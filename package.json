@@ -1,0 +1,57 @@
+{
+  "name": "spec-sketch",
+  "version": "0.1.0",
+  "description": "Spec Sketch is a Chrome extension that lets you assign numbers to elements you select on a webpage and capture annotated screenshots.",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --watch --mode development",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "validate": "npm run lint && npm run check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ymmy833y/SpecSketch.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "ui-review",
+    "annotated-screenshots",
+    "element-numbering",
+    "webpage-elements",
+    "selector",
+    "design-review",
+    "typescript",
+    "tailwindcss",
+    "webpack"
+  ],
+  "author": "Ymmy833y",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ymmy833y/SpecSketch/issues"
+  },
+  "homepage": "https://github.com/Ymmy833y/SpecSketch#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@medv/finder": "^4.0.2",
+    "@types/chrome": "^0.1.1",
+    "autoprefixer": "^10.4.21",
+    "copy-webpack-plugin": "^13.0.0",
+    "css-loader": "^7.1.2",
+    "eslint": "^9.33.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.3.0",
+    "mini-css-extract-plugin": "^2.9.2",
+    "postcss": "^8.5.6",
+    "postcss-loader": "^8.1.1",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^3.4.17",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.39.0",
+    "webpack": "^5.100.2",
+    "webpack-cli": "^6.0.1"
+  }
+}

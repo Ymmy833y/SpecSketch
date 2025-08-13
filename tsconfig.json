@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "lib": ["dom", "es2024"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["chrome"],
+
+    "baseUrl": "src",
+    "paths": {
+      "@common/*": ["common/*"],
+      "@infra/*": ["infra/*"],
+      "@panel/*": ["runtime/panel/*"],
+      "@content/*": ["runtime/content/*"],
+      "@background/*": ["runtime/background/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
