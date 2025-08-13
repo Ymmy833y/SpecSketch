@@ -1,0 +1,50 @@
+name: Build and push dist
+
+on:
+  push:
+    branches: [ master, feature/add-build-action ]
+
+permissions:
+  contents: write
+
+
+concurrency:
+  group: build-dist-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm i
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Push dist to branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: spec-sketch
+          folder: dist
+          clean: true
+          commit-message: "build: update dist from ${{ github.sha }}"
+          git-config-name: github-actions[bot]
+          git-config-email: 41898282+github-actions[bot]@users.noreply.github.com
