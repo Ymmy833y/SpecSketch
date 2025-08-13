@@ -51,7 +51,8 @@ module.exports = {
         { from: 'manifest.json', to: '.' },
         { from: '_locales', to: '_locales' },
         { from: 'assets', to: 'assets' },
-        { from: 'runtime/panel/ui/panel.html', to: 'panel/panel.html' },
+        { from: 'styles/overlay.css', to: 'styles/overlay.css' },
+        { from: 'runtime/panel/pages/panel.html', to: 'panel/panel.html' },
       ]
     }),
     new MiniCssExtractPlugin({

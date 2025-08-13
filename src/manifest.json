@@ -16,6 +16,12 @@
   "side_panel": {
     "default_path": "panel/panel.html"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["styles/overlay.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "icons": {
     "16": "assets/icons/icon16.png",
     "32": "assets/icons/icon32.png",

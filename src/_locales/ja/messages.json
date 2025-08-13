@@ -1,1 +1,18 @@
-{}
+{
+  "app_name": { "message": "Spec Sketch" },
+
+  "status_restricted": { "message": "制限URL/タブなし" },
+  "status_connecting":     { "message": "接続準備…" },
+  "status_connected": { "message": "接続完了" },
+  "status_disconnected": { "message": "切断" },
+
+  "panel_tagline": { "message": "Spec Sketchは、ユーザーが選択した要素に番号を付け、その状態をスクリーンショットとして保存できます。" },
+
+  "btn_clear": { "message": "クリア" },
+  "btn_capture": { "message": "キャプチャ" },
+  "toggle_on": { "message": "選択モード: ON" },
+  "toggle_off": { "message": "選択モード: OFF" },
+
+  "section_selected_items": { "message": "選択済みの要素" },
+  "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" }
+}
