@@ -2,7 +2,7 @@ name: Build and push dist
 
 on:
   push:
-    branches: [ master, feature/add-build-action ]
+    branches: [ master ]
 
 permissions:
   contents: write
