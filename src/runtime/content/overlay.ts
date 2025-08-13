@@ -13,6 +13,12 @@ const tracked = new Map<number, Tracked>();
 
 let rafPending = false;
 
+/**
+ * Mounts the on-page overlay (Shadow DOM) that draws selection boxes.
+ * Also sets up scroll/resize listeners to reschedule position updates.
+ *
+ * @remarks Idempotent: repeated calls won't mount twice.
+ */
 export async function mountOverlay() {
   if (rootEl) return;
   const host = document.createElement('div');
@@ -46,6 +52,12 @@ export async function mountOverlay() {
   }
 }
 
+/**
+ * Renders the given items into the overlay.
+ * Applies add/update/remove by diffing against current state.
+ *
+ * @param items - Array of ScreenItem to display
+ */
 export async function renderItems(items: ScreenItem[]) {
   if (!rootEl) await mountOverlay();
   if (!rootEl) return;
@@ -80,12 +92,22 @@ export async function renderItems(items: ScreenItem[]) {
   requestAnimationFrame(updatePositions);
 }
 
+/**
+ * Clears the overlay and its internal tracking state.
+ * Removes DOM nodes and resets the map.
+ */
 export async function clearOverlay() {
   if (!rootEl) return;
   rootEl.innerHTML = '';
   tracked.clear();
 }
 
+/**
+ * Resolves an element by CSS selector using querySelector.
+ *
+ * @param cssSelector - CSS selector to query
+ * @returns The first matching element or null
+ */
 function resolveElement(cssSelector: string): Element | null {
   try {
     return document.querySelector(cssSelector);
@@ -94,6 +116,12 @@ function resolveElement(cssSelector: string): Element | null {
   }
 }
 
+/**
+ * Updates positions and sizes of all tracked boxes to match the latest layout.
+ * Hides boxes temporarily when their target elements are not found.
+ *
+ * @remarks Intended to be called from requestAnimationFrame.
+ */
 function updatePositions() {
   for (const [_, t] of tracked.entries()) {
     // Check if the existing reference is still alive
@@ -125,7 +153,12 @@ function updatePositions() {
   }
 }
 
-// Helper for receiving and storing CSS from RENDER
+/**
+ * Associates CSS selectors (from RENDER) with tracked boxes.
+ * Actual element resolution is handled in `updatePositions`.
+ *
+ * @param items - Items containing id and anchor
+ */
 export function bindCssSelectorMap(items: ScreenItem[]) {
   for (const it of items) {
     const t = tracked.get(it.id);

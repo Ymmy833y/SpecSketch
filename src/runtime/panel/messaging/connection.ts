@@ -11,6 +11,13 @@ export type Connection = {
   dispose(): void;
 };
 
+/**
+ * Injects the content script into the tab if needed, and
+ * initializes the Port connection and RPC for Panel ↔ Content.
+ *
+ * @param tabId - Target tab id
+ * @returns A connection object bundling API, Port, and RPC
+ */
 export async function connectToTab(tabId: number): Promise<Connection> {
   await chrome.scripting.executeScript({
     target: { tabId },

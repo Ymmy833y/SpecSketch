@@ -22,6 +22,11 @@ const TOGGLE_ICON_BASE = [
 const TOGGLE_ICON_ON  = ['bg-emerald-500'] as const;
 const TOGGLE_ICON_OFF = ['bg-slate-300'] as const;
 
+/**
+ * Updates the connection status indicator's style and text.
+ *
+ * @param key - Current status key
+ */
 export function updateStatusUI(key: StatusKey) {
   const style = STATUS_LABEL_STYLE[key];
 
@@ -37,12 +42,22 @@ export function updateStatusUI(key: StatusKey) {
   statusEl.replaceChildren(dot, text);
 }
 
+/**
+ * Updates the selection toggle's icon and label.
+ *
+ * @param enabled - True if selection is enabled
+ */
 export function updateToggleIconUI(enabled: boolean) {
   toggleIconEl.className = '';
   toggleIconEl.classList.add(...TOGGLE_ICON_BASE, ...(enabled ? TOGGLE_ICON_ON : TOGGLE_ICON_OFF));
   toggleLabelEl.textContent = i18n.get(enabled ? 'toggle_on' : 'toggle_off');
 }
 
+/**
+ * Rebuilds the selection list UI. Shows an empty state when no items exist.
+ *
+ * @param items - Items to display
+ */
 export function renderList(items: ScreenItem[]) {
   const isEmpty = items.length === 0;
   selectCountEl.textContent = String(items.length);

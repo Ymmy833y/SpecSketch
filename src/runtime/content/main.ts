@@ -9,11 +9,15 @@ import { Selector } from './selector';
 const selection = new Selector(onPick);
 let port: chrome.runtime.Port | null = null;
 
+// Accepts connections from the Panel. Once connected, initializes the overlay,
+// subscribes to messages, and sets up cleanup on disconnect.
 chrome.runtime.onConnect.addListener(async (p) => {
   if (!isPanelContentPort(p)) return;
   port = p;
   await mountOverlay();
 
+  // Handles messages from Panel → Content.
+  // Processes RPCs such as toggling selection, rendering, and clearing.
   p.onMessage.addListener(async (msg: PanelToContent) => {
     if (!msg?.type) return;
     switch (msg.type) {
@@ -37,12 +41,20 @@ chrome.runtime.onConnect.addListener(async (p) => {
     }
   });
 
+  // Cleans up on port disconnection.
+  // Disables selection and clears the overlay.
   p.onDisconnect.addListener(() => {
     selection.setEnabled(false);
     clearOverlay();
   });
 });
 
+/**
+ * Called when an element is picked.
+ * Builds an anchor and notifies the Panel.
+ *
+ * @param el - Element confirmed by click
+ */
 function onPick(el: Element) {
   const anchor = buildCssAnchor(el);
   port?.postMessage({

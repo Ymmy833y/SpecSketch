@@ -1,9 +1,17 @@
 import { isResponse, RpcRequest, RpcResponse } from '@common/messages';
 
+/**
+ * Implements a minimal request/response RPC over chrome.runtime.Port.
+ * Tracks pending requests by id and handles timeouts and disconnects.
+ */
 export class PortRpc {
   private port: chrome.runtime.Port;
   private pending = new Map<string, (res?: RpcResponse) => void>();
 
+  /**
+   * Subscribes to port message and disconnect events.
+   * @param port - The runtime.Port used for messaging
+   */
   constructor(port: chrome.runtime.Port) {
     this.port = port;
     this.port.onMessage.addListener((msg) => {
@@ -19,6 +27,13 @@ export class PortRpc {
     });
   }
 
+  /**
+   * Sends an RPC request and optionally awaits a response.
+   *
+   * @param req - The RPC request to send
+   * @param timeoutMs - Timeout (ms) when waiting for a reply (default 5000)
+   * @returns The response when `expectReply` is true; otherwise undefined
+   */
   send<T extends RpcRequest>(req: T, timeoutMs = 5000): Promise<RpcResponse | undefined> {
     return new Promise((resolve) => {
       if (req.expectReply) {

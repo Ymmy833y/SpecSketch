@@ -18,6 +18,13 @@ let selectionEnabled = false;
 
 main().catch(console.error);
 
+/**
+ * Orchestrates UI initialization and connection lifecycle.
+ * - Apply i18n
+ * - Detect and connect to the active tab
+ * - Restore state and perform initial render
+ * - Bind UI events
+ */
 async function main() {
   i18n.localize(document);
 
@@ -34,7 +41,8 @@ async function main() {
     toggleLabel.textContent = i18n.get('toggle_off');
   });
 
-  // Content → Panel
+  // Receives messages from Content → Panel.
+  // Applies selection results (anchors), updates state, and re-renders.
   conn.port.onMessage.addListener(async (msg: ContentToPanel) => {
     if (!msg || !msg.type) return;
 
@@ -51,13 +59,14 @@ async function main() {
   renderList(st.items);
   updateStatusUI(STATUS.CONNECTED);
 
-  // UI
+  // Toggles selection mode from the Panel and notifies Content.
   toggleBtn.onclick = async () => {
     selectionEnabled = !selectionEnabled;
     updateToggleIconUI(selectionEnabled);
     await conn.api.toggleSelect(selectionEnabled);
   };
 
+  // Clears all selections from storage and the Content overlay.
   clearBtn.onclick = async () => {
     const cleared: ScreenState = { items: [], nextId: 1, nextLabel: 1 };
     await setState(currentPageKey, cleared);
