@@ -4,6 +4,7 @@ import type { ScreenState } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { connectToTab } from '@panel/messaging/connection'
+import { captureFullPage } from '@panel/services/capture';
 import { getState, handleSelected, setState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
 import { renderList, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
@@ -11,6 +12,7 @@ import { renderList, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const toggleLabel = document.getElementById('toggle-label') as HTMLSpanElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
+const captureBtn = document.getElementById('capture') as HTMLButtonElement;
 
 let currentTabId: number | null = null;
 let currentPageKey = '';
@@ -72,5 +74,15 @@ async function main() {
     await setState(currentPageKey, cleared);
     renderList([]);
     await conn.api.clear();
+  };
+
+  // Initiates a full-page screenshot of the current tab and saves it via the Downloads API.
+  // Errors are logged to the console without interrupting the UI.
+  captureBtn.onclick = async () => {
+    try {
+      await captureFullPage({ tabId: currentTabId! });
+    } catch (e) {
+      console.error('Full capture failed', e);
+    }
   };
 }
