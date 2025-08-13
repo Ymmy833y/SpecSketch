@@ -1,17 +1,16 @@
 import i18n from '@common/i18n';
 import { ContentToPanel, MSG_TYPE } from '@common/messages';
-import type { ScreenItem, ScreenState } from '@common/types';
+import type { ScreenState } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { connectToTab } from '@panel/messaging/connection'
 import { getState, handleSelected, setState } from '@panel/state/store';
-import { getStatusMessage, STATUS, StatusKey } from '@panel/view/status';
+import { STATUS } from '@panel/view/status';
+import { renderList, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const toggleLabel = document.getElementById('toggle-label') as HTMLSpanElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
-const statusEl = document.getElementById('status')!;
-const listEl = document.getElementById('list')!;
 
 let currentTabId: number | null = null;
 let currentPageKey = '';
@@ -23,14 +22,14 @@ async function main() {
   i18n.localize(document);
 
   const tab = await getActiveTab();
-  if (!tab?.id || isRestricted(tab.url)) return setStatus(STATUS.RESTRICTED);
+  if (!tab?.id || isRestricted(tab.url)) return updateStatusUI(STATUS.RESTRICTED);
   currentTabId = tab.id!;
   currentPageKey = pageKey(tab.url!);
-  setStatus(STATUS.CONNECTING);
+  updateStatusUI(STATUS.CONNECTING);
 
   const conn = await connectToTab(currentTabId);
   conn.onDisconnect(() => {
-    setStatus(STATUS.DISCONNECTED);
+    updateStatusUI(STATUS.DISCONNECTED);
     selectionEnabled = false;
     toggleLabel.textContent = i18n.get('toggle_off');
   });
@@ -50,12 +49,12 @@ async function main() {
   const st = await getState(currentPageKey);
   await conn.api.render(st.items);
   renderList(st.items);
-  setStatus(STATUS.CONNECTED);
+  updateStatusUI(STATUS.CONNECTED);
 
   // UI
   toggleBtn.onclick = async () => {
     selectionEnabled = !selectionEnabled;
-    toggleLabel.textContent = i18n.get(selectionEnabled ? 'toggle_on' : 'toggle_off');
+    updateToggleIconUI(selectionEnabled);
     await conn.api.toggleSelect(selectionEnabled);
   };
 
@@ -65,17 +64,4 @@ async function main() {
     renderList([]);
     await conn.api.clear();
   };
-}
-
-function renderList(items: ScreenItem[]) {
-  listEl.innerHTML = '';
-  for (const it of items) {
-    const li = document.createElement('li');
-    li.textContent = `#${it.label}  ${it.anchor.value}`;
-    listEl.appendChild(li);
-  }
-}
-
-function setStatus(key: StatusKey) {
-  statusEl.textContent = getStatusMessage(key);
 }

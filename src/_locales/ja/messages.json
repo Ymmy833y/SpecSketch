@@ -13,5 +13,6 @@
   "toggle_on": { "message": "選択モード: ON" },
   "toggle_off": { "message": "選択モード: OFF" },
 
-  "section_selected_items": { "message": "選択済みの要素" }
+  "section_selected_items": { "message": "選択済みの要素" },
+  "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" }
 }
