@@ -1,0 +1,18 @@
+{
+  "app_name": { "message": "Spec Sketch" },
+
+  "status_restricted": { "message": "Restricted / No tab" },
+  "status_connecting": { "message": "Connecting…" },
+  "status_connected": { "message": "Connected" },
+  "status_disconnected":{ "message": "Disconnected" },
+
+  "panel_tagline": { "message": "Spec Sketch allows you to number the elements you select and save them as screenshots." },
+
+  "btn_clear": { "message": "Clear" },
+  "btn_capture": { "message": "Capture" },
+  "toggle_on": { "message": "Selection: ON" },
+  "toggle_off": { "message": "Selection: OFF" },
+
+  "section_selected_items": { "message": "Selected Elements" },
+  "empty_hint": { "message": "Turn on the selection mode and click on the element." }
+}
