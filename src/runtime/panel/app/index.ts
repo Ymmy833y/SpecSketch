@@ -1,5 +1,5 @@
 import i18n from '@common/i18n';
-import { ContentToPanel, MSG_TYPE } from '@common/messages';
+import { type BackgroundToPanel,ContentToPanel, MSG_TYPE } from '@common/messages';
 import type { ScreenState } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
@@ -51,6 +51,14 @@ async function main() {
       const newState = await handleSelected(currentPageKey, msg.payload.anchors);
       renderList(newState.items);
       await conn.api.render(newState.items);
+    }
+  });
+
+  // Receives messages from Background (SW) → Panel.
+  chrome.runtime.onMessage.addListener((msg: BackgroundToPanel) => {
+    if (msg?.type !== MSG_TYPE.CLOSE_PANEL) return;
+    if (currentTabId === null || msg.payload?.tabId === currentTabId) {
+      window.close();
     }
   });
 

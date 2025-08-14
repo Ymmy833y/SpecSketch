@@ -1,6 +1,6 @@
 import i18n from '@common/i18n';
 import type { ScreenItem } from '@common/types';
-import { getStatusMessage, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
+import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
 
 const statusEl = document.getElementById('status') as HTMLSpanElement;
 const toggleIconEl = document.getElementById('toggle-select-icon') as HTMLSpanElement;
@@ -22,6 +22,11 @@ const TOGGLE_ICON_BASE = [
 const TOGGLE_ICON_ON  = ['bg-emerald-500'] as const;
 const TOGGLE_ICON_OFF = ['bg-slate-300'] as const;
 
+function disabledBtns(isDisabled: boolean) {
+  const btns = document.querySelectorAll('button');
+  btns.forEach(btn => btn.disabled = isDisabled);
+}
+
 /**
  * Updates the connection status indicator's style and text.
  *
@@ -40,6 +45,7 @@ export function updateStatusUI(key: StatusKey) {
   text.textContent = getStatusMessage(key);
 
   statusEl.replaceChildren(dot, text);
+  disabledBtns(key !== STATUS.CONNECTED);
 }
 
 /**

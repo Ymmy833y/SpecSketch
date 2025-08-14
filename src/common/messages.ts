@@ -12,11 +12,16 @@ const C2P = {
   SELECTED: 'SELECTED',
 } as const;
 
-export const MSG_TYPE = { ...P2C, ...C2P } as const;
+const B2P = {
+  CLOSE_PANEL: 'CLOSE_PANEL',
+} as const;
+
+export const MSG_TYPE = { ...P2C, ...C2P, ...B2P } as const;
 
 export type P2CType = typeof P2C[keyof typeof P2C];
 export type C2PType = typeof C2P[keyof typeof C2P];
-export type MsgType  = typeof MSG_TYPE[keyof typeof MSG_TYPE];
+export type B2PType = typeof B2P[keyof typeof B2P];
+export type MsgType = typeof MSG_TYPE[keyof typeof MSG_TYPE];
 
 export type PanelToContent =
   | { type: typeof P2C.PING; id?: string }
@@ -27,6 +32,9 @@ export type PanelToContent =
 
 export type ContentToPanel =
   | { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } };
+
+export type BackgroundToPanel =
+  | { type: typeof B2P.CLOSE_PANEL; payload: { tabId: number } };
 
 export type RpcRequest = {
   id: string;

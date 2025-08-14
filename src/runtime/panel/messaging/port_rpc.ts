@@ -46,7 +46,13 @@ export class PortRpc {
           resolve(res);
         });
       }
-      this.port.postMessage(req);
+      try {
+        this.port.postMessage(req);
+      } catch {
+        if (req.expectReply) this.pending.delete(req.id);
+        resolve(undefined);
+        return;
+      }
       if (!req.expectReply) resolve(undefined);
     });
   }
