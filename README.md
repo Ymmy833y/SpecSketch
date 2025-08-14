@@ -49,6 +49,7 @@
 * `debugger` — to take full-page screenshots
 * `downloads` — to save images to your device
 * `host_permissions: <all_urls>` — to work on any website you open
+* `webNavigation` — To detect top-level screen transitions in advance using Service Worker
 
 ---
 
