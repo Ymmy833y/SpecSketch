@@ -10,7 +10,6 @@ import { STATUS } from '@panel/view/status';
 import { renderList, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
-const toggleLabel = document.getElementById('toggle-label') as HTMLSpanElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
 const captureBtn = document.getElementById('capture') as HTMLButtonElement;
 
@@ -40,7 +39,7 @@ async function main() {
   conn.onDisconnect(() => {
     updateStatusUI(STATUS.DISCONNECTED);
     selectionEnabled = false;
-    toggleLabel.textContent = i18n.get('toggle_off');
+    updateToggleIconUI(selectionEnabled);
   });
 
   // Receives messages from Content → Panel.
