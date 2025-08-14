@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Spec Sketch",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "default_locale": "en",
   "description": "Spec Sketch is a Chrome extension that lets you assign numbers to elements you select on a webpage and capture annotated screenshots.",
   "permissions": ["sidePanel", "webNavigation", "scripting", "storage", "tabs", "debugger", "downloads"],
