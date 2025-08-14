@@ -1,0 +1,19 @@
+.spsk-overlay {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+.spsk-box {
+  position: absolute;
+  border: 2px solid rgba(0, 128, 255, .7);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.8) inset;
+}
+.spsk-badge {
+  position: absolute;
+  top: -10px; left: -10px;
+  font: 12px/1 system-ui, sans-serif;
+  background: rgba(0,128,255,.9);
+  color: #fff; padding: 2px 6px; border-radius: 10px;
+}

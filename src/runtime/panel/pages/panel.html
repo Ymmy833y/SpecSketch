@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <title data-i18n="app_name">Spec Sketch</title>
+  <link rel="stylesheet" href="../styles/tailwind.css" />
+  <meta name="color-scheme" content="light dark" />
+</head>
+<body class="min-h-screen h-full bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100 antialiased">
+  <div class="p-4 max-w-md mx-auto">
+    <header class="mb-4">
+      <div class="flex items-center w-full rounded-xl bg-white/70 dark:bg-slate-900/60 backdrop-blur border border-slate-200/70 dark:border-slate-800 py-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+            <img src="/assets/icons/icon128.png" class="h-7 w-7" alt="Spec Sketch logo" />
+          </span>
+          <h1 class="text-base font-semibold tracking-wide" data-i18n="app_name">Spec Sketch</h1>
+        </div>
+        <div class="ml-auto text-xs">
+          <span id="status" data-i18n="status_restricted"></span>
+        </div>
+      </div>
+      <p data-i18n="panel_tagline" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
+    </header>
+
+    <div class="flex gap-1 mb-6">
+      <button id="toggle-select"
+        class="group inline-flex items-center gap-2 px-2.5 py-2 rounded-lg 
+              bg-indigo-600 text-white text-sm font-medium shadow-sm 
+              hover:bg-indigo-700 active:bg-indigo-800 
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 
+              focus-visible:ring-offset-2 focus-visible:ring-offset-white 
+              dark:focus-visible:ring-offset-slate-900 
+              transition
+              disabled:bg-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+        aria-pressed="false">
+        <span class="inline-block w-3 h-3 rounded-full bg-slate-300" id="toggle-select-icon" data-role="icon"></span>
+        <span id="toggle-select-label" data-i18n="toggle_off">Select mode: OFF</span>
+      </button>
+
+      <button id="clear"
+        class="inline-flex items-center gap-2 px-2.5 py-2 rounded-lg 
+              border border-slate-200 dark:border-slate-700 
+              bg-white dark:bg-slate-900 text-sm 
+              hover:bg-slate-50 dark:hover:bg-slate-800 
+              active:bg-slate-100 dark:active:bg-slate-800/80 
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 
+              focus-visible:ring-offset-2 focus-visible:ring-offset-white 
+              dark:focus-visible:ring-offset-slate-900 
+              transition
+              disabled:bg-slate-100 dark:disabled:bg-slate-800/50 
+              disabled:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+        data-i18n="btn_clear"></button>
+
+      <button id="capture"
+        class="inline-flex items-center gap-2 px-2.5 py-2 rounded-lg 
+              border border-slate-200 dark:border-slate-700 
+              bg-white dark:bg-slate-900 text-sm 
+              hover:bg-slate-50 dark:hover:bg-slate-800 
+              active:bg-slate-100 dark:active:bg-slate-800/80 
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 
+              focus-visible:ring-offset-2 focus-visible:ring-offset-white 
+              dark:focus-visible:ring-offset-slate-900 
+              transition
+              disabled:bg-slate-100 dark:disabled:bg-slate-800/50 
+              disabled:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+        data-i18n="btn_capture"></button>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <div class="flex items-center justify-between p-3 border-b border-slate-200/70 dark:border-slate-800/70">
+        <h2 class="text-sm font-medium text-slate-600 dark:text-slate-300" data-i18n="section_selected_items">Selected items</h2>
+        <span id="select-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">0</span>
+      </div>
+
+      <div id="select-empty" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p data-i18n="empty_hint"></p>
+      </div>
+
+      <ul id="select-list" class="overflow-y-auto divide-y divide-slate-200 dark:divide-slate-800"></ul>
+    </div>
+  </div>
+
+  <script type="module" src="index.js"></script>
+</body>
+</html>
