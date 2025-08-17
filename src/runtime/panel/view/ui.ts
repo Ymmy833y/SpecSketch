@@ -1,13 +1,21 @@
 import i18n from '@common/i18n';
 import type { ScreenItem } from '@common/types';
+import { CaptureFormat } from '@panel/services/capture';
 import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
 
 const statusEl = document.getElementById('status') as HTMLSpanElement;
+
 const toggleIconEl = document.getElementById('toggle-select-icon') as HTMLSpanElement;
 const toggleLabelEl = document.getElementById('toggle-select-label') as HTMLSpanElement;
+
 const selectCountEl = document.getElementById('select-count') as HTMLSpanElement;
 const selectEmptyEl = document.getElementById('select-empty') as HTMLDivElement;
 const selectListEl = document.getElementById('select-list') as HTMLUListElement;
+
+const captureOptionsPanel = document.getElementById('capture-options') as HTMLElement;
+const jpegOnlyEls = document.querySelectorAll<HTMLElement>('.jpeg-only');
+const jpegQualityRange = document.getElementById('opt-quality-range') as HTMLInputElement;
+const jpegQualityNumber = document.getElementById('opt-quality-number') as HTMLInputElement;
 
 const STATUS_BASE_BODY = [
   'inline-flex','items-center','gap-1',
@@ -21,6 +29,9 @@ const TOGGLE_ICON_BASE = [
 
 const TOGGLE_ICON_ON  = ['bg-emerald-500'] as const;
 const TOGGLE_ICON_OFF = ['bg-slate-300'] as const;
+
+const CAPTURE_OPTION_COLLAPSED = '▼';
+const CAPTURE_OPTION_EXPANDED = '▲';
 
 function disabledBtns(isDisabled: boolean) {
   const btns = document.querySelectorAll('button');
@@ -97,4 +108,56 @@ export function renderList(items: ScreenItem[]) {
     frag.appendChild(li);
   }
   selectListEl.replaceChildren(frag);
+}
+
+// Open/close capture options
+export function toggleCaptureOptionsUI(toggleBtn: HTMLButtonElement) {
+  const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+  toggleBtn.setAttribute('aria-expanded', String(!expanded));
+  toggleBtn.textContent = expanded ? CAPTURE_OPTION_COLLAPSED : CAPTURE_OPTION_EXPANDED;
+  captureOptionsPanel.classList.toggle('hidden', expanded);
+}
+
+export function getSelectedCaptureFormat(): CaptureFormat {
+  const val = document.querySelector<HTMLInputElement>('input[name="capture-format"]:checked')?.value;
+  return val === 'jpeg' ? 'jpeg' : 'png'; // default: png
+}
+
+export function updateQualityVisibility(): void {
+  const isJpeg = getSelectedCaptureFormat() === 'jpeg';
+  jpegOnlyEls.forEach((el) => el.classList.toggle('hidden', !isJpeg));
+  if (jpegQualityRange) jpegQualityRange.disabled = !isJpeg;
+  if (jpegQualityNumber) jpegQualityNumber.disabled = !isJpeg;
+}
+
+// Synchronization of range and number (quality/scale)
+export function bindSync(rangeEl: HTMLInputElement, numberEl: HTMLInputElement): void {
+  const readNum = (s: string | null | undefined, fallback: number): number => {
+    const v = s != null && s !== '' ? Number(s) : NaN;
+    return Number.isFinite(v) ? v : fallback;
+  };
+
+  const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(v, min), max);
+
+  rangeEl.addEventListener('input', () => {
+    numberEl.value = rangeEl.value;
+  });
+
+  numberEl.addEventListener('input', () => {
+    const min = readNum(numberEl.min || rangeEl.min, Number.NEGATIVE_INFINITY);
+    const max = readNum(numberEl.max || rangeEl.max, Number.POSITIVE_INFINITY);
+    const step = readNum(numberEl.step || rangeEl.step, 1);
+
+    const raw = Number(numberEl.value);
+    const clamped = clamp(Number.isFinite(raw) ? raw : 0, min, max);
+
+    // step rounding (supports fractional steps such as 0.1)
+    const rounded = Math.round(clamped / step) * step;
+
+    // Reduce floating point errors (round to 6 decimal places)
+    const fixed = Number(rounded.toFixed(6));
+
+    numberEl.value = String(fixed);
+    rangeEl.value = String(fixed);
+  });
 }

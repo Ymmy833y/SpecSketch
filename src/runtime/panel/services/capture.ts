@@ -1,7 +1,7 @@
 import { isRestricted } from '@common/url';
 import { attach, type Debuggee,detach, send } from '@infra/cdp/cdp_client'
 
-type CaptureFormat = 'png' | 'jpeg';
+export type CaptureFormat = 'png' | 'jpeg';
 
 export type CaptureOptions = {
   tabId: number;

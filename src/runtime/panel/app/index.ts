@@ -7,11 +7,19 @@ import { connectToTab } from '@panel/messaging/connection'
 import { captureFullPage } from '@panel/services/capture';
 import { getState, handleSelected, setState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
-import { renderList, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
+import { bindSync, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
 const captureBtn = document.getElementById('capture') as HTMLButtonElement;
+
+// capture options
+const captureOptionsToggleBtn = document.getElementById('capture-options-toggle') as HTMLButtonElement;
+const captureFmtRadios = document.querySelectorAll<HTMLInputElement>('input[name="capture-format"]');
+const jpegQualityRange = document.getElementById('jpeg-quality-range') as HTMLInputElement;
+const jpegQualityNumber = document.getElementById('jpeg-quality-number') as HTMLInputElement;
+const captureScaleRange = document.getElementById('capture-scale-range') as HTMLInputElement;
+const captureScaleNumber = document.getElementById('capture-scale-number') as HTMLInputElement;
 
 let currentTabId: number | null = null;
 let currentPageKey = '';
@@ -87,9 +95,24 @@ async function main() {
   // Errors are logged to the console without interrupting the UI.
   captureBtn.onclick = async () => {
     try {
-      await captureFullPage({ tabId: currentTabId! });
+      await captureFullPage({
+        tabId: currentTabId!,
+        format: getSelectedCaptureFormat(),
+        quality: Number(jpegQualityNumber.value),
+        scale: Number(captureScaleNumber.value),
+      });
     } catch (e) {
       console.error('Full capture failed', e);
     }
   };
+
+  captureOptionsToggleBtn.onclick = async () => {
+    toggleCaptureOptionsUI(captureOptionsToggleBtn);
+  }
+  captureFmtRadios.forEach((radio) => {
+    radio.addEventListener('change', updateQualityVisibility);
+  });
+  updateQualityVisibility();
+  bindSync(jpegQualityRange, jpegQualityNumber);
+  bindSync(captureScaleRange, captureScaleNumber);
 }
