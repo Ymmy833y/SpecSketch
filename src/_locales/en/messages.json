@@ -13,6 +13,13 @@
   "toggle_on": { "message": "Selection: ON" },
   "toggle_off": { "message": "Selection: OFF" },
 
+  "section_capture_options": { "message": "Capture options" },
+  "hint_applies_on_capture": { "message": "Applied when capturing." },
+  "label_capture_format": { "message": "Format" },
+  "label_jpeg_quality": { "message": "JPEG quality (0–100)" },
+  "label_capture_scale": { "message": "Scale (0.5–2.0)" },
+  "hint_capture_scale_note": { "message": "Large scale increases resolution and file size." },
+
   "section_selected_items": { "message": "Selected Elements" },
   "empty_hint": { "message": "Turn on the selection mode and click on the element." }
 }

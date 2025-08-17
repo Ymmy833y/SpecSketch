@@ -13,6 +13,13 @@
   "toggle_on": { "message": "選択モード: ON" },
   "toggle_off": { "message": "選択モード: OFF" },
 
+  "section_capture_options": { "message": "キャプチャ オプション" },
+  "hint_applies_on_capture": { "message": "キャプチャ時に適用されます。" },
+  "label_capture_format": { "message": "ファイル形式" },
+  "label_jpeg_quality": { "message": "JPEG品質（0～100）" },
+  "label_capture_scale": { "message": "拡大倍率（0.5～2.0）" },
+  "hint_capture_scale_note": { "message": "スケールが大きいほど解像度とファイルサイズが増大します。" },
+
   "section_selected_items": { "message": "選択済みの要素" },
   "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" }
 }
