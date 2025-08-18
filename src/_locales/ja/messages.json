@@ -20,6 +20,9 @@
   "label_capture_scale": { "message": "拡大倍率（0.5～2.0）" },
   "hint_capture_scale_note": { "message": "スケールが大きいほど解像度とファイルサイズが増大します。" },
 
+  "label_badge_size": { "message": "項番サイズ (10–30px)" },
+  "label_badge_color": { "message": "項番色" },
+
   "section_selected_items": { "message": "選択済みの要素" },
   "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" }
 }

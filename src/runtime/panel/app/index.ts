@@ -5,9 +5,9 @@ import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { connectToTab } from '@panel/messaging/connection'
 import { captureFullPage } from '@panel/services/capture';
-import { getState, handleSelected, setState } from '@panel/state/store';
+import { getState, handleSelected, setState, updateScreenState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
-import { bindSync, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
+import { bindSync, getBadgeColor, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateBadgeColorUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
@@ -20,6 +20,10 @@ const jpegQualityRange = document.getElementById('jpeg-quality-range') as HTMLIn
 const jpegQualityNumber = document.getElementById('jpeg-quality-number') as HTMLInputElement;
 const captureScaleRange = document.getElementById('capture-scale-range') as HTMLInputElement;
 const captureScaleNumber = document.getElementById('capture-scale-number') as HTMLInputElement;
+
+const badgeSizeRange = document.getElementById('badge-size-range') as HTMLInputElement;
+const badgeSizeNumber = document.getElementById('badge-size-number') as HTMLInputElement;
+const badgeColorPopButtons = document.querySelectorAll<HTMLButtonElement>('#badge-color-pop button');
 
 let currentTabId: number | null = null;
 let currentPageKey = '';
@@ -75,6 +79,9 @@ async function main() {
   await conn.api.render(st.items);
   renderList(st.items);
   updateStatusUI(STATUS.CONNECTED);
+  badgeSizeNumber.value = String(st.defaultSize);
+  badgeSizeRange.value = String(st.defaultSize);
+  updateBadgeColorUI(st.defaultColor);
 
   // Toggles selection mode from the Panel and notifies Content.
   toggleBtn.onclick = async () => {
@@ -85,7 +92,13 @@ async function main() {
 
   // Clears all selections from storage and the Content overlay.
   clearBtn.onclick = async () => {
-    const cleared: ScreenState = { items: [], nextId: 1, nextLabel: 1 };
+    const cleared: ScreenState = {
+      items: [],
+      nextId: 1,
+      nextLabel: 1,
+      defaultSize: Number(badgeSizeNumber.value),
+      defaultColor: getBadgeColor(),
+    };
     await setState(currentPageKey, cleared);
     renderList([]);
     await conn.api.clear();
@@ -115,4 +128,19 @@ async function main() {
   updateQualityVisibility();
   bindSync(jpegQualityRange, jpegQualityNumber);
   bindSync(captureScaleRange, captureScaleNumber);
+
+  bindSync(badgeSizeRange, badgeSizeNumber);
+  badgeSizeRange.addEventListener('change', async() => {
+    const newState = await updateScreenState(currentPageKey, Number(badgeSizeNumber.value), undefined);
+    renderList(newState.items);
+    await conn.api.render(newState.items);
+  })
+  badgeColorPopButtons.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      updateBadgeColorUI(btn.dataset.colorName ?? '');
+      const newState = await updateScreenState(currentPageKey, undefined, getBadgeColor());
+      renderList(newState.items);
+      await conn.api.render(newState.items);
+    });
+  });
 }

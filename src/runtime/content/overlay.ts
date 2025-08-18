@@ -74,12 +74,20 @@ export async function renderItems(items: ScreenItem[]) {
   // add/update
   for (const it of items) {
     let t = tracked.get(it.id);
-    if (!t) {
+    const color = it.color.toLowerCase();
+    if (t) {
+      t.boxEl.className = `spsk-box spsk-box-${color}`;
+      t.boxEl.style.borderWidth = `${it.size / 6}px`;
+      t.badgeEl.className = `spsk-badge spsk-badge-${color}`;
+      t.badgeEl.style.fontSize = `${it.size}px`;
+    } else {
       const box = document.createElement('div');
-      box.className = 'spsk-box';
+      box.className = `spsk-box spsk-box-${color}`;
+      box.style.borderWidth = `${it.size / 6}px`;
 
       const badge = document.createElement('div');
-      badge.className = 'spsk-badge';
+      badge.className = `spsk-badge spsk-badge-${color}`;
+      badge.style.fontSize = `${it.size}px`;
       box.appendChild(badge);
 
       rootEl!.appendChild(box);
