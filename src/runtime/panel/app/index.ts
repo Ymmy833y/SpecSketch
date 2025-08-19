@@ -4,13 +4,14 @@ import type { ScreenState } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { connectToTab } from '@panel/messaging/connection';
-import { captureFullPage } from '@panel/services/capture';
+import { capture } from '@panel/services/capture';
 import { getState, handleSelected, setState, updateScreenState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
 import {
   bindSync,
   getBadgeColor,
   getBadgeShape,
+  getSelectedCaptureArea,
   getSelectedCaptureFormat,
   renderList,
   toggleCaptureOptionsUI,
@@ -127,9 +128,10 @@ async function main() {
   // Errors are logged to the console without interrupting the UI.
   captureBtn.onclick = async () => {
     try {
-      await captureFullPage({
+      await capture({
         tabId: currentTabId!,
         format: getSelectedCaptureFormat(),
+        area: getSelectedCaptureArea(),
         quality: Number(jpegQualityNumber.value),
         scale: Number(captureScaleNumber.value),
       });

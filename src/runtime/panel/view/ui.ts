@@ -1,6 +1,6 @@
 import i18n from '@common/i18n';
 import { isItemColor, isItemShape, type ItemColor, type ScreenItem } from '@common/types';
-import { CaptureFormat } from '@panel/services/capture';
+import { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
 
 const statusEl = document.getElementById('status') as HTMLSpanElement;
@@ -139,6 +139,11 @@ export function updateQualityVisibility(): void {
   jpegOnlyEls.forEach((el) => el.classList.toggle('hidden', !isJpeg));
   if (jpegQualityRange) jpegQualityRange.disabled = !isJpeg;
   if (jpegQualityNumber) jpegQualityNumber.disabled = !isJpeg;
+}
+
+export function getSelectedCaptureArea(): CaptureArea {
+  const val = document.querySelector<HTMLInputElement>('input[name="capture-area"]:checked')?.value;
+  return val === 'full' ? 'full' : 'viewport'; // default: full
 }
 
 // Synchronization of range and number (quality/scale)

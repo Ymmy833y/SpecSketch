@@ -121,8 +121,24 @@
           </div>
         </fieldset>
 
+        <fieldset class="space-y-1">
+          <legend class="text-xs font-semibold text-slate-500 dark:text-slate-400" data-i18n="label_capture_area">
+            Capture area
+          </legend>
+          <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-1 text-sm">
+              <input type="radio" name="capture-area" value="full" class="accent-indigo-600" checked>
+              <span data-i18n="label_capture_area_full">Full page</span>
+            </label>
+            <label class="inline-flex items-center gap-1 text-sm">
+              <input type="radio" name="capture-area" value="viewport" class="accent-indigo-600">
+              <span data-i18n="label_capture_area_viewport">Visible viewport</span>
+            </label>
+          </div>
+        </fieldset>
+
         <div class="jpeg-only">
-          <label for="jpeg-quality-range" class="block text-xs font-semibold text-slate-500 dark:text-slate-400" 
+          <label for="jpeg-quality-range" class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
                 data-i18n="label_jpeg_quality">JPEG quality (0–100)</label>
           <div class="flex items-center gap-2">
             <input id="jpeg-quality-range" name="quality" type="range" min="0" max="100" step="1" value="92"
@@ -133,7 +149,7 @@
         </div>
 
         <div>
-          <label for="capture-scale-range" class="block text-xs font-semibold text-slate-500 dark:text-slate-400" 
+          <label for="capture-scale-range" class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
                 data-i18n="label_capture_scale">Scale (0.5–2.0)</label>
           <div class="flex items-center gap-2">
             <input id="capture-scale-range" name="scale" type="range" min="0.5" max="2" step="0.1" value="1"
