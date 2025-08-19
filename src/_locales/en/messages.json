@@ -23,6 +23,10 @@
   "label_badge_size": { "message": "Badge size (10–30px)" },
   "label_badge_color": { "message": "Badge color" },
 
+  "badge_shape": { "message": "Badge shape" },
+  "badge_shape_circle": { "message": "Circle" },
+  "badge_shape_square": { "message": "Square" },
+
   "section_selected_items": { "message": "Selected Elements" },
   "empty_hint": { "message": "Turn on the selection mode and click on the element." }
 }

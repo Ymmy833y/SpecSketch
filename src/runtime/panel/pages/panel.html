@@ -155,94 +155,112 @@
             </div>
           </div>
           <div>
-            <span class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
-                  data-i18n="label_badge_color">Badge color</span>
-            <button id="badge-color-button" type="button"
-                    class="mt-1 inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 transition"
-                    popovertarget="badge-color-pop" popovertargetaction="toggle" aria-haspopup="listbox"
-                    style="anchor-name: --badge-color-trigger;">
-              <span id="badge-color-dot" class="inline-block w-4 h-4 rounded-full bg-slate-500"></span>
-              <span id="badge-color-label" class="text-slate-600 dark:text-slate-300">Gray</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
-              </svg>
-            </button>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <span class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
+                      data-i18n="label_badge_color">Badge color</span>
+                <button id="badge-color-button" type="button"
+                  class="mt-1 inline-flex w-full items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 transition"
+                  popovertarget="badge-color-pop" popovertargetaction="toggle" aria-haspopup="listbox"
+                  style="anchor-name: --badge-color-trigger;">
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span id="badge-color-dot" class="inline-block w-4 h-4 rounded-full bg-slate-500 shrink-0"></span>
+                    <span id="badge-color-label" class="text-slate-600 dark:text-slate-300 truncate">Gray</span>
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                      class="ml-auto h-4 w-4 opacity-60 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
 
-            <div id="badge-color-pop" popover
-                class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-3 w-64">
-              <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">Pick a color</p>
+                <div id="badge-color-pop" popover
+                    class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-3 w-64">
+                  <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">Pick a color</p>
 
-              <div class="grid grid-cols-5 gap-2" role="listbox" aria-label="Badge color">
-                <!-- Gray -->
-                <button type="button" role="radio" aria-selected="true" data-color-name="Gray"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-slate-500 group-aria-selected:ring-2 group-aria-selected:ring-indigo-400"></span>
-                  <span class="text-[10px] text-slate-500">Gray</span>
-                </button>
-                <!-- Red -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Red"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-red-500"></span>
-                  <span class="text-[10px] text-slate-500">Red</span>
-                </button>
-                <!-- Yellow -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Yellow"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-yellow-500"></span>
-                  <span class="text-[10px] text-slate-500">Yellow</span>
-                </button>
-                <!-- Green -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Green"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-green-500"></span>
-                  <span class="text-[10px] text-slate-500">Green</span>
-                </button>
-                <!-- Blue -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Blue"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-blue-500"></span>
-                  <span class="text-[10px] text-slate-500">Blue</span>
-                </button>
-                <!-- Indigo -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Indigo"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-indigo-500"></span>
-                  <span class="text-[10px] text-slate-500">Indigo</span>
-                </button>
-                <!-- Purple -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Purple"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-purple-500"></span>
-                  <span class="text-[10px] text-slate-500">Purple</span>
-                </button>
-                <!-- Pink -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Pink"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-pink-500"></span>
-                  <span class="text-[10px] text-slate-500">Pink</span>
-                </button>
-                <!-- Orange -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Orange"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-orange-500"></span>
-                  <span class="text-[10px] text-slate-500">Orange</span>
-                </button>
-                <!-- Cyan -->
-                <button type="button" role="radio" aria-selected="false" data-color-name="Cyan"
-                        class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
-                        popovertarget="badge-color-pop" popovertargetaction="hide">
-                  <span class="block w-6 h-6 rounded-full bg-cyan-500"></span>
-                  <span class="text-[10px] text-slate-500">Cyan</span>
-                </button>
+                  <div class="grid grid-cols-5 gap-2" role="listbox" aria-label="Badge color">
+                    <!-- Gray -->
+                    <button type="button" role="radio" aria-selected="true" data-color-name="Gray"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-slate-500 group-aria-selected:ring-2 group-aria-selected:ring-indigo-400"></span>
+                      <span class="text-[10px] text-slate-500">Gray</span>
+                    </button>
+                    <!-- Red -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Red"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-red-500"></span>
+                      <span class="text-[10px] text-slate-500">Red</span>
+                    </button>
+                    <!-- Yellow -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Yellow"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-yellow-500"></span>
+                      <span class="text-[10px] text-slate-500">Yellow</span>
+                    </button>
+                    <!-- Green -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Green"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-green-500"></span>
+                      <span class="text-[10px] text-slate-500">Green</span>
+                    </button>
+                    <!-- Blue -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Blue"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-blue-500"></span>
+                      <span class="text-[10px] text-slate-500">Blue</span>
+                    </button>
+                    <!-- Indigo -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Indigo"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-indigo-500"></span>
+                      <span class="text-[10px] text-slate-500">Indigo</span>
+                    </button>
+                    <!-- Purple -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Purple"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-purple-500"></span>
+                      <span class="text-[10px] text-slate-500">Purple</span>
+                    </button>
+                    <!-- Pink -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Pink"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-pink-500"></span>
+                      <span class="text-[10px] text-slate-500">Pink</span>
+                    </button>
+                    <!-- Orange -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Orange"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-orange-500"></span>
+                      <span class="text-[10px] text-slate-500">Orange</span>
+                    </button>
+                    <!-- Cyan -->
+                    <button type="button" role="radio" aria-selected="false" data-color-name="Cyan"
+                            class="group flex flex-col items-center gap-1 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-700 p-2"
+                            popovertarget="badge-color-pop" popovertargetaction="hide">
+                      <span class="block w-6 h-6 rounded-full bg-cyan-500"></span>
+                      <span class="text-[10px] text-slate-500">Cyan</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label for="badge-shape-select"
+                      class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
+                      data-i18n="badge_shape">Badge shape</label>
+                <select id="badge-shape-select" name="badgeShape"
+                        class="mt-1 block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">
+                  <option value="circle" selected data-i18n="badge_shape_circle">Circle</option>
+                  <option value="square" data-i18n="badge_shape_square">Square</option>
+                </select>
               </div>
             </div>
           </div>

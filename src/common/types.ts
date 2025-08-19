@@ -16,12 +16,23 @@ export function isItemColor(v: string | null): v is ItemColor {
   return v !== null && (ITEM_COLORS as readonly string[]).includes(v);
 }
 
+export type ItemShape = 'circle' | 'square';
+
+const ITEM_SHAPE = [
+  'circle', 'square'
+] as const;
+
+export function isItemShape(v: string | null): v is ItemShape {
+  return v !== null && (ITEM_SHAPE as readonly string[]).includes(v);
+}
+
 export type ScreenItem = {
   id: number;
   label: number;
   anchor: Anchor;
   size: number;
   color: ItemColor;
+  shape: ItemShape;
 };
 
 export type ScreenState = {
@@ -30,4 +41,5 @@ export type ScreenState = {
   nextLabel: number;
   defaultSize: number;
   defaultColor: ItemColor;
+  defaultShape: ItemShape;
 };

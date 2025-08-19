@@ -23,6 +23,10 @@
   "label_badge_size": { "message": "項番サイズ (10–30px)" },
   "label_badge_color": { "message": "項番色" },
 
+  "badge_shape": { "message": "形状" },
+  "badge_shape_circle": { "message": "丸" },
+  "badge_shape_square": { "message": "四角" },
+
   "section_selected_items": { "message": "選択済みの要素" },
   "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" }
 }

@@ -1,5 +1,5 @@
 import i18n from '@common/i18n';
-import { isItemColor, type ItemColor, type ScreenItem } from '@common/types';
+import { isItemColor, isItemShape, type ItemColor, type ScreenItem } from '@common/types';
 import { CaptureFormat } from '@panel/services/capture';
 import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
 
@@ -19,6 +19,7 @@ const jpegQualityNumber = document.getElementById('opt-quality-number') as HTMLI
 
 const badgeColorLabelEl = document.getElementById('badge-color-label') as HTMLSpanElement;
 const badgeColorDotEl = document.getElementById('badge-color-dot') as HTMLSpanElement;
+const badgeShapeSelect = document.getElementById('badge-shape-select') as HTMLSelectElement;
 
 const STATUS_BASE_BODY = [
   'inline-flex','items-center','gap-1',
@@ -200,4 +201,9 @@ export function updateBadgeColorUI(selectColor: string) {
 export function getBadgeColor(def: ItemColor = 'Blue'): ItemColor {
   const raw = badgeColorLabelEl.textContent?.trim() ?? null;
   return isItemColor(raw) ? raw : def;
+}
+
+export function getBadgeShape() {
+  const v = badgeShapeSelect.value ?? null;
+  return isItemShape(v) ? v : 'circle';
 }

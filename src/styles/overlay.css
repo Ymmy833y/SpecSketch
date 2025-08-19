@@ -13,8 +13,23 @@
   position: absolute;
   top: -10px; left: -10px;
   font: 12px/1 system-ui, sans-serif;
-  color: #fff; padding: 2px 6px; border-radius: 10px;
+  color: #fff;
 }
+
+.spsk-badge--circle,
+.spsk-badge--square {
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.spsk-badge--circle { border-radius: 50%; }
+.spsk-badge--square { border-radius: .25rem; }
 
 .spsk-box-gray   { border-color: rgba(107,114,128,.8); }
 .spsk-badge-gray { background:  rgba(107,114,128,1); }

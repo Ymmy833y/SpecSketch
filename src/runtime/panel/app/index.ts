@@ -7,7 +7,7 @@ import { connectToTab } from '@panel/messaging/connection'
 import { captureFullPage } from '@panel/services/capture';
 import { getState, handleSelected, setState, updateScreenState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
-import { bindSync, getBadgeColor, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateBadgeColorUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
+import { bindSync, getBadgeColor, getBadgeShape, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateBadgeColorUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
@@ -24,6 +24,7 @@ const captureScaleNumber = document.getElementById('capture-scale-number') as HT
 const badgeSizeRange = document.getElementById('badge-size-range') as HTMLInputElement;
 const badgeSizeNumber = document.getElementById('badge-size-number') as HTMLInputElement;
 const badgeColorPopButtons = document.querySelectorAll<HTMLButtonElement>('#badge-color-pop button');
+const badgeShapeSelect = document.getElementById('badge-shape-select') as HTMLSelectElement;
 
 let currentTabId: number | null = null;
 let currentPageKey = '';
@@ -82,6 +83,7 @@ async function main() {
   badgeSizeNumber.value = String(st.defaultSize);
   badgeSizeRange.value = String(st.defaultSize);
   updateBadgeColorUI(st.defaultColor);
+  badgeShapeSelect.value = st.defaultShape;
 
   // Toggles selection mode from the Panel and notifies Content.
   toggleBtn.onclick = async () => {
@@ -98,6 +100,7 @@ async function main() {
       nextLabel: 1,
       defaultSize: Number(badgeSizeNumber.value),
       defaultColor: getBadgeColor(),
+      defaultShape: getBadgeShape(),
     };
     await setState(currentPageKey, cleared);
     renderList([]);
@@ -131,16 +134,21 @@ async function main() {
 
   bindSync(badgeSizeRange, badgeSizeNumber);
   badgeSizeRange.addEventListener('change', async() => {
-    const newState = await updateScreenState(currentPageKey, Number(badgeSizeNumber.value), undefined);
+    const newState = await updateScreenState(currentPageKey, { badgeSize: Number(badgeSizeNumber.value) });
     renderList(newState.items);
     await conn.api.render(newState.items);
   })
   badgeColorPopButtons.forEach((btn) => {
     btn.addEventListener('click', async () => {
       updateBadgeColorUI(btn.dataset.colorName ?? '');
-      const newState = await updateScreenState(currentPageKey, undefined, getBadgeColor());
+      const newState = await updateScreenState(currentPageKey, { badgeColor: getBadgeColor() });
       renderList(newState.items);
       await conn.api.render(newState.items);
     });
   });
+  badgeShapeSelect.addEventListener('change', async () => {
+    const newState = await updateScreenState(currentPageKey, { badgeShape: getBadgeShape() });
+    renderList(newState.items);
+    await conn.api.render(newState.items);
+  })
 }

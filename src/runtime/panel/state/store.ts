@@ -1,4 +1,4 @@
-import type { Anchor, ItemColor, ScreenItem, ScreenState } from '@common/types';
+import type { Anchor, ItemColor, ItemShape, ScreenItem, ScreenState } from '@common/types';
 
 const ROOT_KEY = 'screenStateByPage';
 type StateMap = Record<string, ScreenState>;
@@ -34,7 +34,7 @@ async function writeAll(map: StateMap): Promise<void> {
  */
 export async function getState(pageKey: string): Promise<ScreenState> {
   const map = await readAll();
-  return map[pageKey] ?? { items: [], nextId: 1, nextLabel: 1, defaultSize: 14, defaultColor: 'Blue' };
+  return map[pageKey] ?? { items: [], nextId: 1, nextLabel: 1, defaultSize: 14, defaultColor: 'Blue', defaultShape: 'circle' };
 }
 
 /**
@@ -108,6 +108,7 @@ export async function applyPatch(pageKeyStr: string, patch: Patch) {
         anchor: a.anchor,
         size: state.defaultSize,
         color: state.defaultColor,
+        shape: state.defaultShape,
       };
       state.items.push(it);
     }
@@ -170,19 +171,23 @@ export async function handleSelected(pageKeyStr: string, anchors: Anchor[]) {
  * @param badgeColor - Optional new default badge color to apply.
  * @returns Promise resolving to the updated ScreenState.
  */
-export async function updateScreenState(pageKeyStr: string, badgeSize?: number, badgeColor?: ItemColor) {
+export async function updateScreenState(pageKeyStr: string, options: { badgeSize?: number, badgeColor?: ItemColor, badgeShape?: ItemShape} ) {
   const state = await getState(pageKeyStr);
 
-  if (badgeSize !== undefined) {
-    state.defaultSize = badgeSize;
+  if (options.badgeSize !== undefined) {
+    state.defaultSize = options.badgeSize;
   }
-  if (badgeColor !== undefined) {
-    state.defaultColor = badgeColor;
+  if (options.badgeColor !== undefined) {
+    state.defaultColor = options.badgeColor;
+  }
+  if (options.badgeShape !== undefined) {
+    state.defaultShape = options.badgeShape;
   }
 
   state.items.map(item => {
     item.size = state.defaultSize;
     item.color = state.defaultColor;
+    item.shape = state.defaultShape;
   });
   await setState(pageKeyStr, state);
   return state;
