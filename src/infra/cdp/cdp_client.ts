@@ -55,7 +55,7 @@ export async function detach(target: Debuggee): Promise<void> {
 export async function send<T = unknown>(
   target: Debuggee,
   method: string,
-  params?: Record<string, unknown>
+  params?: Record<string, unknown>,
 ): Promise<T> {
   return await new Promise<T>((resolve, reject) => {
     chrome.debugger.sendCommand(target, method, params ?? {}, (result) => {

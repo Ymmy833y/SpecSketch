@@ -25,9 +25,11 @@ export function pageKey(url: string, includeHash = false): string {
  * @returns True if the URL is restricted
  */
 export function isRestricted(url?: string): boolean {
-  return !url
-    || url.startsWith('chrome://')
-    || url.startsWith('edge://')
-    || url.startsWith('about:')
-    || url.startsWith('moz-extension://');
+  return (
+    !url ||
+    url.startsWith('chrome://') ||
+    url.startsWith('edge://') ||
+    url.startsWith('about:') ||
+    url.startsWith('moz-extension://')
+  );
 }

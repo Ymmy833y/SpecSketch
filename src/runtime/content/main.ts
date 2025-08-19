@@ -3,7 +3,7 @@ import { MSG_TYPE, type PanelToContent } from '@common/messages';
 import type { ScreenItem } from '@common/types';
 
 import { buildCssAnchor } from './anchor';
-import { bindCssSelectorMap,clearOverlay, mountOverlay, renderItems } from './overlay';
+import { bindCssSelectorMap, clearOverlay, mountOverlay, renderItems } from './overlay';
 import { Selector } from './selector';
 
 const selection = new Selector(onPick);
@@ -21,23 +21,23 @@ chrome.runtime.onConnect.addListener(async (p) => {
   p.onMessage.addListener(async (msg: PanelToContent) => {
     if (!msg?.type) return;
     switch (msg.type) {
-    case MSG_TYPE.PING:
-      p.postMessage({ id: msg.id, ok: true });
-      break;
-    case MSG_TYPE.TOGGLE_SELECT:
-      selection.setEnabled(!!msg.payload?.enabled);
-      break;
-    case MSG_TYPE.RENDER: {
-      const items = msg.payload.items as ScreenItem[];
-      await renderItems(items);
-      bindCssSelectorMap(items);
-      break;
-    }
-    case MSG_TYPE.CLEAR:
-      await clearOverlay();
-      break;
-    case MSG_TYPE.GET_STATE:
-      break;
+      case MSG_TYPE.PING:
+        p.postMessage({ id: msg.id, ok: true });
+        break;
+      case MSG_TYPE.TOGGLE_SELECT:
+        selection.setEnabled(!!msg.payload?.enabled);
+        break;
+      case MSG_TYPE.RENDER: {
+        const items = msg.payload.items as ScreenItem[];
+        await renderItems(items);
+        bindCssSelectorMap(items);
+        break;
+      }
+      case MSG_TYPE.CLEAR:
+        await clearOverlay();
+        break;
+      case MSG_TYPE.GET_STATE:
+        break;
     }
   });
 

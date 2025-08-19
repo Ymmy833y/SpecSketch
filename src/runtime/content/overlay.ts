@@ -63,7 +63,7 @@ export async function renderItems(items: ScreenItem[]) {
   if (!rootEl) return;
 
   // Diff: remove disappeared items
-  const ids = new Set(items.map(i => i.id));
+  const ids = new Set(items.map((i) => i.id));
   for (const [id, t] of tracked.entries()) {
     if (!ids.has(id)) {
       t.boxEl.remove();

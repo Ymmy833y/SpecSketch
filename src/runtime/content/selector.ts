@@ -89,7 +89,7 @@ export class Selector {
       position: 'absolute',
       outline: '2px dashed #00a',
       pointerEvents: 'none',
-      zIndex: '2147483647'
+      zIndex: '2147483647',
     } as CSSStyleDeclaration);
     document.body.appendChild(this.hoverBox);
   }

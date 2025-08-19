@@ -34,7 +34,16 @@ async function writeAll(map: StateMap): Promise<void> {
  */
 export async function getState(pageKey: string): Promise<ScreenState> {
   const map = await readAll();
-  return map[pageKey] ?? { items: [], nextId: 1, nextLabel: 1, defaultSize: 14, defaultColor: 'Blue', defaultShape: 'circle' };
+  return (
+    map[pageKey] ?? {
+      items: [],
+      nextId: 1,
+      nextLabel: 1,
+      defaultSize: 14,
+      defaultColor: 'Blue',
+      defaultShape: 'circle',
+    }
+  );
 }
 
 /**
@@ -51,9 +60,9 @@ export async function setState(pageKeyStr: string, state: ScreenState): Promise<
 }
 
 type Patch = {
-  added?: Array<{ anchor: ScreenItem['anchor']; label?: number; }>;
+  added?: Array<{ anchor: ScreenItem['anchor']; label?: number }>;
   removedIds?: number[];
-  updated?: Array<{ id: number; label?: number; anchor?: ScreenItem['anchor']; }>;
+  updated?: Array<{ id: number; label?: number; anchor?: ScreenItem['anchor'] }>;
 };
 
 /**
@@ -142,7 +151,9 @@ export async function handleSelected(pageKeyStr: string, anchors: Anchor[]) {
   const toAdd: NonNullable<Patch['added']> = [];
 
   for (const a of uniq) {
-    const found = state.items.find((it) => it.anchor.kind === a.kind && it.anchor.value === a.value);
+    const found = state.items.find(
+      (it) => it.anchor.kind === a.kind && it.anchor.value === a.value,
+    );
     if (found) {
       removedIds.push(found.id);
     } else {
@@ -171,7 +182,10 @@ export async function handleSelected(pageKeyStr: string, anchors: Anchor[]) {
  * @param badgeColor - Optional new default badge color to apply.
  * @returns Promise resolving to the updated ScreenState.
  */
-export async function updateScreenState(pageKeyStr: string, options: { badgeSize?: number, badgeColor?: ItemColor, badgeShape?: ItemShape} ) {
+export async function updateScreenState(
+  pageKeyStr: string,
+  options: { badgeSize?: number; badgeColor?: ItemColor; badgeShape?: ItemShape },
+) {
   const state = await getState(pageKeyStr);
 
   if (options.badgeSize !== undefined) {
@@ -184,7 +198,7 @@ export async function updateScreenState(pageKeyStr: string, options: { badgeSize
     state.defaultShape = options.badgeShape;
   }
 
-  state.items.map(item => {
+  state.items.map((item) => {
     item.size = state.defaultSize;
     item.color = state.defaultColor;
     item.shape = state.defaultShape;
