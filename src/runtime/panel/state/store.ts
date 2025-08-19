@@ -1,4 +1,4 @@
-import type { Anchor, ScreenItem, ScreenState } from '@common/types';
+import type { Anchor, ItemColor, ItemShape, ScreenItem, ScreenState } from '@common/types';
 
 const ROOT_KEY = 'screenStateByPage';
 type StateMap = Record<string, ScreenState>;
@@ -34,7 +34,7 @@ async function writeAll(map: StateMap): Promise<void> {
  */
 export async function getState(pageKey: string): Promise<ScreenState> {
   const map = await readAll();
-  return map[pageKey] ?? { items: [], nextId: 1, nextLabel: 1 };
+  return map[pageKey] ?? { items: [], nextId: 1, nextLabel: 1, defaultSize: 14, defaultColor: 'Blue', defaultShape: 'circle' };
 }
 
 /**
@@ -51,9 +51,9 @@ export async function setState(pageKeyStr: string, state: ScreenState): Promise<
 }
 
 type Patch = {
-  added?: Array<{ anchor: ScreenItem['anchor']; label?: number; meta?: ScreenItem['meta'] }>;
+  added?: Array<{ anchor: ScreenItem['anchor']; label?: number; }>;
   removedIds?: number[];
-  updated?: Array<{ id: number; label?: number; anchor?: ScreenItem['anchor']; meta?: ScreenItem['meta'] }>;
+  updated?: Array<{ id: number; label?: number; anchor?: ScreenItem['anchor']; }>;
 };
 
 /**
@@ -95,7 +95,6 @@ export async function applyPatch(pageKeyStr: string, patch: Patch) {
       if (!it) continue;
       if (typeof u.label === 'number') it.label = u.label;
       if (u.anchor) it.anchor = u.anchor;
-      if (u.meta) it.meta = u.meta;
     }
   }
 
@@ -107,7 +106,9 @@ export async function applyPatch(pageKeyStr: string, patch: Patch) {
         id,
         label,
         anchor: a.anchor,
-        ...(a.meta ? { meta: a.meta } : {}),
+        size: state.defaultSize,
+        color: state.defaultColor,
+        shape: state.defaultShape,
       };
       state.items.push(it);
     }
@@ -154,4 +155,40 @@ export async function handleSelected(pageKeyStr: string, anchors: Anchor[]) {
   if (toAdd.length) patch.added = toAdd;
 
   return applyPatch(pageKeyStr, patch);
+}
+
+/**
+ * Updates the screen state defaults (badge size and/or badge color) and
+ * applies them to all items in the state for the given page.
+ *
+ * - If `badgeSize` is provided, it is stored as the new default size.
+ * - If `badgeColor` is provided, it is stored as the new default color.
+ * - All items in the state are updated to use the latest default size and color.
+ * - The updated state is then persisted.
+ *
+ * @param pageKeyStr - Page key identifying the screen state to update.
+ * @param badgeSize - Optional new default badge size to apply.
+ * @param badgeColor - Optional new default badge color to apply.
+ * @returns Promise resolving to the updated ScreenState.
+ */
+export async function updateScreenState(pageKeyStr: string, options: { badgeSize?: number, badgeColor?: ItemColor, badgeShape?: ItemShape} ) {
+  const state = await getState(pageKeyStr);
+
+  if (options.badgeSize !== undefined) {
+    state.defaultSize = options.badgeSize;
+  }
+  if (options.badgeColor !== undefined) {
+    state.defaultColor = options.badgeColor;
+  }
+  if (options.badgeShape !== undefined) {
+    state.defaultShape = options.badgeShape;
+  }
+
+  state.items.map(item => {
+    item.size = state.defaultSize;
+    item.color = state.defaultColor;
+    item.shape = state.defaultShape;
+  });
+  await setState(pageKeyStr, state);
+  return state;
 }
