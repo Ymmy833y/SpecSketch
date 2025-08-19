@@ -4,12 +4,29 @@ export type Anchor = {
   version: 1;
 };
 
-export type ItemColor = 'Gray' | 'Red'
-  | 'Yellow' | 'Green' | 'Blue' | 'Indigo'
-  | 'Purple' | 'Pink' | 'Orange' | 'Cyan';
+export type ItemColor =
+  | 'Gray'
+  | 'Red'
+  | 'Yellow'
+  | 'Green'
+  | 'Blue'
+  | 'Indigo'
+  | 'Purple'
+  | 'Pink'
+  | 'Orange'
+  | 'Cyan';
 
 const ITEM_COLORS = [
-  'Gray','Red','Yellow','Green','Blue','Indigo','Purple','Pink','Orange','Cyan',
+  'Gray',
+  'Red',
+  'Yellow',
+  'Green',
+  'Blue',
+  'Indigo',
+  'Purple',
+  'Pink',
+  'Orange',
+  'Cyan',
 ] as const;
 
 export function isItemColor(v: string | null): v is ItemColor {
@@ -18,9 +35,7 @@ export function isItemColor(v: string | null): v is ItemColor {
 
 export type ItemShape = 'circle' | 'square';
 
-const ITEM_SHAPE = [
-  'circle', 'square'
-] as const;
+const ITEM_SHAPE = ['circle', 'square'] as const;
 
 export function isItemShape(v: string | null): v is ItemShape {
   return v !== null && (ITEM_SHAPE as readonly string[]).includes(v);

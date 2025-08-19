@@ -22,16 +22,20 @@ const badgeColorDotEl = document.getElementById('badge-color-dot') as HTMLSpanEl
 const badgeShapeSelect = document.getElementById('badge-shape-select') as HTMLSelectElement;
 
 const STATUS_BASE_BODY = [
-  'inline-flex','items-center','gap-1',
-  'rounded-full','border','px-2','py-1','text-xs',
+  'inline-flex',
+  'items-center',
+  'gap-1',
+  'rounded-full',
+  'border',
+  'px-2',
+  'py-1',
+  'text-xs',
   'transition-colors',
 ] as const;
 
-const TOGGLE_ICON_BASE = [
-  'inline-block', 'w-3', 'h-3', 'rounded-full',
-] as const;
+const TOGGLE_ICON_BASE = ['inline-block', 'w-3', 'h-3', 'rounded-full'] as const;
 
-const TOGGLE_ICON_ON  = ['bg-emerald-500'] as const;
+const TOGGLE_ICON_ON = ['bg-emerald-500'] as const;
 const TOGGLE_ICON_OFF = ['bg-slate-300'] as const;
 
 const CAPTURE_OPTION_COLLAPSED = '▼';
@@ -39,7 +43,7 @@ const CAPTURE_OPTION_EXPANDED = '▲';
 
 function disabledBtns(isDisabled: boolean) {
   const btns = document.querySelectorAll('button');
-  btns.forEach(btn => btn.disabled = isDisabled);
+  btns.forEach((btn) => (btn.disabled = isDisabled));
 }
 
 /**
@@ -97,7 +101,8 @@ export function renderList(items: ScreenItem[]) {
     li.dataset.id = String(it.id);
 
     const badge = document.createElement('span');
-    badge.className = 'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold';
+    badge.className =
+      'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold';
     badge.textContent = String(it.label);
 
     const main = document.createElement('div');
@@ -123,7 +128,9 @@ export function toggleCaptureOptionsUI(toggleBtn: HTMLButtonElement) {
 }
 
 export function getSelectedCaptureFormat(): CaptureFormat {
-  const val = document.querySelector<HTMLInputElement>('input[name="capture-format"]:checked')?.value;
+  const val = document.querySelector<HTMLInputElement>(
+    'input[name="capture-format"]:checked',
+  )?.value;
   return val === 'jpeg' ? 'jpeg' : 'png'; // default: png
 }
 
@@ -169,28 +176,28 @@ export function bindSync(rangeEl: HTMLInputElement, numberEl: HTMLInputElement):
 function getBadgeColorStyleName(color: ItemColor) {
   let colorName: string;
   switch (color) {
-  case 'Gray':
-    colorName = 'slate';
-    break;
-  default:
-    colorName = color;
-    break;
+    case 'Gray':
+      colorName = 'slate';
+      break;
+    default:
+      colorName = color;
+      break;
   }
 
   return `bg-${colorName.toLowerCase()}-500`;
-};
+}
 
 export function updateBadgeColorUI(selectColor: string) {
   if (!isItemColor(selectColor)) {
-    selectColor = 'Blue'
+    selectColor = 'Blue';
   }
   const color = selectColor as ItemColor;
   const buttons = document.querySelectorAll<HTMLButtonElement>('#badge-color-pop button');
-  buttons.forEach(button => {
+  buttons.forEach((button) => {
     if (button.dataset.colorName === color) {
-      button.setAttribute('aria-selected', 'true')
+      button.setAttribute('aria-selected', 'true');
     } else {
-      button.setAttribute('aria-selected', 'false')
+      button.setAttribute('aria-selected', 'false');
     }
     badgeColorLabelEl.textContent = color;
     badgeColorDotEl.className = 'inline-block w-4 h-4 rounded-full';

@@ -1,21 +1,36 @@
 import i18n from '@common/i18n';
-import { type BackgroundToPanel,ContentToPanel, MSG_TYPE } from '@common/messages';
+import { type BackgroundToPanel, ContentToPanel, MSG_TYPE } from '@common/messages';
 import type { ScreenState } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
-import { connectToTab } from '@panel/messaging/connection'
+import { connectToTab } from '@panel/messaging/connection';
 import { captureFullPage } from '@panel/services/capture';
 import { getState, handleSelected, setState, updateScreenState } from '@panel/state/store';
 import { STATUS } from '@panel/view/status';
-import { bindSync, getBadgeColor, getBadgeShape, getSelectedCaptureFormat, renderList, toggleCaptureOptionsUI, updateBadgeColorUI, updateQualityVisibility, updateStatusUI, updateToggleIconUI } from '@panel/view/ui';
+import {
+  bindSync,
+  getBadgeColor,
+  getBadgeShape,
+  getSelectedCaptureFormat,
+  renderList,
+  toggleCaptureOptionsUI,
+  updateBadgeColorUI,
+  updateQualityVisibility,
+  updateStatusUI,
+  updateToggleIconUI,
+} from '@panel/view/ui';
 
 const toggleBtn = document.getElementById('toggle-select') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear') as HTMLButtonElement;
 const captureBtn = document.getElementById('capture') as HTMLButtonElement;
 
 // capture options
-const captureOptionsToggleBtn = document.getElementById('capture-options-toggle') as HTMLButtonElement;
-const captureFmtRadios = document.querySelectorAll<HTMLInputElement>('input[name="capture-format"]');
+const captureOptionsToggleBtn = document.getElementById(
+  'capture-options-toggle',
+) as HTMLButtonElement;
+const captureFmtRadios = document.querySelectorAll<HTMLInputElement>(
+  'input[name="capture-format"]',
+);
 const jpegQualityRange = document.getElementById('jpeg-quality-range') as HTMLInputElement;
 const jpegQualityNumber = document.getElementById('jpeg-quality-number') as HTMLInputElement;
 const captureScaleRange = document.getElementById('capture-scale-range') as HTMLInputElement;
@@ -23,7 +38,8 @@ const captureScaleNumber = document.getElementById('capture-scale-number') as HT
 
 const badgeSizeRange = document.getElementById('badge-size-range') as HTMLInputElement;
 const badgeSizeNumber = document.getElementById('badge-size-number') as HTMLInputElement;
-const badgeColorPopButtons = document.querySelectorAll<HTMLButtonElement>('#badge-color-pop button');
+const badgeColorPopButtons =
+  document.querySelectorAll<HTMLButtonElement>('#badge-color-pop button');
 const badgeShapeSelect = document.getElementById('badge-shape-select') as HTMLSelectElement;
 
 let currentTabId: number | null = null;
@@ -124,7 +140,7 @@ async function main() {
 
   captureOptionsToggleBtn.onclick = async () => {
     toggleCaptureOptionsUI(captureOptionsToggleBtn);
-  }
+  };
   captureFmtRadios.forEach((radio) => {
     radio.addEventListener('change', updateQualityVisibility);
   });
@@ -133,11 +149,13 @@ async function main() {
   bindSync(captureScaleRange, captureScaleNumber);
 
   bindSync(badgeSizeRange, badgeSizeNumber);
-  badgeSizeRange.addEventListener('change', async() => {
-    const newState = await updateScreenState(currentPageKey, { badgeSize: Number(badgeSizeNumber.value) });
+  badgeSizeRange.addEventListener('change', async () => {
+    const newState = await updateScreenState(currentPageKey, {
+      badgeSize: Number(badgeSizeNumber.value),
+    });
     renderList(newState.items);
     await conn.api.render(newState.items);
-  })
+  });
   badgeColorPopButtons.forEach((btn) => {
     btn.addEventListener('click', async () => {
       updateBadgeColorUI(btn.dataset.colorName ?? '');
@@ -150,5 +168,5 @@ async function main() {
     const newState = await updateScreenState(currentPageKey, { badgeShape: getBadgeShape() });
     renderList(newState.items);
     await conn.api.render(newState.items);
-  })
+  });
 }

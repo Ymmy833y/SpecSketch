@@ -1,4 +1,4 @@
-import { type BackgroundToPanel,MSG_TYPE } from '@common/messages';
+import { type BackgroundToPanel, MSG_TYPE } from '@common/messages';
 
 export const DELIVERY_RESULT = {
   DELIVERED: 'DELIVERED',
@@ -6,7 +6,7 @@ export const DELIVERY_RESULT = {
   FAILED: 'FAILED',
 } as const;
 
-export type DeliveryResult = typeof DELIVERY_RESULT[keyof typeof DELIVERY_RESULT];
+export type DeliveryResult = (typeof DELIVERY_RESULT)[keyof typeof DELIVERY_RESULT];
 
 /**
  * Checks whether a side panel exists for the specified tab.

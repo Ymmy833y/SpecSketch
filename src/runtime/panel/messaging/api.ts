@@ -20,7 +20,7 @@ export class PanelApi {
     const req: RpcRequest = {
       id: crypto.randomUUID(),
       expectReply: false,
-      ...body
+      ...body,
     };
     return this.rpc.send(req);
   }
@@ -58,7 +58,7 @@ export class PanelApi {
     const req: RpcRequest = {
       id: crypto.randomUUID(),
       expectReply: true,
-      type: MSG_TYPE.PING
+      type: MSG_TYPE.PING,
     };
     return this.rpc.send(req, 5000);
   }

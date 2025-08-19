@@ -2,12 +2,15 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import eslintConfigPrettier from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  eslintConfigPrettier,
 
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -18,12 +21,10 @@ export default tseslint.config(
     },
     plugins: {
       'simple-import-sort': simpleImportSort,
+      prettier: prettierPlugin,
     },
     rules: {
-      indent: ['error', 2],
-      quotes: ['error', 'single'],
-      'no-trailing-spaces': 'error',
-      'eol-last': ['error', 'always'],
+      'prettier/prettier': ['error'],
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
         'warn',

@@ -1,16 +1,16 @@
 import { isRestricted } from '@common/url';
-import { attach, type Debuggee,detach, send } from '@infra/cdp/cdp_client'
+import { attach, type Debuggee, detach, send } from '@infra/cdp/cdp_client';
 
 export type CaptureFormat = 'png' | 'jpeg';
 
 export type CaptureOptions = {
   tabId: number;
-  format?: CaptureFormat;  // default: png
-  quality?: number;        // only for jpeg, 0–100
-  scale?: number;          // image scale factor
-  bringToFront?: boolean;  // default: true
-  filename?: string;       // auto-generated when omitted
-  settleMs?: number;       // layout settle delay (default: 500ms)
+  format?: CaptureFormat; // default: png
+  quality?: number; // only for jpeg, 0–100
+  scale?: number; // image scale factor
+  bringToFront?: boolean; // default: true
+  filename?: string; // auto-generated when omitted
+  settleMs?: number; // layout settle delay (default: 500ms)
 };
 
 /**
@@ -21,7 +21,10 @@ export type CaptureOptions = {
  * @returns Sanitized filename-safe string.
  */
 function sanitizeForFilename(s: string): string {
-  return s.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -34,9 +37,15 @@ function sanitizeForFilename(s: string): string {
  */
 function makeFilename(tab: chrome.tabs.Tab, fmt: CaptureFormat): string {
   const title = tab.title && tab.title.trim() ? tab.title : '';
-  let base = title || (() => {
-    try { return new URL(tab.url ?? '').host || 'page'; } catch { return 'page'; }
-  })();
+  let base =
+    title ||
+    (() => {
+      try {
+        return new URL(tab.url ?? '').host || 'page';
+      } catch {
+        return 'page';
+      }
+    })();
 
   base = sanitizeForFilename(base);
   if (base.length > 80) base = base.slice(0, 80);
@@ -74,20 +83,27 @@ export async function captureFullPage(opts: CaptureOptions): Promise<number | un
 
     // CSS content dimensions of the page
     const lm = await send<{ cssContentSize: { width: number; height: number } }>(
-      target, 'Page.getLayoutMetrics'
+      target,
+      'Page.getLayoutMetrics',
     );
     const width = Math.max(1, Math.ceil(lm.cssContentSize?.width ?? 1) | 0);
     const height = Math.max(1, Math.ceil(lm.cssContentSize?.height ?? 1) | 0);
 
     // Avoid repeated viewport stitching: override viewport to cover the full page
     await send(target, 'Emulation.setDeviceMetricsOverride', {
-      width, height, deviceScaleFactor: 1, mobile: false,
-      screenWidth: width, screenHeight: height, positionX: 0, positionY: 0,
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: false,
+      screenWidth: width,
+      screenHeight: height,
+      positionX: 0,
+      positionY: 0,
     });
 
     // Scroll to top & wait briefly for layout/image stabilization
     await send(target, 'Runtime.evaluate', { expression: 'window.scrollTo(0,0)' });
-    await new Promise((r) => setTimeout(r, settleMs));;
+    await new Promise((r) => setTimeout(r, settleMs));
 
     // Full-size capture
     const clip = { x: 0, y: 0, width, height, scale };
@@ -115,8 +131,16 @@ export async function captureFullPage(opts: CaptureOptions): Promise<number | un
     return downloadId;
   } finally {
     // Clear overridden viewport metrics
-    try { await send(target, 'Emulation.clearDeviceMetricsOverride'); } catch { /* no-op */ }
+    try {
+      await send(target, 'Emulation.clearDeviceMetricsOverride');
+    } catch {
+      /* no-op */
+    }
     // Always detach
-    try { await detach(target); } catch { /* no-op */ }
+    try {
+      await detach(target);
+    } catch {
+      /* no-op */
+    }
   }
 }
