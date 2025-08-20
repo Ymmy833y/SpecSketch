@@ -1,0 +1,35 @@
+import type { Anchor, ItemColor, ItemShape, ScreenItem } from '@common/types';
+import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
+import type { StatusKey } from '@panel/view/status';
+
+import { ActionType } from '../types/action_types';
+
+export type Action =
+  | { type: ActionType.INIT }
+  | { type: ActionType.CONNECTED; tabId: number; pageKey: string }
+  | { type: ActionType.SET_STATUS; status: StatusKey }
+  | {
+      type: ActionType.RESTORE_STATE;
+      state: {
+        items: ScreenItem[];
+        defaultSize: number;
+        defaultColor: ItemColor;
+        defaultShape: ItemShape;
+      };
+    }
+  | { type: ActionType.TOGGLE_SELECT }
+  | { type: ActionType.CLEAR_ALL }
+  | { type: ActionType.CONTENT_SELECTED; anchors: Anchor[] }
+  | { type: ActionType.SET_BADGE_SIZE; size: number }
+  | { type: ActionType.SET_BADGE_COLOR; color: ItemColor }
+  | { type: ActionType.SET_BADGE_SHAPE; shape: ItemShape }
+  | { type: ActionType.SET_CAPTURE_FORMAT; format: CaptureFormat }
+  | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }
+  | { type: ActionType.SET_CAPTURE_QUALITY; quality: number }
+  | { type: ActionType.SET_CAPTURE_SCALE; scale: number }
+  | { type: ActionType.TOGGLE_CAPTURE_PANEL }
+  | { type: ActionType.CAPTURE_REQUESTED }
+  | { type: ActionType.CAPTURE_SUCCEEDED }
+  | { type: ActionType.CAPTURE_FAILED; error: unknown }
+  | { type: ActionType.PORT_DISCONNECTED }
+  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };
