@@ -5,15 +5,26 @@
   pointer-events: none;
   z-index: 2147483647;
 }
+
 .spsk-box {
   position: absolute;
-  border: 2px solid;
+  --spsk-border-w: 2px;
 }
+.spsk-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: var(--spsk-border-w) solid var(--spsk-border-color);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .spsk-badge {
   position: absolute;
   top: -10px; left: -10px;
   font: 12px/1 system-ui, sans-serif;
   color: #fff;
+  z-index: 1;
 }
 
 .spsk-badge--circle,
@@ -27,37 +38,89 @@
   line-height: 1;
   font-weight: 600;
 }
+.spsk-badge--circle {
+  border-radius: 50%;
+}
+.spsk-badge--square {
+  border-radius: 0.25rem;
+}
 
-.spsk-badge--circle { border-radius: 50%; }
-.spsk-badge--square { border-radius: .25rem; }
+.spsk-box-gray {
+  border-color: rgba(107, 114, 128, 0.8);
+  --spsk-border-color: rgba(107, 114, 128, 0.8);
+}
+.spsk-badge-gray {
+  background: rgba(107, 114, 128, 1);
+}
 
-.spsk-box-gray   { border-color: rgba(107,114,128,.8); }
-.spsk-badge-gray { background:  rgba(107,114,128,1); }
+.spsk-box-red {
+  border-color: rgba(239, 68, 68, 0.8);
+  --spsk-border-color: rgba(239, 68, 68, 0.8);
+}
+.spsk-badge-red {
+  background: rgba(239, 68, 68, 1);
+}
 
-.spsk-box-red    { border-color: rgba(239,68,68,.8); }
-.spsk-badge-red  { background:  rgba(239,68,68,1); }
+.spsk-box-yellow {
+  border-color: rgba(234, 179, 8, 0.8);
+  --spsk-border-color: rgba(234, 179, 8, 0.8);
+}
+.spsk-badge-yellow {
+  background: rgba(234, 179, 8, 1);
+}
 
-.spsk-box-yellow   { border-color: rgba(234,179,8,.8); }
-.spsk-badge-yellow { background:  rgba(234,179,8,1); }
+.spsk-box-green {
+  border-color: rgba(34, 197, 94, 0.8);
+  --spsk-border-color: rgba(34, 197, 94, 0.8);
+}
+.spsk-badge-green {
+  background: rgba(34, 197, 94, 1);
+}
 
-.spsk-box-green   { border-color: rgba(34,197,94,.8); }
-.spsk-badge-green { background:  rgba(34,197,94,1); }
+.spsk-box-blue {
+  border-color: rgba(59, 130, 246, 0.8);
+  --spsk-border-color: rgba(59, 130, 246, 0.8);
+}
+.spsk-badge-blue {
+  background: rgba(59, 130, 246, 1);
+}
 
-.spsk-box-blue   { border-color: rgba(59,130,246,.8); }
-.spsk-badge-blue { background:  rgba(59,130,246,1); }
+.spsk-box-indigo {
+  border-color: rgba(99, 102, 241, 0.8);
+  --spsk-border-color: rgba(99, 102, 241, 0.8);
+}
+.spsk-badge-indigo {
+  background: rgba(99, 102, 241, 1);
+}
 
-.spsk-box-indigo   { border-color: rgba(99,102,241,.8); }
-.spsk-badge-indigo { background:  rgba(99,102,241,1); }
+.spsk-box-purple {
+  border-color: rgba(168, 85, 247, 0.8);
+  --spsk-border-color: rgba(168, 85, 247, 0.8);
+}
+.spsk-badge-purple {
+  background: rgba(168, 85, 247, 1);
+}
 
-.spsk-box-purple   { border-color: rgba(168,85,247,.8); }
-.spsk-badge-purple { background:  rgba(168,85,247,1); }
+.spsk-box-pink {
+  border-color: rgba(236, 72, 153, 0.8);
+  --spsk-border-color: rgba(236, 72, 153, 0.8);
+}
+.spsk-badge-pink {
+  background: rgba(236, 72, 153, 1);
+}
 
-.spsk-box-pink   { border-color: rgba(236,72,153,.8); }
-.spsk-badge-pink { background:  rgba(236,72,153,1); }
+.spsk-box-orange {
+  border-color: rgba(249, 115, 22, 0.8);
+  --spsk-border-color: rgba(249, 115, 22, 0.8);
+}
+.spsk-badge-orange {
+  background: rgba(249, 115, 22, 1);
+}
 
-.spsk-box-orange   { border-color: rgba(249,115,22,.8); }
-.spsk-badge-orange { background:  rgba(249,115,22,1); }
-
-.spsk-box-cyan   { border-color: rgba(6,182,212,.8); }
-.spsk-badge-cyan { background:  rgba(6,182,212,1); }
-
+.spsk-box-cyan {
+  border-color: rgba(6, 182, 212, 0.8);
+  --spsk-border-color: rgba(6, 182, 212, 0.8);
+}
+.spsk-badge-cyan {
+  background: rgba(6, 182, 212, 1);
+}
