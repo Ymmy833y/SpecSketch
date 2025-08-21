@@ -2,14 +2,15 @@ name: Build and push dist
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
+      - 'release/*.*.*'
 
 permissions:
   contents: write
 
-
 concurrency:
-  group: build-dist-${{ github.ref }}
+  group: build-dist-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -39,12 +40,27 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Compute deploy branch
+        id: vars
+        shell: bash
+        run: |
+          ref_name="${GITHUB_REF_NAME}"
+          if [[ "$ref_name" == release/* ]]; then
+            version="${ref_name#release/}"
+            echo "DEPLOY_BRANCH=spec-sketch-${version}" >> "$GITHUB_ENV"
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+          else
+            echo "DEPLOY_BRANCH=spec-sketch" >> "$GITHUB_ENV"
+            echo "version=" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Deploy branch: ${DEPLOY_BRANCH:-spec-sketch}"
+
       - name: Push dist to branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: spec-sketch
+          branch: ${{ env.DEPLOY_BRANCH }}
           folder: dist
           clean: true
-          commit-message: "build: update dist from ${{ github.sha }}"
+          commit-message: "build: update dist (${% raw %}${{ github.ref_name }}{% endraw %}) from ${% raw %}${{ github.sha }}{% endraw %}"
           git-config-name: github-actions[bot]
           git-config-email: 41898282+github-actions[bot]@users.noreply.github.com
