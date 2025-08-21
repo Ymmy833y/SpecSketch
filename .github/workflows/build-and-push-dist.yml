@@ -61,6 +61,6 @@ jobs:
           branch: ${{ env.DEPLOY_BRANCH }}
           folder: dist
           clean: true
-          commit-message: "build: update dist (${% raw %}${{ github.ref_name }}{% endraw %}) from ${% raw %}${{ github.sha }}{% endraw %}"
+          commit-message: "build: update dist (${{ github.ref_name }}) from ${{ github.sha }}"
           git-config-name: github-actions[bot]
           git-config-email: 41898282+github-actions[bot]@users.noreply.github.com
