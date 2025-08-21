@@ -31,5 +31,6 @@ export type Action =
   | { type: ActionType.CAPTURE_REQUESTED }
   | { type: ActionType.CAPTURE_SUCCEEDED }
   | { type: ActionType.CAPTURE_FAILED; error: unknown }
+  | { type: ActionType.REORDER_ITEMS; fromId: number; toIndex: number }
   | { type: ActionType.PORT_DISCONNECTED }
   | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };

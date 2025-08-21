@@ -65,6 +65,9 @@ export enum ActionType {
   /** Capture failed with an error */
   CAPTURE_FAILED = 'CAPTURE_FAILED',
 
+  /** Reordering selected items (drag and drop) */
+  REORDER_ITEMS = 'REORDER_ITEMS',
+
   /** Port disconnected (lost connection to Content/Service Worker) */
   PORT_DISCONNECTED = 'PORT_DISCONNECTED',
 

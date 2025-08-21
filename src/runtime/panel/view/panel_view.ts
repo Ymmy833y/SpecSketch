@@ -27,6 +27,11 @@ const TOGGLE_ICON_BASE = ['inline-block', 'w-3', 'h-3', 'rounded-full'] as const
 const CAPTURE_OPTION_COLLAPSED = '▼';
 const CAPTURE_OPTION_EXPANDED = '▲';
 
+function byLabelThenId(a: { label: number; id: number }, b: { label: number; id: number }) {
+  if (a.label !== b.label) return a.label - b.label;
+  return a.id - b.id;
+}
+
 export class PanelView {
   private listeners: { [K in UIEventType]?: unknown[] } = {};
 
@@ -59,6 +64,9 @@ export class PanelView {
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
   };
+
+  private dragEl: HTMLLIElement | null = null;
+  private dragStartIndex = -1;
 
   constructor(private doc: Document) {
     i18n.localize(doc);
@@ -146,6 +154,21 @@ export class PanelView {
       this.emit(UIEventType.BADGE_SHAPE_CHANGE, { shape });
     });
 
+    this.els.list.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!this.dragEl) return;
+
+      const targetLi = (e.target as HTMLElement)?.closest('li') as HTMLLIElement | null;
+      if (targetLi && targetLi !== this.dragEl) {
+        const rect = targetLi.getBoundingClientRect();
+        const isAfter = e.clientY - rect.top > rect.height / 2;
+        this.els.list.insertBefore(this.dragEl, isAfter ? targetLi.nextSibling : targetLi);
+      } else if (!targetLi) {
+        this.els.list.appendChild(this.dragEl);
+      }
+    });
+    this.els.list.addEventListener('drop', (e) => e.preventDefault());
+
     this.updateQualityVisibility();
   }
 
@@ -218,11 +241,46 @@ export class PanelView {
     this.els.empty.classList.add('hidden');
 
     const frag = this.doc.createDocumentFragment();
-    for (const it of items) {
+    for (const it of items.sort(byLabelThenId)) {
       const li = this.doc.createElement('li');
       li.className =
         'group flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60';
       li.dataset.id = String(it.id);
+      li.draggable = true;
+
+      // Drag origin retention & light visual feedback
+      li.addEventListener('dragstart', (e) => {
+        this.dragEl = li;
+        this.dragStartIndex = Array.prototype.indexOf.call(this.els.list.children, li);
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+        }
+        li.classList.add('opacity-60');
+      });
+
+      // Clean up & fire an action if anything changes
+      li.addEventListener('dragend', () => {
+        if (!this.dragEl) return;
+        const endIndex = Array.prototype.indexOf.call(this.els.list.children, this.dragEl);
+        this.dragEl.classList.remove('opacity-60');
+
+        const fromId = this.dragEl.dataset.id ?? '';
+        this.dragEl = null;
+
+        if (
+          fromId &&
+          this.dragStartIndex >= 0 &&
+          endIndex >= 0 &&
+          endIndex !== this.dragStartIndex
+        ) {
+          this.emit(UIEventType.REORDER_ITEMS, {
+            fromId: Number(fromId),
+            toIndex: endIndex,
+          });
+        }
+
+        this.dragStartIndex = -1;
+      });
 
       const badge = this.doc.createElement('span');
       badge.className =
