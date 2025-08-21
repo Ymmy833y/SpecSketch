@@ -144,6 +144,15 @@ export function update(model: Model, action: Action): { model: Model; effects: E
     case ActionType.CAPTURE_FAILED:
       return { model, effects: [{ kind: EffectType.NOTIFY_ERROR, error: action.error }] };
 
+    case ActionType.REORDER_ITEMS: {
+      const { fromId, toIndex } = action;
+      const items = reorderItemLabel(model.items, fromId, toIndex);
+      return {
+        model: { ...model, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
     case ActionType.PORT_DISCONNECTED:
       return {
         model: { ...model, status: 'DISCONNECTED', selectionEnabled: false },
@@ -161,4 +170,52 @@ export function update(model: Model, action: Action): { model: Model; effects: E
     default:
       return { model, effects: [] };
   }
+}
+
+/**
+ * Relabel items as if the item with `fromId` was moved to the position
+ * whose label equals `items[toIndex].label`. Labels of the items in between
+ * are shifted by ±1 to keep labels unique and contiguous (if they were).
+ *
+ * @param items   - Source items (not mutated).
+ * @param fromId  - ID of the item to move.
+ * @param toIndex - Target index in `items` whose label becomes the new label.
+ * @returns A new array with updated labels.
+ * @throws RangeError if `toIndex` is out of bounds or Error if `fromId` not found.
+ */
+function reorderItemLabel(items: ScreenItem[], fromId: number, toIndex: number) {
+  if (toIndex < 0 || toIndex >= items.length) {
+    throw new RangeError(`toIndex out of range: ${toIndex}`);
+  }
+
+  const fromIdx = items.findIndex((i) => i.id === fromId);
+  if (fromIdx === -1) {
+    throw new Error(`Item not found for id=${fromId}`);
+  }
+
+  const fromLabel = items[fromIdx]!.label;
+  const targetLabel = items[toIndex]!.label;
+
+  if (fromLabel === targetLabel) {
+    return items.slice();
+  }
+
+  const movingUp = targetLabel < fromLabel;
+
+  return items.map((it) => {
+    if (it.id === fromId) {
+      return { ...it, label: targetLabel };
+    }
+
+    if (movingUp) {
+      if (it.label >= targetLabel && it.label < fromLabel) {
+        return { ...it, label: it.label + 1 };
+      }
+    } else {
+      if (it.label <= targetLabel && it.label > fromLabel) {
+        return { ...it, label: it.label - 1 };
+      }
+    }
+    return it;
+  });
 }

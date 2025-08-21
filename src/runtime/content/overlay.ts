@@ -77,13 +77,13 @@ export async function renderItems(items: ScreenItem[]) {
     const color = it.color.toLowerCase();
     if (t) {
       t.boxEl.className = `spsk-box spsk-box-${color}`;
-      t.boxEl.style.borderWidth = `${it.size / 6}px`;
+      t.boxEl.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
       t.badgeEl.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color}`;
       t.badgeEl.style.fontSize = `${it.size}px`;
     } else {
       const box = document.createElement('div');
       box.className = `spsk-box spsk-box-${color}`;
-      box.style.borderWidth = `${it.size / 6}px`;
+      box.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
 
       const badge = document.createElement('div');
       badge.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color}`;

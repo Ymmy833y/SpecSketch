@@ -43,6 +43,9 @@ export enum UIEventType {
 
   /** Toggle capture options dropdown (expand/collapse) */
   TOGGLE_CAPTURE_PANEL = 'TOGGLE_CAPTURE_PANEL',
+
+  /** Reordering selected items (drag and drop) */
+  REORDER_ITEMS = 'REORDER_ITEMS',
 }
 
 /**
@@ -66,4 +69,6 @@ export type UIEventPayloadMap = {
   [UIEventType.CAPTURE_SCALE_CHANGE]: { scale: number };
 
   [UIEventType.TOGGLE_CAPTURE_PANEL]: undefined;
+
+  [UIEventType.REORDER_ITEMS]: { fromId: number; toIndex: number };
 };

@@ -107,6 +107,10 @@ export class PanelController {
       this.dispatch({ type: ActionType.SET_CAPTURE_SCALE, scale }),
     );
 
+    this.view.on(UIEventType.REORDER_ITEMS, ({ fromId, toIndex }) =>
+      this.dispatch({ type: ActionType.REORDER_ITEMS, fromId, toIndex }),
+    );
+
     this.view.render(this.model);
   }
 
