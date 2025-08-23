@@ -49,6 +49,9 @@ export enum UIEventType {
 
   /** Update a group of elements */
   SET_ITEM_GROUP = 'SET_ITEM_GROUP',
+
+  /** Emitted when an item's edit-selection checkbox changes state */
+  ITEM_SELECTION_CHANGED = 'ITEM_SELECTION_CHANGED',
 }
 
 /**
@@ -75,4 +78,8 @@ export type UIEventPayloadMap = {
 
   [UIEventType.REORDER_ITEMS]: { fromId: number; fromIndex: number; toIndex: number };
   [UIEventType.SET_ITEM_GROUP]: { id: number; group: string };
+  [UIEventType.ITEM_SELECTION_CHANGED]:
+    | { id: number; isCheck: boolean }
+    | { group: string; isCheck: boolean }
+    | { allCheck: boolean };
 };

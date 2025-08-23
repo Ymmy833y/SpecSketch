@@ -116,6 +116,15 @@ export class PanelController {
     this.view.on(UIEventType.SET_ITEM_GROUP, ({ id, group }) =>
       this.dispatch({ type: ActionType.SET_ITEM_GROUP, id, group }),
     );
+    this.view.on(
+      UIEventType.ITEM_SELECTION_CHANGED,
+      (
+        payload:
+          | { id: number; isCheck: boolean }
+          | { group: string; isCheck: boolean }
+          | { allCheck: boolean },
+      ) => this.dispatch({ type: ActionType.ITEM_SELECTION_CHANGED, ...payload }),
+    );
 
     this.view.render(this.model);
   }
@@ -143,7 +152,7 @@ export class PanelController {
           await setState(this.model.pageKey, {
             items: this.model.items,
             nextId: 1,
-            nextLabel: 1,
+            nextLabel: this.model.nextLabel,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,

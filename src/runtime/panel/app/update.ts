@@ -1,4 +1,5 @@
 import type { ScreenItem } from '@common/types';
+import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 
 import { ActionType } from '../types/action_types';
 import { EffectType } from '../types/effect_types';
@@ -25,6 +26,8 @@ export type Effect =
   | { kind: EffectType.CLOSE_PANEL_IF_MATCH; tabId?: number }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };
 
+const NOGROUP = '' as const;
+
 export function update(model: Model, action: Action): { model: Model; effects: Effect[] } {
   switch (action.type) {
     case ActionType.INIT:
@@ -41,6 +44,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         model: {
           ...model,
           items: action.state.items,
+          nextLabel: action.state.nextLabel,
           defaultSize: action.state.defaultSize,
           defaultColor: action.state.defaultColor,
           defaultShape: action.state.defaultShape,
@@ -58,7 +62,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
 
     case ActionType.CLEAR_ALL:
       return {
-        model: { ...model, items: [] },
+        model: { ...model, items: [], nextLabel: 1 },
         effects: [{ kind: EffectType.CLEAR_CONTENT }, { kind: EffectType.CLEAR_STATE }],
       };
 
@@ -75,7 +79,10 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       };
 
     case ActionType.SET_BADGE_SIZE: {
-      const items: ScreenItem[] = model.items.map((it) => ({ ...it, size: action.size }));
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { size: action.size } : {}),
+      }));
       return {
         model: { ...model, defaultSize: action.size, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
@@ -83,7 +90,11 @@ export function update(model: Model, action: Action): { model: Model; effects: E
     }
 
     case ActionType.SET_BADGE_COLOR: {
-      const items: ScreenItem[] = model.items.map((it) => ({ ...it, color: action.color }));
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { color: action.color } : {}),
+      }));
+
       return {
         model: { ...model, defaultColor: action.color, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
@@ -91,7 +102,10 @@ export function update(model: Model, action: Action): { model: Model; effects: E
     }
 
     case ActionType.SET_BADGE_SHAPE: {
-      const items: ScreenItem[] = model.items.map((it) => ({ ...it, shape: action.shape }));
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { shape: action.shape } : {}),
+      }));
       return {
         model: { ...model, defaultShape: action.shape, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
@@ -171,6 +185,40 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       };
     }
 
+    case ActionType.ITEM_SELECTION_CHANGED: {
+      if ('id' in action) {
+        // Select/deselect a single item
+        const selectItems = applyItemSelectionChangedById(
+          action.id,
+          action.isCheck,
+          model.selectItems,
+        );
+        return {
+          model: { ...model, selectItems },
+          effects: [],
+        };
+      } else if ('group' in action) {
+        // Select/deselect a group
+        const selectItems = applyItemSelectionChangedForGroup(
+          action.group,
+          action.isCheck,
+          model.selectItems,
+          model.items,
+        );
+        return {
+          model: { ...model, selectItems },
+          effects: [],
+        };
+      } else {
+        // Select all/Deselect all
+        const selectItems = applyItemSelectionChangedForAll(action.allCheck, model.items);
+        return {
+          model: { ...model, selectItems },
+          effects: [],
+        };
+      }
+    }
+
     case ActionType.PORT_DISCONNECTED:
       return {
         model: { ...model, status: 'DISCONNECTED', selectionEnabled: false },
@@ -236,7 +284,7 @@ function reorderItemLabel(items: ScreenItem[], fromId: number, fromIndex: number
  * @param nextGroupRaw - The target group name. Empty string ("") represents "no group".
  * @returns A new array where only the target item is updated when the group changes; otherwise the original array.
  */
-export function updateGroupAndDeferRelabel(
+function updateGroupAndDeferRelabel(
   items: ScreenItem[],
   id: number,
   nextGroupRaw: string,
@@ -258,45 +306,38 @@ export function updateGroupAndDeferRelabel(
   return items.map((it) => (it.id === id ? { ...it, group: nextGroup, label: Infinity } : it));
 }
 
-/**
- * Relabels items consecutively (1..n) *within each group* and reports
- * the current size of the "no group" bucket.
- *
- * @param items - The original list of items (treated immutably).
- * @returns An object containing the normalized items and the no-group count.
- */
-export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): {
-  items: ScreenItem[];
-  nextLabel: number;
-} {
-  const NOGROUP = '' as const;
-  const normalize = (g?: string) => (g ?? NOGROUP).trim(); // '' is unified as UnGroup
-
-  // Bucket [index, item] for each group
-  const buckets = new Map<string, Array<{ index: number; item: ScreenItem }>>();
-  items.forEach((item, index) => {
-    const key = normalize(item.group);
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key)!.push({ index, item });
-  });
-
-  const out = items.slice();
-
-  // Sort each group → Reassign 1..n
-  for (const [, bucket] of buckets) {
-    bucket.sort((a, b) => {
-      if (a.item.label !== b.item.label) return a.item.label - b.item.label;
-      return a.item.id - b.item.id;
-    });
-
-    bucket.forEach(({ index, item }, i) => {
-      const desired = i + 1;
-      if (item.label !== desired) {
-        out[index] = { ...item, label: desired };
-      }
-    });
+function applyItemSelectionChangedById(id: number, isCheck: boolean, selectItems: number[]) {
+  if (isCheck) {
+    if (!selectItems.includes(id)) {
+      return [...selectItems, id];
+    }
   }
-  const noGroupCount = buckets.get(NOGROUP)?.length ?? 0;
+  return selectItems.filter((item) => item !== id);
+}
 
-  return { items: out, nextLabel: noGroupCount + 1 };
+function applyItemSelectionChangedForGroup(
+  group: string,
+  isCheck: boolean,
+  selectItems: number[],
+  items: ScreenItem[],
+) {
+  const g = group.trim();
+  const groupIds = items.filter((it) => (it.group ?? NOGROUP).trim() === g).map((it) => it.id);
+
+  if (groupIds.length === 0) return selectItems;
+  if (isCheck) {
+    const set = new Set<number>(selectItems);
+    for (const id of groupIds) set.add(id);
+    return [...set];
+  } else {
+    const groupSet = new Set<number>(groupIds);
+    return selectItems.filter((id) => !groupSet.has(id));
+  }
+}
+
+function applyItemSelectionChangedForAll(allCheck: boolean, items: ScreenItem[]) {
+  if (allCheck) {
+    return items.map((it) => it.id);
+  }
+  return [];
 }
