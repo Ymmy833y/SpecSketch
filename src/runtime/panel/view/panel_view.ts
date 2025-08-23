@@ -63,6 +63,8 @@ export class PanelView {
     badgeColorLabel: HTMLSpanElement;
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
+
+    selectItemAllCheckbox: HTMLInputElement;
   };
 
   private readonly CREATE_VALUE = '__create__';
@@ -103,6 +105,8 @@ export class PanelView {
       badgeColorLabel: this.$('#badge-color-label'),
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
+
+      selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
     };
 
     this.els.toggleBtn.addEventListener('click', () =>
@@ -159,6 +163,11 @@ export class PanelView {
     });
 
     this.updateQualityVisibility();
+
+    this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
+      const selected = (e.target as HTMLInputElement).checked;
+      this.emit(UIEventType.ITEM_SELECTION_CHANGED, { allCheck: selected });
+    });
   }
 
   on<K extends UIEventType>(type: K, handler: (e: UIEventPayloadMap[K]) => void): void {
@@ -172,9 +181,17 @@ export class PanelView {
   }
 
   render(model: Model): void {
+    console.log(
+      JSON.stringify(
+        model.items.map((i) => ({ id: i.id, label: i.label })),
+        undefined,
+        2,
+      ),
+    );
+
     this.renderStatus(model.status);
     this.renderToggle(model.selectionEnabled);
-    this.renderList(model.items);
+    this.renderList(model.items, model.selectItems);
 
     this.selectRadioByValue(this.els.captureFmtRadios, model.capture.format);
     this.selectRadioByValue(this.els.captureAreaRadios, model.capture.area);
@@ -220,8 +237,11 @@ export class PanelView {
     this.els.toggleLabel.textContent = i18n.get(enabled ? 'toggle_on' : 'toggle_off');
   }
 
-  private renderList(items: ScreenItem[]): void {
+  private renderList(items: ScreenItem[], selectItems: number[]): void {
     this.els.count.textContent = String(items.length);
+    const allChecked =
+      items.length === 0 ? false : items.every((it) => selectItems.includes(it.id));
+    this.els.selectItemAllCheckbox.checked = allChecked;
     if (!items.length) {
       this.els.empty.classList.remove('hidden');
       this.els.list.replaceChildren();
@@ -240,7 +260,7 @@ export class PanelView {
 
     const frag = this.doc.createDocumentFragment();
     for (const gKey of groupKeys) {
-      const section = this.renderGroupSection(gKey, groups.get(gKey)!, existingGroups);
+      const section = this.renderGroupSection(gKey, groups.get(gKey)!, existingGroups, selectItems);
       frag.appendChild(section);
     }
     this.els.list.replaceChildren(frag);
@@ -250,6 +270,7 @@ export class PanelView {
     gKey: string,
     gItems: ScreenItem[],
     existingGroups: string[],
+    selectItems: number[],
   ): HTMLElement {
     const section = this.el(
       'section',
@@ -261,30 +282,55 @@ export class PanelView {
       'div',
       'flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/40',
     );
+    // checkbox
+    const checkboxWrap = this.el('div', 'shrink-0 self-stretch flex items-center');
+    const checkbox = this.el(
+      'input',
+      'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600',
+    ) as HTMLInputElement;
+    checkbox.type = 'checkbox';
+    checkbox.name = 'item-select';
+    checkbox.value = gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey;
+    checkbox.checked = gItems.every((it) => selectItems.includes(it.id));
+    checkbox.addEventListener('change', (e) => {
+      const selected = (e.target as HTMLInputElement).checked;
+      this.emit(UIEventType.ITEM_SELECTION_CHANGED, {
+        group: gKey === this.NOGROUP ? '' : gKey,
+        isCheck: selected,
+      });
+    });
+    checkboxWrap.append(checkbox);
     const title = this.el(
       'span',
       'text-xs font-medium text-slate-600 dark:text-slate-300',
       gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey,
     );
+    const left = this.el('div', 'flex items-center gap-2 min-w-0 flex-1');
+    left.append(checkboxWrap, title);
     const count = this.el('span', 'text-[11px] text-slate-400', String(gItems.length));
-    header.append(title, count);
+    header.append(left, count);
 
     // ul
     const ul = this.el('ul', 'divide-y divide-slate-200 dark:divide-slate-800') as HTMLUListElement;
     this.attachUlDnDHandlers(ul);
 
     for (const it of gItems.sort(byLabelThenId)) {
-      ul.appendChild(this.renderItem(it, existingGroups));
+      const selectChecked = selectItems.includes(it.id);
+      ul.appendChild(this.renderItem(it, existingGroups, selectChecked));
     }
 
     section.append(header, ul);
     return section;
   }
 
-  private renderItem(it: ScreenItem, existingGroups: string[]): HTMLLIElement {
+  private renderItem(
+    it: ScreenItem,
+    existingGroups: string[],
+    selectChecked: boolean,
+  ): HTMLLIElement {
     const li = this.el(
       'li',
-      'group flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60',
+      'group flex items-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60',
     ) as HTMLLIElement;
     li.dataset.id = String(it.id);
     li.draggable = true;
@@ -320,6 +366,22 @@ export class PanelView {
       this.dragStartParent = null;
     });
 
+    // checkbox
+    const checkboxWrap = this.el('div', 'shrink-0 self-stretch flex items-center');
+    const checkbox = this.el(
+      'input',
+      'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600',
+    ) as HTMLInputElement;
+    checkbox.type = 'checkbox';
+    checkbox.name = 'item-select';
+    checkbox.value = String(it.id);
+    checkbox.checked = selectChecked;
+    checkbox.addEventListener('change', (e) => {
+      const selected = (e.target as HTMLInputElement).checked;
+      this.emit(UIEventType.ITEM_SELECTION_CHANGED, { id: it.id, isCheck: selected });
+    });
+    checkboxWrap.append(checkbox);
+
     // badge
     const badge = this.el(
       'span',
@@ -335,7 +397,7 @@ export class PanelView {
     // group select
     const groupWrap = this.buildGroupSelect(it, existingGroups);
 
-    li.append(badge, main, groupWrap);
+    li.append(checkboxWrap, badge, main, groupWrap);
     return li;
   }
 

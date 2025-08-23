@@ -34,5 +34,8 @@ export type Action =
   | { type: ActionType.CAPTURE_FAILED; error: unknown }
   | { type: ActionType.REORDER_ITEMS; fromId: number; fromIndex: number; toIndex: number }
   | { type: ActionType.SET_ITEM_GROUP; id: number; group: string }
+  | { type: ActionType.ITEM_SELECTION_CHANGED; id: number; isCheck: boolean }
+  | { type: ActionType.ITEM_SELECTION_CHANGED; group: string; isCheck: boolean }
+  | { type: ActionType.ITEM_SELECTION_CHANGED; allCheck: boolean }
   | { type: ActionType.PORT_DISCONNECTED }
   | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };

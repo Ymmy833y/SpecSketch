@@ -22,6 +22,8 @@ export type Model = {
     scale: number;
     panelExpanded: boolean;
   };
+
+  selectItems: ScreenItem['id'][];
 };
 
 export const initialModel: Model = {
@@ -41,4 +43,5 @@ export const initialModel: Model = {
     scale: 1,
     panelExpanded: false,
   },
+  selectItems: [],
 };

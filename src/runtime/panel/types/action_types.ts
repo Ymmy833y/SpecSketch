@@ -76,4 +76,7 @@ export enum ActionType {
 
   /** Request to close the panel when the tabId matches (Background → Panel) */
   CLOSE_PANEL_REQUESTED = 'CLOSE_PANEL_REQUESTED',
+
+  /** Emitted when an item's edit-selection checkbox changes state */
+  ITEM_SELECTION_CHANGED = 'ITEM_SELECTION_CHANGED',
 }

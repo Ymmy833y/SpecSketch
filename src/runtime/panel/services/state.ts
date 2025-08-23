@@ -2,21 +2,11 @@ import type { Anchor, ScreenItem, ScreenState } from '@common/types';
 import { getState, setState } from '@panel/state/store';
 
 type Patch = {
-  added?: Array<{ anchor: ScreenItem['anchor']; label?: number }>;
+  added?: Array<{ anchor: ScreenItem['anchor'] }>;
   removedIds?: number[];
-  updated?: Array<{ id: number; label?: number; anchor?: ScreenItem['anchor'] }>;
 };
 
-/**
- * Reassigns labels sequentially (1..n) according to the current array order.
- *
- * @param state - The state whose items should be relabeled in-place.
- * @remarks Also updates `nextLabel` to `items.length + 1`.
- */
-function relabelSequential(state: ScreenState) {
-  state.items.forEach((it, i) => (it.label = i + 1));
-  state.nextLabel = state.items.length + 1;
-}
+const NOGROUP = '' as const;
 
 /**
  * Applies a patch (add/update/remove) to the state for the given page key,
@@ -30,27 +20,15 @@ function relabelSequential(state: ScreenState) {
 export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenState> {
   const state = await getState(pageKey);
 
-  const hasRemoval = !!(patch.removedIds && patch.removedIds.length);
-
   if (patch.removedIds?.length) {
     const toRemove = new Set(patch.removedIds);
     state.items = state.items.filter((it) => !toRemove.has(it.id));
   }
 
-  if (patch.updated?.length) {
-    const map = new Map(state.items.map((i) => [i.id, i]));
-    for (const u of patch.updated) {
-      const it = map.get(u.id);
-      if (!it) continue;
-      if (typeof u.label === 'number') it.label = u.label;
-      if (u.anchor) it.anchor = u.anchor;
-    }
-  }
-
   if (patch.added?.length) {
     for (const a of patch.added) {
       const id = state.nextId++;
-      const label = typeof a.label === 'number' ? a.label : state.nextLabel++;
+      const label = state.nextLabel;
       const it: ScreenItem = {
         id,
         label,
@@ -62,8 +40,9 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
       state.items.push(it);
     }
   }
-
-  if (hasRemoval) relabelSequential(state);
+  ({ items: state.items, nextLabel: state.nextLabel } = normalizeGroupLabelsAndCountUngrouped(
+    state.items,
+  ));
 
   await setState(pageKey, state);
   return state;
@@ -103,4 +82,46 @@ export async function handleSelected(pageKey: string, anchors: Anchor[]): Promis
   if (toAdd.length) patch.added = toAdd;
 
   return applyPatch(pageKey, patch);
+}
+
+/**
+ * Relabels items consecutively (1..n) *within each group* and reports
+ * the current size of the "no group" bucket.
+ *
+ * @param items - The original list of items (treated immutably).
+ * @returns An object containing the normalized items and the no-group count.
+ */
+export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): {
+  items: ScreenItem[];
+  nextLabel: number;
+} {
+  const normalize = (g?: string) => (g ?? NOGROUP).trim(); // '' is unified as UnGroup
+
+  // Bucket [index, item] for each group
+  const buckets = new Map<string, Array<{ index: number; item: ScreenItem }>>();
+  items.forEach((item, index) => {
+    const key = normalize(item.group);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push({ index, item });
+  });
+
+  const out = items.slice();
+
+  // Sort each group → Reassign 1..n
+  for (const [, bucket] of buckets) {
+    bucket.sort((a, b) => {
+      if (a.item.label !== b.item.label) return a.item.label - b.item.label;
+      return a.item.id - b.item.id;
+    });
+
+    bucket.forEach(({ index, item }, i) => {
+      const desired = i + 1;
+      if (item.label !== desired) {
+        out[index] = { ...item, label: desired };
+      }
+    });
+  }
+  const noGroupCount = buckets.get(NOGROUP)?.length ?? 0;
+
+  return { items: out, nextLabel: noGroupCount + 1 };
 }
