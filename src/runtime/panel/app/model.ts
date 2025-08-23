@@ -10,6 +10,7 @@ export type Model = {
   selectionEnabled: boolean;
   items: ScreenItem[];
 
+  nextLabel: number;
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
@@ -29,6 +30,7 @@ export const initialModel: Model = {
   pageKey: '',
   selectionEnabled: false,
   items: [],
+  nextLabel: 1,
   defaultSize: 14,
   defaultColor: 'Blue',
   defaultShape: 'circle',

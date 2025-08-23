@@ -48,6 +48,7 @@ export type ScreenItem = {
   size: number;
   color: ItemColor;
   shape: ItemShape;
+  group?: string;
 };
 
 export type ScreenState = {

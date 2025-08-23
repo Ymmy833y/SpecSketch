@@ -46,6 +46,9 @@ export enum UIEventType {
 
   /** Reordering selected items (drag and drop) */
   REORDER_ITEMS = 'REORDER_ITEMS',
+
+  /** Update a group of elements */
+  SET_ITEM_GROUP = 'SET_ITEM_GROUP',
 }
 
 /**
@@ -70,5 +73,6 @@ export type UIEventPayloadMap = {
 
   [UIEventType.TOGGLE_CAPTURE_PANEL]: undefined;
 
-  [UIEventType.REORDER_ITEMS]: { fromId: number; toIndex: number };
+  [UIEventType.REORDER_ITEMS]: { fromId: number; fromIndex: number; toIndex: number };
+  [UIEventType.SET_ITEM_GROUP]: { id: number; group: string };
 };

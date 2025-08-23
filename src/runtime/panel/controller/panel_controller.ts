@@ -49,6 +49,7 @@ export class PanelController {
           type: ActionType.RESTORE_STATE,
           state: {
             items: newState.items,
+            nextLabel: newState.nextLabel,
             defaultSize: newState.defaultSize,
             defaultColor: newState.defaultColor,
             defaultShape: newState.defaultShape,
@@ -68,6 +69,7 @@ export class PanelController {
       type: ActionType.RESTORE_STATE,
       state: {
         items: st.items,
+        nextLabel: st.nextLabel,
         defaultSize: st.defaultSize,
         defaultColor: st.defaultColor,
         defaultShape: st.defaultShape,
@@ -107,8 +109,12 @@ export class PanelController {
       this.dispatch({ type: ActionType.SET_CAPTURE_SCALE, scale }),
     );
 
-    this.view.on(UIEventType.REORDER_ITEMS, ({ fromId, toIndex }) =>
-      this.dispatch({ type: ActionType.REORDER_ITEMS, fromId, toIndex }),
+    this.view.on(UIEventType.REORDER_ITEMS, ({ fromId, fromIndex, toIndex }) =>
+      this.dispatch({ type: ActionType.REORDER_ITEMS, fromId, fromIndex, toIndex }),
+    );
+
+    this.view.on(UIEventType.SET_ITEM_GROUP, ({ id, group }) =>
+      this.dispatch({ type: ActionType.SET_ITEM_GROUP, id, group }),
     );
 
     this.view.render(this.model);
@@ -148,6 +154,7 @@ export class PanelController {
           await setState(this.model.pageKey, {
             ...prev,
             items: this.model.items,
+            nextLabel: this.model.nextLabel,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,

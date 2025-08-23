@@ -68,6 +68,9 @@ export enum ActionType {
   /** Reordering selected items (drag and drop) */
   REORDER_ITEMS = 'REORDER_ITEMS',
 
+  /** Update a group of elements */
+  SET_ITEM_GROUP = 'SET_ITEM_GROUP',
+
   /** Port disconnected (lost connection to Content/Service Worker) */
   PORT_DISCONNECTED = 'PORT_DISCONNECTED',
 
