@@ -31,5 +31,11 @@
   "badge_shape_square": { "message": "Square" },
 
   "section_selected_items": { "message": "Selected Elements" },
-  "empty_hint": { "message": "Turn on the selection mode and click on the element." }
+  "empty_hint": { "message": "Turn on the selection mode and click on the element." },
+
+  "group_ungrouped": { "message": "Ungrouped" },
+  "group_new_placeholder": { "message": "New group name" },
+
+  "common_create": { "message": "Create" },
+  "common_cancel": { "message": "Cancel" }
 }
