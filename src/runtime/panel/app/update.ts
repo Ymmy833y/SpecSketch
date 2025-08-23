@@ -145,10 +145,28 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       return { model, effects: [{ kind: EffectType.NOTIFY_ERROR, error: action.error }] };
 
     case ActionType.REORDER_ITEMS: {
-      const { fromId, toIndex } = action;
-      const items = reorderItemLabel(model.items, fromId, toIndex);
+      const itemsMarkedForRelabel = reorderItemLabel(
+        model.items,
+        action.fromId,
+        action.fromIndex,
+        action.toIndex,
+      );
+      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
       return {
-        model: { ...model, items },
+        model: { ...model, items, nextLabel },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_ITEM_GROUP: {
+      const itemsMarkedForRelabel = updateGroupAndDeferRelabel(
+        model.items,
+        action.id,
+        action.group,
+      );
+      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
+      return {
+        model: { ...model, items, nextLabel },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
@@ -179,11 +197,12 @@ export function update(model: Model, action: Action): { model: Model; effects: E
  *
  * @param items   - Source items (not mutated).
  * @param fromId  - ID of the item to move.
+ * @param fromIndex  - The current index of the item to be moved.
  * @param toIndex - Target index in `items` whose label becomes the new label.
  * @returns A new array with updated labels.
  * @throws RangeError if `toIndex` is out of bounds or Error if `fromId` not found.
  */
-function reorderItemLabel(items: ScreenItem[], fromId: number, toIndex: number) {
+function reorderItemLabel(items: ScreenItem[], fromId: number, fromIndex: number, toIndex: number) {
   if (toIndex < 0 || toIndex >= items.length) {
     throw new RangeError(`toIndex out of range: ${toIndex}`);
   }
@@ -192,30 +211,92 @@ function reorderItemLabel(items: ScreenItem[], fromId: number, toIndex: number) 
   if (fromIdx === -1) {
     throw new Error(`Item not found for id=${fromId}`);
   }
-
-  const fromLabel = items[fromIdx]!.label;
-  const targetLabel = items[toIndex]!.label;
-
-  if (fromLabel === targetLabel) {
-    return items.slice();
+  if (toIndex < 0 || toIndex >= items.filter((it) => it.group === items[fromIdx]!.group).length) {
+    throw new RangeError(`toIndex out of range: ${toIndex}`);
   }
 
-  const movingUp = targetLabel < fromLabel;
+  const OFFSET_AFTER = 1.1;
+  const OFFSET_BEFORE = 0.1;
 
-  return items.map((it) => {
-    if (it.id === fromId) {
-      return { ...it, label: targetLabel };
-    }
+  const offset = fromIndex < toIndex ? OFFSET_AFTER : OFFSET_BEFORE;
+  const label = toIndex + offset;
 
-    if (movingUp) {
-      if (it.label >= targetLabel && it.label < fromLabel) {
-        return { ...it, label: it.label + 1 };
-      }
-    } else {
-      if (it.label <= targetLabel && it.label > fromLabel) {
-        return { ...it, label: it.label - 1 };
-      }
-    }
-    return it;
+  return items.map((it) => (it.id === fromId ? { ...it, label } : it));
+}
+
+/**
+ * Updates the group of a specific item and *defers* label normalization.
+ *
+ * Notes
+ * - This function does **not** reorder or compact labels for any group.
+ *   Call `relabelConsecutivePerGroup()` afterwards to normalize labels to 1..n per group.
+ *
+ * @param items - The current list of items.
+ * @param id - The ID of the target item whose group is to be updated.
+ * @param nextGroupRaw - The target group name. Empty string ("") represents "no group".
+ * @returns A new array where only the target item is updated when the group changes; otherwise the original array.
+ */
+export function updateGroupAndDeferRelabel(
+  items: ScreenItem[],
+  id: number,
+  nextGroupRaw: string,
+): ScreenItem[] {
+  const normalize = (g?: string) => (g ?? '').trim();
+  const nextGroup = normalize(nextGroupRaw);
+
+  const idx = items.findIndex((it) => it.id === id);
+  if (idx < 0) return items;
+
+  const target = items[idx]!;
+  const currGroup = normalize(target.group);
+
+  // If the item already belongs to the target group, skip the operation.
+  if (currGroup === nextGroup) {
+    return items;
+  }
+
+  return items.map((it) => (it.id === id ? { ...it, group: nextGroup, label: Infinity } : it));
+}
+
+/**
+ * Relabels items consecutively (1..n) *within each group* and reports
+ * the current size of the "no group" bucket.
+ *
+ * @param items - The original list of items (treated immutably).
+ * @returns An object containing the normalized items and the no-group count.
+ */
+export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): {
+  items: ScreenItem[];
+  nextLabel: number;
+} {
+  const NOGROUP = '' as const;
+  const normalize = (g?: string) => (g ?? NOGROUP).trim(); // '' is unified as UnGroup
+
+  // Bucket [index, item] for each group
+  const buckets = new Map<string, Array<{ index: number; item: ScreenItem }>>();
+  items.forEach((item, index) => {
+    const key = normalize(item.group);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push({ index, item });
   });
+
+  const out = items.slice();
+
+  // Sort each group → Reassign 1..n
+  for (const [, bucket] of buckets) {
+    bucket.sort((a, b) => {
+      if (a.item.label !== b.item.label) return a.item.label - b.item.label;
+      return a.item.id - b.item.id;
+    });
+
+    bucket.forEach(({ index, item }, i) => {
+      const desired = i + 1;
+      if (item.label !== desired) {
+        out[index] = { ...item, label: desired };
+      }
+    });
+  }
+  const noGroupCount = buckets.get(NOGROUP)?.length ?? 0;
+
+  return { items: out, nextLabel: noGroupCount + 1 };
 }

@@ -12,6 +12,7 @@ export type Action =
       type: ActionType.RESTORE_STATE;
       state: {
         items: ScreenItem[];
+        nextLabel: number;
         defaultSize: number;
         defaultColor: ItemColor;
         defaultShape: ItemShape;
@@ -31,6 +32,7 @@ export type Action =
   | { type: ActionType.CAPTURE_REQUESTED }
   | { type: ActionType.CAPTURE_SUCCEEDED }
   | { type: ActionType.CAPTURE_FAILED; error: unknown }
-  | { type: ActionType.REORDER_ITEMS; fromId: number; toIndex: number }
+  | { type: ActionType.REORDER_ITEMS; fromId: number; fromIndex: number; toIndex: number }
+  | { type: ActionType.SET_ITEM_GROUP; id: number; group: string }
   | { type: ActionType.PORT_DISCONNECTED }
   | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };

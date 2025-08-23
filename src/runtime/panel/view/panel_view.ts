@@ -43,7 +43,7 @@ export class PanelView {
     clearBtn: HTMLButtonElement;
     captureBtn: HTMLButtonElement;
 
-    list: HTMLUListElement;
+    list: HTMLDivElement;
     empty: HTMLDivElement;
     count: HTMLSpanElement;
 
@@ -65,7 +65,11 @@ export class PanelView {
     badgeShapeSelect: HTMLSelectElement;
   };
 
+  private readonly CREATE_VALUE = '__create__';
+  private readonly NOGROUP = '__nogroup__';
+
   private dragEl: HTMLLIElement | null = null;
+  private dragStartParent: Element | null = null;
   private dragStartIndex = -1;
 
   constructor(private doc: Document) {
@@ -154,21 +158,6 @@ export class PanelView {
       this.emit(UIEventType.BADGE_SHAPE_CHANGE, { shape });
     });
 
-    this.els.list.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      if (!this.dragEl) return;
-
-      const targetLi = (e.target as HTMLElement)?.closest('li') as HTMLLIElement | null;
-      if (targetLi && targetLi !== this.dragEl) {
-        const rect = targetLi.getBoundingClientRect();
-        const isAfter = e.clientY - rect.top > rect.height / 2;
-        this.els.list.insertBefore(this.dragEl, isAfter ? targetLi.nextSibling : targetLi);
-      } else if (!targetLi) {
-        this.els.list.appendChild(this.dragEl);
-      }
-    });
-    this.els.list.addEventListener('drop', (e) => e.preventDefault());
-
     this.updateQualityVisibility();
   }
 
@@ -240,65 +229,250 @@ export class PanelView {
     }
     this.els.empty.classList.add('hidden');
 
+    const existingGroups = this.getExistingGroups(items);
+    const groups = this.groupByGroup(items);
+
+    const groupKeys = Array.from(groups.keys()).sort((a, b) => {
+      if (a === this.NOGROUP) return -1;
+      if (b === this.NOGROUP) return 1;
+      return a.localeCompare(b);
+    });
+
     const frag = this.doc.createDocumentFragment();
-    for (const it of items.sort(byLabelThenId)) {
-      const li = this.doc.createElement('li');
-      li.className =
-        'group flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60';
-      li.dataset.id = String(it.id);
-      li.draggable = true;
-
-      // Drag origin retention & light visual feedback
-      li.addEventListener('dragstart', (e) => {
-        this.dragEl = li;
-        this.dragStartIndex = Array.prototype.indexOf.call(this.els.list.children, li);
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = 'move';
-        }
-        li.classList.add('opacity-60');
-      });
-
-      // Clean up & fire an action if anything changes
-      li.addEventListener('dragend', () => {
-        if (!this.dragEl) return;
-        const endIndex = Array.prototype.indexOf.call(this.els.list.children, this.dragEl);
-        this.dragEl.classList.remove('opacity-60');
-
-        const fromId = this.dragEl.dataset.id ?? '';
-        this.dragEl = null;
-
-        if (
-          fromId &&
-          this.dragStartIndex >= 0 &&
-          endIndex >= 0 &&
-          endIndex !== this.dragStartIndex
-        ) {
-          this.emit(UIEventType.REORDER_ITEMS, {
-            fromId: Number(fromId),
-            toIndex: endIndex,
-          });
-        }
-
-        this.dragStartIndex = -1;
-      });
-
-      const badge = this.doc.createElement('span');
-      badge.className =
-        'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold';
-      badge.textContent = String(it.label);
-
-      const main = this.doc.createElement('div');
-      main.className = 'min-w-0 flex-1';
-
-      const line1 = this.doc.createElement('div');
-      line1.className = 'text-sm font-medium truncate';
-      line1.textContent = it.anchor.value;
-
-      main.append(line1);
-      li.append(badge, main);
-      frag.appendChild(li);
+    for (const gKey of groupKeys) {
+      const section = this.renderGroupSection(gKey, groups.get(gKey)!, existingGroups);
+      frag.appendChild(section);
     }
     this.els.list.replaceChildren(frag);
+  }
+
+  private renderGroupSection(
+    gKey: string,
+    gItems: ScreenItem[],
+    existingGroups: string[],
+  ): HTMLElement {
+    const section = this.el(
+      'section',
+      'rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden',
+    );
+
+    // header
+    const header = this.el(
+      'div',
+      'flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/40',
+    );
+    const title = this.el(
+      'span',
+      'text-xs font-medium text-slate-600 dark:text-slate-300',
+      gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey,
+    );
+    const count = this.el('span', 'text-[11px] text-slate-400', String(gItems.length));
+    header.append(title, count);
+
+    // ul
+    const ul = this.el('ul', 'divide-y divide-slate-200 dark:divide-slate-800') as HTMLUListElement;
+    this.attachUlDnDHandlers(ul);
+
+    for (const it of gItems.sort(byLabelThenId)) {
+      ul.appendChild(this.renderItem(it, existingGroups));
+    }
+
+    section.append(header, ul);
+    return section;
+  }
+
+  private renderItem(it: ScreenItem, existingGroups: string[]): HTMLLIElement {
+    const li = this.el(
+      'li',
+      'group flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60',
+    ) as HTMLLIElement;
+    li.dataset.id = String(it.id);
+    li.draggable = true;
+
+    // Only sorting within the same UL is allowed
+    li.addEventListener('dragstart', (e) => {
+      this.dragEl = li;
+      this.dragStartParent = li.parentElement;
+      this.dragStartIndex = Array.prototype.indexOf.call(li.parentElement?.children ?? [], li);
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('opacity-60');
+    });
+
+    li.addEventListener('dragend', () => {
+      if (!this.dragEl) return;
+      const parent = this.dragEl.parentElement;
+      const endIndex = parent ? Array.prototype.indexOf.call(parent.children, this.dragEl) : -1;
+
+      this.dragEl.classList.remove('opacity-60');
+      const fromId = this.dragEl.dataset.id ?? '';
+      this.dragEl = null;
+
+      if (fromId && this.dragStartIndex >= 0 && endIndex >= 0 && endIndex !== this.dragStartIndex) {
+        console.log(fromId, endIndex, this.dragStartIndex);
+
+        this.emit(UIEventType.REORDER_ITEMS, {
+          fromId: Number(fromId),
+          fromIndex: this.dragStartIndex,
+          toIndex: endIndex,
+        });
+      }
+      this.dragStartIndex = -1;
+      this.dragStartParent = null;
+    });
+
+    // badge
+    const badge = this.el(
+      'span',
+      'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold',
+      String(it.label),
+    );
+
+    // anchor
+    const main = this.el('div', 'min-w-0 flex-1');
+    const line1 = this.el('div', 'text-sm font-medium truncate', it.anchor.value);
+    main.append(line1);
+
+    // group select
+    const groupWrap = this.buildGroupSelect(it, existingGroups);
+
+    li.append(badge, main, groupWrap);
+    return li;
+  }
+
+  private buildGroupSelect(it: ScreenItem, existingGroups: string[]): HTMLElement {
+    const groupWrap = this.el('div', 'min-w-0');
+
+    const selectEl = this.el(
+      'select',
+      'block rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-2 py-1',
+    ) as HTMLSelectElement;
+    selectEl.style.maxWidth = '10rem';
+
+    // options
+    selectEl.append(this.makeOpt('', i18n.get('group_ungrouped'), !it.group || !it.group.trim()));
+    for (const g of existingGroups) {
+      selectEl.append(this.makeOpt(g, g, it.group?.trim() === g));
+    }
+    const createOpt = this.makeOpt(this.CREATE_VALUE, i18n.get('common_create'));
+    selectEl.append(createOpt);
+
+    // Inline input UI for create
+    const showCreateInput = (prevValue: string) => {
+      selectEl.classList.add('hidden');
+
+      const input = this.el(
+        'input',
+        'w-40 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-2 py-1',
+      ) as HTMLInputElement;
+      input.type = 'text';
+      input.placeholder = i18n.get('group_new_placeholder');
+
+      const okBtn = this.el(
+        'button',
+        'rounded-md border border-slate-300 dark:border-slate-700 px-2 py-1 text-sm',
+        i18n.get('common_create'),
+      ) as HTMLButtonElement;
+      okBtn.type = 'button';
+
+      const cancelBtn = this.el(
+        'button',
+        'rounded-md border border-transparent px-2 py-1 text-sm text-slate-500',
+        i18n.get('common_cancel'),
+      ) as HTMLButtonElement;
+      cancelBtn.type = 'button';
+
+      const inputWrap = this.el('div', 'flex items-center gap-2');
+      inputWrap.append(input, okBtn, cancelBtn);
+      groupWrap.append(inputWrap);
+
+      const cleanup = () => {
+        inputWrap.remove();
+        selectEl.classList.remove('hidden');
+      };
+
+      const commit = () => {
+        const name = input.value.trim();
+        // Undo any missing entries
+        if (!name) {
+          selectEl.value = prevValue;
+          cleanup();
+          return;
+        }
+        this.emit(UIEventType.SET_ITEM_GROUP, { id: it.id, group: name });
+        cleanup();
+      };
+
+      okBtn.addEventListener('click', commit);
+      cancelBtn.addEventListener('click', () => {
+        selectEl.value = prevValue;
+        cleanup();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') {
+          selectEl.value = prevValue;
+          cleanup();
+        }
+      });
+
+      input.focus();
+    };
+
+    selectEl.addEventListener('change', () => {
+      const prev = (it.group ?? '').trim();
+      const val = selectEl.value;
+      if (val === this.CREATE_VALUE) {
+        showCreateInput(prev);
+        return;
+      }
+      const nextGroup = val.length ? val : '';
+      if ((prev || '') !== nextGroup) {
+        this.emit(UIEventType.SET_ITEM_GROUP, { id: it.id, group: nextGroup });
+      }
+    });
+
+    groupWrap.append(selectEl);
+    return groupWrap;
+  }
+
+  /**
+   * UL D&D Handler
+   * Only sorting within the same UL is allowed
+   * @param ul
+   */
+  private attachUlDnDHandlers(ul: HTMLUListElement): void {
+    ul.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!this.dragEl) return;
+
+      if (this.dragStartParent && ul !== this.dragStartParent) return;
+
+      const targetLi = (e.target as HTMLElement)?.closest('li') as HTMLLIElement | null;
+      if (targetLi && targetLi !== this.dragEl) {
+        const rect = targetLi.getBoundingClientRect();
+        const isAfter = e.clientY - rect.top > rect.height / 2;
+        ul.insertBefore(this.dragEl, isAfter ? targetLi.nextSibling : targetLi);
+      } else if (!targetLi) {
+        ul.appendChild(this.dragEl);
+      }
+    });
+    ul.addEventListener('drop', (e) => e.preventDefault());
+  }
+
+  private getExistingGroups(items: ScreenItem[]): string[] {
+    return Array.from(
+      new Set(items.map((i) => (i.group ?? '').trim()).filter((g): g is string => g.length > 0)),
+    ).sort((a, b) => a.localeCompare(b));
+  }
+
+  private groupByGroup(items: ScreenItem[]): Map<string, ScreenItem[]> {
+    const m = new Map<string, ScreenItem[]>();
+    for (const it of items) {
+      const key = (it.group ?? '').trim() || this.NOGROUP;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(it);
+    }
+    return m;
   }
 
   private getSelectedCaptureFormat(): CaptureFormat {
@@ -374,5 +548,23 @@ export class PanelView {
   }
   private $all<T extends Element>(selector: string): NodeListOf<T> {
     return this.doc.querySelectorAll<T>(selector);
+  }
+  private el<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    className?: string,
+    text?: string,
+  ): HTMLElementTagNameMap[K] {
+    const node = this.doc.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  private makeOpt(value: string, label: string, selected = false): HTMLOptionElement {
+    const o = this.doc.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    if (selected) o.selected = true;
+    return o;
   }
 }
