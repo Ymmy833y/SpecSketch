@@ -24,6 +24,7 @@ export type Model = {
   };
 
   selectItems: ScreenItem['id'][];
+  missingIds: ScreenItem['id'][];
 };
 
 export const initialModel: Model = {
@@ -44,4 +45,5 @@ export const initialModel: Model = {
     panelExpanded: false,
   },
   selectItems: [],
+  missingIds: [],
 };

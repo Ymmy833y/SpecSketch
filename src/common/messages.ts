@@ -10,6 +10,7 @@ const P2C = {
 
 const C2P = {
   SELECTED: 'SELECTED',
+  MISSING_IDS: 'MISSING_IDS',
 } as const;
 
 const B2P = {
@@ -30,7 +31,9 @@ export type PanelToContent =
   | { type: typeof P2C.CLEAR }
   | { type: typeof P2C.HOVER; payload: { id: number | null } };
 
-export type ContentToPanel = { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } };
+export type ContentToPanel =
+  | { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } }
+  | { type: typeof C2P.MISSING_IDS; payload: { missingIds: number[] } };
 
 export type BackgroundToPanel = { type: typeof B2P.CLOSE_PANEL; payload: { tabId: number } };
 

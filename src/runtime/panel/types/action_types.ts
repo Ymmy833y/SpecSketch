@@ -23,6 +23,9 @@ export enum ActionType {
   /** Restore persisted state: items and defaults (size/color/shape) */
   RESTORE_STATE = 'RESTORE_STATE',
 
+  /** Overwrites the set of elements that are not present in the content */
+  SET_MISSING_IDS = 'SET_MISSING_IDS',
+
   /** Toggle selection mode on the page overlay */
   TOGGLE_SELECT = 'TOGGLE_SELECT',
 
@@ -40,6 +43,9 @@ export enum ActionType {
 
   /** Update default badge shape (also apply to existing items) */
   SET_BADGE_SHAPE = 'SET_BADGE_SHAPE',
+
+  /** Delete the selected badge */
+  BADGE_DELETE = 'BADGE_DELETE',
 
   /** Update capture format (png/jpeg) */
   SET_CAPTURE_FORMAT = 'SET_CAPTURE_FORMAT',

@@ -4,8 +4,8 @@ import type { ScreenItem } from '@common/types';
 
 import { buildCssAnchor } from './anchor';
 import {
-  bindCssSelectorMap,
   clearOverlay,
+  getMissingIds,
   highlightOverlay,
   mountOverlay,
   renderItems,
@@ -36,7 +36,7 @@ chrome.runtime.onConnect.addListener(async (p) => {
       case MSG_TYPE.RENDER: {
         const items = msg.payload.items as ScreenItem[];
         await renderItems(items);
-        bindCssSelectorMap(items);
+        postMissingIdsIfAny();
         break;
       }
       case MSG_TYPE.CLEAR:
@@ -67,6 +67,18 @@ function onPick(el: Element) {
   port?.postMessage({
     type: MSG_TYPE.SELECTED,
     payload: { anchors: [anchor] },
+    id: crypto.randomUUID(),
+  });
+}
+
+/**
+ * Send to side panel only if MissingIds exist.
+ */
+function postMissingIdsIfAny() {
+  const missingIds = getMissingIds();
+  port?.postMessage({
+    type: MSG_TYPE.MISSING_IDS,
+    payload: { missingIds: missingIds },
     id: crypto.randomUUID(),
   });
 }

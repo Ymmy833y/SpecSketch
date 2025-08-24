@@ -18,6 +18,7 @@ export type Action =
         defaultShape: ItemShape;
       };
     }
+  | { type: ActionType.SET_MISSING_IDS; missingIds: number[] }
   | { type: ActionType.TOGGLE_SELECT }
   | { type: ActionType.CLEAR_ALL }
   | { type: ActionType.CONTENT_SELECTED; anchors: Anchor[] }
@@ -28,6 +29,7 @@ export type Action =
   | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }
   | { type: ActionType.SET_CAPTURE_QUALITY; quality: number }
   | { type: ActionType.SET_CAPTURE_SCALE; scale: number }
+  | { type: ActionType.BADGE_DELETE }
   | { type: ActionType.TOGGLE_CAPTURE_PANEL }
   | { type: ActionType.CAPTURE_REQUESTED }
   | { type: ActionType.CAPTURE_SUCCEEDED }

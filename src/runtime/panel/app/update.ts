@@ -53,6 +53,12 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         effects: [{ kind: EffectType.RENDER_CONTENT, items: action.state.items }],
       };
 
+    case ActionType.SET_MISSING_IDS:
+      return {
+        model: { ...model, missingIds: action.missingIds },
+        effects: [],
+      };
+
     case ActionType.TOGGLE_SELECT: {
       const next = !model.selectionEnabled;
       return {
@@ -109,6 +115,15 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       }));
       return {
         model: { ...model, defaultShape: action.shape, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.BADGE_DELETE: {
+      const itemsMarkedForRelabel = model.items.filter((it) => !model.selectItems.includes(it.id));
+      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
+      return {
+        model: { ...model, items, nextLabel },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
