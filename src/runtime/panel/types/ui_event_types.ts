@@ -29,6 +29,9 @@ export enum UIEventType {
   /** Badge shape changed (select) */
   BADGE_SHAPE_CHANGE = 'BADGE_SHAPE_CHANGE',
 
+  /** Delete the selected badge */
+  BADGE_DELETE = 'BADGE_DELETE',
+
   /** Capture format changed (radio) */
   CAPTURE_FORMAT_CHANGE = 'CAPTURE_FORMAT_CHANGE',
 
@@ -74,6 +77,7 @@ export type UIEventPayloadMap = {
   [UIEventType.BADGE_SIZE_CHANGE]: { size: number };
   [UIEventType.BADGE_COLOR_SELECT]: { color: ItemColor };
   [UIEventType.BADGE_SHAPE_CHANGE]: { shape: ItemShape };
+  [UIEventType.BADGE_DELETE]: undefined;
 
   [UIEventType.CAPTURE_FORMAT_CHANGE]: { format: CaptureFormat };
   [UIEventType.CAPTURE_AREA_CHANGE]: { area: CaptureArea };

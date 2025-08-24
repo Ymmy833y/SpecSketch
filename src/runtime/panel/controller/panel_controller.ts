@@ -55,6 +55,11 @@ export class PanelController {
             defaultShape: newState.defaultShape,
           },
         });
+      } else if (msg?.type === MSG_TYPE.MISSING_IDS) {
+        this.dispatch({
+          type: ActionType.SET_MISSING_IDS,
+          missingIds: msg.payload.missingIds,
+        });
       }
     });
 
@@ -92,6 +97,7 @@ export class PanelController {
     this.view.on(UIEventType.BADGE_SHAPE_CHANGE, ({ shape }) =>
       this.dispatch({ type: ActionType.SET_BADGE_SHAPE, shape }),
     );
+    this.view.on(UIEventType.BADGE_DELETE, () => this.dispatch({ type: ActionType.BADGE_DELETE }));
 
     this.view.on(UIEventType.TOGGLE_CAPTURE_PANEL, () =>
       this.dispatch({ type: ActionType.TOGGLE_CAPTURE_PANEL }),

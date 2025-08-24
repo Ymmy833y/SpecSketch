@@ -1,9 +1,10 @@
-import type { ScreenItem } from '@common/types';
+import type { Anchor, ScreenItem } from '@common/types';
 
 let shadowRoot: ShadowRoot | null = null;
 let rootEl: HTMLElement | null = null;
 
 type Tracked = {
+  anchor: Anchor;
   boxEl: HTMLDivElement;
   badgeEl: HTMLDivElement;
   elRef: WeakRef<Element> | null;
@@ -93,13 +94,13 @@ export async function renderItems(items: ScreenItem[]) {
       box.appendChild(badge);
 
       rootEl!.appendChild(box);
-      t = { boxEl: box, badgeEl: badge, elRef: null, missing: false };
+      t = { anchor: it.anchor, boxEl: box, badgeEl: badge, elRef: null, missing: true };
       tracked.set(it.id, t);
     }
     t.badgeEl.textContent = String(it.label);
   }
 
-  requestAnimationFrame(updatePositions);
+  await waitForPositionsApplied();
 }
 
 /**
@@ -132,6 +133,17 @@ export async function highlightOverlay(id: number | null) {
 }
 
 /**
+ * Returns the IDs of tracked items whose target elements are currently missing.
+ *
+ * @returns Array of item IDs that are marked as missing.
+ */
+export function getMissingIds() {
+  return Array.from(tracked.entries())
+    .filter(([, t]) => t.missing)
+    .map(([id]) => id);
+}
+
+/**
  * Resolves an element by CSS selector using querySelector.
  *
  * @param cssSelector - CSS selector to query
@@ -146,6 +158,20 @@ function resolveElement(cssSelector: string): Element | null {
 }
 
 /**
+ * Waits for the next animation frame and applies a single layout update.
+ *
+ * @returns This guarantees ordering of the update, not the visual paint itself.
+ */
+function waitForPositionsApplied(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      updatePositions();
+      resolve();
+    });
+  });
+}
+
+/**
  * Updates positions and sizes of all tracked boxes to match the latest layout.
  * Hides boxes temporarily when their target elements are not found.
  *
@@ -154,23 +180,17 @@ function resolveElement(cssSelector: string): Element | null {
 function updatePositions() {
   for (const [_, t] of tracked.entries()) {
     // Check if the existing reference is still alive
-    let el = t.elRef?.deref() ?? null;
-    if (!el) {
-      // The anchor always comes from Panel → Content during RENDER,
-      // so store the CSS selector in boxEl.dataset.css
-      const css = t.boxEl.dataset.css;
-      if (!css) continue;
-      el = resolveElement(css);
-      t.elRef = el ? new WeakRef(el) : null;
-      t.missing = !el;
-    }
+    const el = resolveElement(t.anchor.value);
+    t.elRef = el ? new WeakRef(el) : null;
 
     if (!el) {
       // Lost: hide the box (adjust styles here if you want a faint placeholder)
       t.boxEl.style.display = 'none';
+      t.missing = true;
       continue;
     } else {
       t.boxEl.style.display = '';
+      t.missing = false;
     }
 
     const r = el.getBoundingClientRect();
@@ -179,20 +199,5 @@ function updatePositions() {
     t.boxEl.style.top = `${r.top}px`;
     t.boxEl.style.width = `${r.width}px`;
     t.boxEl.style.height = `${r.height}px`;
-  }
-}
-
-/**
- * Associates CSS selectors (from RENDER) with tracked boxes.
- * Actual element resolution is handled in `updatePositions`.
- *
- * @param items - Items containing id and anchor
- */
-export function bindCssSelectorMap(items: ScreenItem[]) {
-  for (const it of items) {
-    const t = tracked.get(it.id);
-    if (!t) continue;
-    t.boxEl.dataset.css = it.anchor.value;
-    // Element resolution is handled in updatePositions
   }
 }

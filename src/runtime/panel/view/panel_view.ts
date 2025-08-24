@@ -63,6 +63,7 @@ export class PanelView {
     badgeColorLabel: HTMLSpanElement;
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
+    badgeDeleteButton: HTMLButtonElement;
 
     selectItemAllCheckbox: HTMLInputElement;
   };
@@ -108,6 +109,7 @@ export class PanelView {
       badgeColorLabel: this.$('#badge-color-label'),
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
+      badgeDeleteButton: this.$('#badge-delete-button'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
     };
@@ -165,6 +167,10 @@ export class PanelView {
       this.emit(UIEventType.BADGE_SHAPE_CHANGE, { shape });
     });
 
+    this.els.badgeDeleteButton.addEventListener('click', () => {
+      this.emit(UIEventType.BADGE_DELETE, undefined);
+    });
+
     this.updateQualityVisibility();
 
     this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
@@ -193,7 +199,7 @@ export class PanelView {
   render(model: Model): void {
     this.renderStatus(model.status);
     this.renderToggle(model.selectionEnabled);
-    this.renderList(model.items, model.selectItems);
+    this.renderList(model.items, model.selectItems, model.missingIds);
 
     this.selectRadioByValue(this.els.captureFmtRadios, model.capture.format);
     this.selectRadioByValue(this.els.captureAreaRadios, model.capture.area);
@@ -239,7 +245,7 @@ export class PanelView {
     this.els.toggleLabel.textContent = i18n.get(enabled ? 'toggle_on' : 'toggle_off');
   }
 
-  private renderList(items: ScreenItem[], selectItems: number[]): void {
+  private renderList(items: ScreenItem[], selectItems: number[], missingIds: number[]): void {
     this.els.count.textContent = String(items.length);
     const allChecked =
       items.length === 0 ? false : items.every((it) => selectItems.includes(it.id));
@@ -262,7 +268,13 @@ export class PanelView {
 
     const frag = this.doc.createDocumentFragment();
     for (const gKey of groupKeys) {
-      const section = this.renderGroupSection(gKey, groups.get(gKey)!, existingGroups, selectItems);
+      const section = this.renderGroupSection(
+        gKey,
+        groups.get(gKey)!,
+        existingGroups,
+        selectItems,
+        missingIds,
+      );
       frag.appendChild(section);
     }
     this.els.list.replaceChildren(frag);
@@ -273,6 +285,7 @@ export class PanelView {
     gItems: ScreenItem[],
     existingGroups: string[],
     selectItems: number[],
+    missingIds: number[],
   ): HTMLElement {
     const section = this.el(
       'section',
@@ -318,7 +331,7 @@ export class PanelView {
 
     for (const it of gItems.sort(byLabelThenId)) {
       const selectChecked = selectItems.includes(it.id);
-      ul.appendChild(this.renderItem(it, existingGroups, selectChecked));
+      ul.appendChild(this.renderItem(it, existingGroups, selectChecked, missingIds));
     }
 
     section.append(header, ul);
@@ -329,11 +342,14 @@ export class PanelView {
     it: ScreenItem,
     existingGroups: string[],
     selectChecked: boolean,
+    missingIds: number[],
   ): HTMLLIElement {
-    const li = this.el(
-      'li',
-      'group flex items-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60',
-    ) as HTMLLIElement;
+    const isMissing = missingIds.includes(it.id);
+
+    const liStyle = isMissing
+      ? 'group flex items-center gap-2 p-3 hover:bg-amber-50 dark:hover:bg-amber-800/60 bg-amber-100 dark:bg-amber-900/30'
+      : 'group flex items-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60';
+    const li = this.el('li', liStyle) as HTMLLIElement;
     li.dataset.id = String(it.id);
     li.draggable = true;
 
@@ -368,10 +384,10 @@ export class PanelView {
 
     // checkbox
     const checkboxWrap = this.el('div', 'shrink-0 self-stretch flex items-center');
-    const checkbox = this.el(
-      'input',
-      'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600',
-    ) as HTMLInputElement;
+    const checkboxStyle = isMissing
+      ? 'h-4 w-4 border border-amber-300 dark:border-amber-700 outline-none focus:ring-2 focus:ring-amber-500 accent-amber-600'
+      : 'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600';
+    const checkbox = this.el('input', checkboxStyle) as HTMLInputElement;
     checkbox.type = 'checkbox';
     checkbox.name = 'item-select';
     checkbox.value = String(it.id);
@@ -383,21 +399,34 @@ export class PanelView {
     checkboxWrap.append(checkbox);
 
     // badge
-    const badge = this.el(
-      'span',
-      'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold',
-      String(it.label),
-    );
+    const badgeStyle = isMissing
+      ? 'inline-flex h-6 w-6 items-center justify-center rounded-md bg-amber-600/10 text-amber-700 dark:text-amber-300 text-xs font-semibold'
+      : 'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold';
+    const badge = this.el('span', badgeStyle, String(it.label));
 
-    // anchor
+    // main (missingIcon, anchor)
     const main = this.el('div', 'min-w-0 flex-1');
-    const line1 = this.el('div', 'text-sm font-medium truncate', it.anchor.value);
     main.addEventListener('pointerenter', () => {
-      if (this.dragStartParent) return;
+      if (this.dragStartParent || isMissing) return;
       this.cancelHoverOut();
       this.emit(UIEventType.ITEM_HOVER_IN, { id: it.id });
     });
-    main.append(line1);
+    if (isMissing) {
+      const chip = this.el(
+        'span',
+        'inline-flex items-center gap-1 py-1 text-amber-800 dark:text-amber-200 text-[11px] font-medium',
+      );
+      const warnPath =
+        'M9.049 2.927a1.5 1.5 0 012.902 0l6.41 11.94A1.5 1.5 0 0117.01 17H2.99a1.5 1.5 0 01-1.351-2.133l6.41-11.94zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 001-1V7a1 1 0 10-2 0v3a1 1 0 001 1z';
+      const icon = this.createSvgIcon(warnPath, {
+        className: 'h-3.5 w-3.5',
+      });
+      const label = this.el('span', undefined, i18n.get('missing_item'));
+      chip.append(icon, label);
+      main.append(chip);
+    }
+    const anchor = this.el('div', 'text-sm font-medium truncate', it.anchor.value);
+    main.append(anchor);
 
     // group select
     const groupWrap = this.buildGroupSelect(it, existingGroups);
@@ -648,5 +677,39 @@ export class PanelView {
     o.textContent = label;
     if (selected) o.selected = true;
     return o;
+  }
+
+  private createSvgIcon(
+    paths: string | Array<string | { d: string; attrs?: Record<string, string> }>,
+    opts: {
+      className?: string;
+      viewBox?: string;
+      attrs?: Record<string, string>;
+    } = {},
+  ): SVGSVGElement {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', opts.viewBox ?? '0 0 20 20');
+    svg.setAttribute('class', opts.className ?? 'h-3.5 w-3.5');
+    svg.setAttribute('fill', 'currentColor');
+    svg.setAttribute('aria-hidden', 'true');
+
+    if (opts.attrs) {
+      for (const [k, v] of Object.entries(opts.attrs)) svg.setAttribute(k, v);
+    }
+
+    const list = Array.isArray(paths) ? paths : [paths];
+    for (const p of list) {
+      const pathEl = document.createElementNS(SVG_NS, 'path');
+      if (typeof p === 'string') {
+        pathEl.setAttribute('d', p);
+      } else {
+        pathEl.setAttribute('d', p.d);
+        if (p.attrs) for (const [k, v] of Object.entries(p.attrs)) pathEl.setAttribute(k, v);
+      }
+      svg.appendChild(pathEl);
+    }
+    return svg;
   }
 }
