@@ -113,12 +113,12 @@
   background: rgba(59, 130, 246, 1);
 }
 
-.spsk-box-indigo {
-  border-color: rgba(99, 102, 241, 0.8);
-  --spsk-border-color: rgba(99, 102, 241, 0.8);
+.spsk-box-lime {
+  border-color: rgba(132, 204, 22, 0.8);
+  --spsk-border-color: rgba(132, 204, 22, 0.8);
 }
-.spsk-badge-indigo {
-  background: rgba(99, 102, 241, 1);
+.spsk-badge-lime {
+  background: rgba(132, 204, 22, 1);
 }
 
 .spsk-box-purple {
