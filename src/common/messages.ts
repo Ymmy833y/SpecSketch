@@ -5,7 +5,7 @@ const P2C = {
   TOGGLE_SELECT: 'TOGGLE_SELECT',
   RENDER: 'RENDER',
   CLEAR: 'CLEAR',
-  GET_STATE: 'GET_STATE',
+  HOVER: 'HOVER',
 } as const;
 
 const C2P = {
@@ -28,7 +28,7 @@ export type PanelToContent =
   | { type: typeof P2C.TOGGLE_SELECT; payload: { enabled: boolean } }
   | { type: typeof P2C.RENDER; payload: { items: ScreenItem[] } }
   | { type: typeof P2C.CLEAR }
-  | { type: typeof P2C.GET_STATE };
+  | { type: typeof P2C.HOVER; payload: { id: number | null } };
 
 export type ContentToPanel = { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } };
 

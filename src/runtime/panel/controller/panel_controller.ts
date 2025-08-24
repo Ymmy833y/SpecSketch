@@ -125,6 +125,12 @@ export class PanelController {
           | { allCheck: boolean },
       ) => this.dispatch({ type: ActionType.ITEM_SELECTION_CHANGED, ...payload }),
     );
+    this.view.on(UIEventType.ITEM_HOVER_IN, ({ id }) =>
+      this.dispatch({ type: ActionType.ITEM_HOVER_IN, id }),
+    );
+    this.view.on(UIEventType.ITEM_HOVER_OUT, () =>
+      this.dispatch({ type: ActionType.ITEM_HOVER_OUT }),
+    );
 
     this.view.render(this.model);
   }
@@ -147,6 +153,9 @@ export class PanelController {
           break;
         case EffectType.CLEAR_CONTENT:
           await this.conn?.api.clear();
+          break;
+        case EffectType.HOVER:
+          await this.conn?.api.hover(fx.id);
           break;
         case EffectType.CLEAR_STATE:
           await setState(this.model.pageKey, {

@@ -69,10 +69,13 @@ export class PanelView {
 
   private readonly CREATE_VALUE = '__create__';
   private readonly NOGROUP = '__nogroup__';
+  private HOVER_OUT_DELAY = 1000;
 
   private dragEl: HTMLLIElement | null = null;
   private dragStartParent: Element | null = null;
   private dragStartIndex = -1;
+
+  private hoverOutTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private doc: Document) {
     i18n.localize(doc);
@@ -168,6 +171,13 @@ export class PanelView {
       const selected = (e.target as HTMLInputElement).checked;
       this.emit(UIEventType.ITEM_SELECTION_CHANGED, { allCheck: selected });
     });
+
+    this.els.list.addEventListener('pointerenter', () => this.cancelHoverOut());
+    this.els.list.addEventListener('pointerleave', () => this.scheduleHoverOut());
+    doc.addEventListener('pointerleave', () => {
+      this.cancelHoverOut();
+      this.emit(UIEventType.ITEM_HOVER_OUT, undefined);
+    });
   }
 
   on<K extends UIEventType>(type: K, handler: (e: UIEventPayloadMap[K]) => void): void {
@@ -181,14 +191,6 @@ export class PanelView {
   }
 
   render(model: Model): void {
-    console.log(
-      JSON.stringify(
-        model.items.map((i) => ({ id: i.id, label: i.label })),
-        undefined,
-        2,
-      ),
-    );
-
     this.renderStatus(model.status);
     this.renderToggle(model.selectionEnabled);
     this.renderList(model.items, model.selectItems);
@@ -354,8 +356,6 @@ export class PanelView {
       this.dragEl = null;
 
       if (fromId && this.dragStartIndex >= 0 && endIndex >= 0 && endIndex !== this.dragStartIndex) {
-        console.log(fromId, endIndex, this.dragStartIndex);
-
         this.emit(UIEventType.REORDER_ITEMS, {
           fromId: Number(fromId),
           fromIndex: this.dragStartIndex,
@@ -392,6 +392,11 @@ export class PanelView {
     // anchor
     const main = this.el('div', 'min-w-0 flex-1');
     const line1 = this.el('div', 'text-sm font-medium truncate', it.anchor.value);
+    main.addEventListener('pointerenter', () => {
+      if (this.dragStartParent) return;
+      this.cancelHoverOut();
+      this.emit(UIEventType.ITEM_HOVER_IN, { id: it.id });
+    });
     main.append(line1);
 
     // group select
@@ -495,6 +500,21 @@ export class PanelView {
 
     groupWrap.append(selectEl);
     return groupWrap;
+  }
+
+  private scheduleHoverOut() {
+    if (this.hoverOutTimer) clearTimeout(this.hoverOutTimer);
+    if (this.dragStartParent) return;
+    this.hoverOutTimer = setTimeout(() => {
+      this.hoverOutTimer = null;
+      this.emit(UIEventType.ITEM_HOVER_OUT, undefined);
+    }, this.HOVER_OUT_DELAY);
+  }
+
+  private cancelHoverOut() {
+    if (!this.hoverOutTimer) return;
+    clearTimeout(this.hoverOutTimer);
+    this.hoverOutTimer = null;
   }
 
   /**

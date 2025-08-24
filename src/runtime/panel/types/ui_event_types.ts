@@ -52,6 +52,12 @@ export enum UIEventType {
 
   /** Emitted when an item's edit-selection checkbox changes state */
   ITEM_SELECTION_CHANGED = 'ITEM_SELECTION_CHANGED',
+
+  /** Start item hover */
+  ITEM_HOVER_IN = 'ITEM_HOVER_IN',
+
+  /** End item hover */
+  ITEM_HOVER_OUT = 'ITEM_HOVER_OUT',
 }
 
 /**
@@ -82,4 +88,6 @@ export type UIEventPayloadMap = {
     | { id: number; isCheck: boolean }
     | { group: string; isCheck: boolean }
     | { allCheck: boolean };
+  [UIEventType.ITEM_HOVER_IN]: { id: number };
+  [UIEventType.ITEM_HOVER_OUT]: undefined;
 };

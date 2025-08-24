@@ -13,6 +13,8 @@ const tracked = new Map<number, Tracked>();
 
 let rafPending = false;
 
+let hoveredId: number | null = null;
+
 /**
  * Mounts the on-page overlay (Shadow DOM) that draws selection boxes.
  * Also sets up scroll/resize listeners to reschedule position updates.
@@ -108,6 +110,25 @@ export async function clearOverlay() {
   if (!rootEl) return;
   rootEl.innerHTML = '';
   tracked.clear();
+}
+
+/**
+ * Switches the hover highlight to the specified overlay.
+ *
+ * @param id - Overlay identifier to highlight, or `null` to clear the highlight.
+ */
+export async function highlightOverlay(id: number | null) {
+  if (id === hoveredId) return;
+
+  const prev = hoveredId;
+  hoveredId = id;
+
+  if (prev != null) {
+    tracked.get(prev)?.boxEl.classList.remove('is-hovered');
+  }
+  if (id != null) {
+    tracked.get(id)?.boxEl.classList.add('is-hovered');
+  }
 }
 
 /**
