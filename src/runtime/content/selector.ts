@@ -87,7 +87,8 @@ export class Selector {
     this.hoverBox = document.createElement('div');
     Object.assign(this.hoverBox.style, {
       position: 'absolute',
-      outline: '2px dashed #00a',
+      outline: '3px dashed rgba(99, 102, 241, 1)',
+      background: 'rgba(99, 102, 241, 0.3)',
       pointerEvents: 'none',
       zIndex: '2147483647',
     } as CSSStyleDeclaration);

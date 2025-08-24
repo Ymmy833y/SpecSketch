@@ -10,7 +10,7 @@ export type ItemColor =
   | 'Yellow'
   | 'Green'
   | 'Blue'
-  | 'Indigo'
+  | 'Lime'
   | 'Purple'
   | 'Pink'
   | 'Orange'
@@ -22,7 +22,7 @@ const ITEM_COLORS = [
   'Yellow',
   'Green',
   'Blue',
-  'Indigo',
+  'Lime',
   'Purple',
   'Pink',
   'Orange',

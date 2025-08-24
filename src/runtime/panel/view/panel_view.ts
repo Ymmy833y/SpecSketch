@@ -235,7 +235,7 @@ export class PanelView {
   private renderToggle(enabled: boolean): void {
     const icon = this.els.toggleIcon;
     icon.className = '';
-    icon.classList.add(...TOGGLE_ICON_BASE, enabled ? 'bg-emerald-500' : 'bg-slate-300');
+    icon.classList.add(...TOGGLE_ICON_BASE, enabled ? 'bg-indigo-500' : 'bg-slate-300');
     this.els.toggleLabel.textContent = i18n.get(enabled ? 'toggle_on' : 'toggle_off');
   }
 
