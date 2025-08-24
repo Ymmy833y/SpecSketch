@@ -49,6 +49,16 @@ export class PanelApi {
   }
 
   /**
+   * Set the hovered item and request a transient highlight on Content.
+   * Pass `null` to clear the current hover highlight.
+   *
+   * @param id - Target item ID, or `null` to clear.
+   */
+  hover(id: number | null) {
+    return this.send({ type: MSG_TYPE.HOVER, payload: { id } });
+  }
+
+  /**
    * Performs a connectivity health check (round-trip).
    * Sent as a request expecting a reply.
    *

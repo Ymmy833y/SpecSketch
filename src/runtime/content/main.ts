@@ -3,7 +3,13 @@ import { MSG_TYPE, type PanelToContent } from '@common/messages';
 import type { ScreenItem } from '@common/types';
 
 import { buildCssAnchor } from './anchor';
-import { bindCssSelectorMap, clearOverlay, mountOverlay, renderItems } from './overlay';
+import {
+  bindCssSelectorMap,
+  clearOverlay,
+  highlightOverlay,
+  mountOverlay,
+  renderItems,
+} from './overlay';
 import { Selector } from './selector';
 
 const selection = new Selector(onPick);
@@ -36,7 +42,8 @@ chrome.runtime.onConnect.addListener(async (p) => {
       case MSG_TYPE.CLEAR:
         await clearOverlay();
         break;
-      case MSG_TYPE.GET_STATE:
+      case MSG_TYPE.HOVER:
+        await highlightOverlay(msg.payload.id);
         break;
     }
   });

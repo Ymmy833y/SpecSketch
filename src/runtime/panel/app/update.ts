@@ -11,6 +11,7 @@ export type Effect =
   | { kind: EffectType.RENDER_CONTENT; items: ScreenItem[] }
   | { kind: EffectType.TOGGLE_SELECT_ON_CONTENT; enabled: boolean }
   | { kind: EffectType.CLEAR_CONTENT }
+  | { kind: EffectType.HOVER; id: number | null }
   | {
       kind: EffectType.CAPTURE;
       payload: {
@@ -218,6 +219,18 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         };
       }
     }
+
+    case ActionType.ITEM_HOVER_IN:
+      return {
+        model,
+        effects: [{ kind: EffectType.HOVER, id: action.id }],
+      };
+
+    case ActionType.ITEM_HOVER_OUT:
+      return {
+        model,
+        effects: [{ kind: EffectType.HOVER, id: null }],
+      };
 
     case ActionType.PORT_DISCONNECTED:
       return {

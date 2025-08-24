@@ -17,6 +17,9 @@ export enum EffectType {
   /** Clear overlay on the Content side */
   CLEAR_CONTENT = 'CLEAR_CONTENT',
 
+  /** item hover */
+  HOVER = 'HOVER',
+
   /** Run a capture with the given parameters (tabId/format/area/quality/scale) */
   CAPTURE = 'CAPTURE',
 
