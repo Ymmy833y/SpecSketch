@@ -180,7 +180,7 @@
             </div>
           </div>
           <div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-[1fr_1fr_auto] gap-4 items-end">
               <div>
                 <span class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
                       data-i18n="label_badge_color">Badge color</span>
@@ -305,6 +305,26 @@
                   <option value="circle" selected data-i18n="badge_shape_circle">Circle</option>
                   <option value="square" data-i18n="badge_shape_square">Square</option>
                 </select>
+              </div>
+              
+              <div>
+                <label for="badge-shape-select"
+                      class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
+                      data-i18n="common_delete">Badge Delete</label>
+                <button id="badge-delete-button" type="button"
+                        class="mt-1 inline-flex items-center justify-center h-9 w-13 px-2 rounded-lg
+                              border border-slate-200 bg-white hover:bg-slate-50
+                              dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800
+                              text-slate-600 hover:text-red-600
+                              focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400
+                              focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                              dark:focus-visible:ring-offset-slate-900"
+                        aria-label="Delete">
+                  <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                          d="M7 3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h3a1 1 0 1 1 0 2h-1l-1 10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6H4a1 1 0 1 1 0-2h3V3Zm1 3a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Zm4 0a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>

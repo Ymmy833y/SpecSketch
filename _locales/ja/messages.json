@@ -33,9 +33,12 @@
   "section_selected_items": { "message": "選択済みの要素" },
   "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" },
 
+  "missing_item": { "message": "未検出" },
+
   "group_ungrouped": { "message": "未所属" },
   "group_new_placeholder": { "message": "グループ名" },
 
   "common_create": { "message": "作成" },
+  "common_delete": { "message": "削除" },
   "common_cancel": { "message": "取消" }
 }
