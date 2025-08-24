@@ -9,6 +9,11 @@
 .spsk-box {
   position: absolute;
   --spsk-border-w: 2px;
+  --spsk-accent: var(--spsk-border-color);
+  --spsk-hl-outline-w: 2px;
+  --spsk-hl-glow-w: 0px;
+  --spsk-hl-fill: color-mix(in srgb, var(--spsk-accent) 30%, transparent);
+  transition: box-shadow .12s ease, transform .12s ease, opacity .12s ease;
 }
 .spsk-box::before {
   content: '';
@@ -16,6 +21,29 @@
   inset: 0;
   border: var(--spsk-border-w) solid var(--spsk-border-color);
   z-index: 0;
+  pointer-events: none;
+}
+.spsk-box::after {
+  content: none;
+}
+
+.spsk-box.is-hovered {
+  z-index: 2;
+  box-shadow:
+    0 0 0 var(--spsk-hl-outline-w) var(--spsk-accent),
+    0 0 0 calc(var(--spsk-hl-outline-w) + var(--spsk-hl-glow-w))
+      color-mix(in srgb, var(--spsk-accent) 30%, transparent);
+}
+
+.spsk-box.is-hovered::before {
+  border-width: calc(var(--spsk-border-w) + 1px);
+}
+
+.spsk-box.is-hovered::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--spsk-hl-fill);
   pointer-events: none;
 }
 
