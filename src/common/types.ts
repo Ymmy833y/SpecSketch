@@ -29,16 +29,16 @@ const ITEM_COLORS = [
   'Cyan',
 ] as const;
 
-export function isItemColor(v: string | null): v is ItemColor {
-  return v !== null && (ITEM_COLORS as readonly string[]).includes(v);
+export function isItemColor(v: unknown): v is ItemColor {
+  return typeof v === 'string' && (ITEM_COLORS as readonly string[]).includes(v);
 }
 
 export type ItemShape = 'circle' | 'square';
 
 const ITEM_SHAPE = ['circle', 'square'] as const;
 
-export function isItemShape(v: string | null): v is ItemShape {
-  return v !== null && (ITEM_SHAPE as readonly string[]).includes(v);
+export function isItemShape(v: unknown): v is ItemShape {
+  return typeof v === 'string' && (ITEM_SHAPE as readonly string[]).includes(v);
 }
 
 export type ScreenItem = {

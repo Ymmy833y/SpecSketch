@@ -2,30 +2,10 @@ import type { ScreenItem } from '@common/types';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 import { STATUS } from '@panel/view/status';
 
-import { ActionType } from '../types/action_types';
-import { EffectType } from '../types/effect_types';
+import { Action, ActionType } from '../types/action_types';
+import { Effect, EffectType } from '../types/effect_types';
 
-import type { Action } from './actions';
 import type { Model } from './model';
-
-export type Effect =
-  | { kind: EffectType.RENDER_CONTENT; items: ScreenItem[] }
-  | { kind: EffectType.TOGGLE_SELECT_ON_CONTENT; enabled: boolean }
-  | { kind: EffectType.CLEAR_CONTENT }
-  | { kind: EffectType.HOVER; id: number | null }
-  | {
-      kind: EffectType.CAPTURE;
-      payload: {
-        tabId: number;
-        format: 'png' | 'jpeg';
-        area: 'full' | 'viewport';
-        quality: number;
-        scale: number;
-      };
-    }
-  | { kind: EffectType.CLEAR_STATE }
-  | { kind: EffectType.PERSIST_STATE }
-  | { kind: EffectType.NOTIFY_ERROR; error: unknown };
 
 const NOGROUP = '' as const;
 

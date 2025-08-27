@@ -1,15 +1,14 @@
 import { BackgroundToPanel, type ContentToPanel, MSG_TYPE } from '@common/messages';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
-import { Action } from '@panel/app/actions';
 import { initialModel, Model } from '@panel/app/model';
-import { Effect, update } from '@panel/app/update';
+import { update } from '@panel/app/update';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
 import { handleSelected } from '@panel/services/state';
 import { getState, setState } from '@panel/state/store';
-import { ActionType } from '@panel/types/action_types';
-import { EffectType } from '@panel/types/effect_types';
+import { Action, ActionType } from '@panel/types/action_types';
+import { Effect, EffectType } from '@panel/types/effect_types';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
 import { STATUS } from '@panel/view/status';
