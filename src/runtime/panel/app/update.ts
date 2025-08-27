@@ -1,5 +1,6 @@
 import type { ScreenItem } from '@common/types';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
+import { STATUS } from '@panel/view/status';
 
 import { ActionType } from '../types/action_types';
 import { EffectType } from '../types/effect_types';
@@ -24,7 +25,6 @@ export type Effect =
     }
   | { kind: EffectType.CLEAR_STATE }
   | { kind: EffectType.PERSIST_STATE }
-  | { kind: EffectType.CLOSE_PANEL_IF_MATCH; tabId?: number }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };
 
 const NOGROUP = '' as const;
@@ -37,8 +37,12 @@ export function update(model: Model, action: Action): { model: Model; effects: E
     case ActionType.CONNECTED:
       return { model: { ...model, tabId: action.tabId, pageKey: action.pageKey }, effects: [] };
 
-    case ActionType.SET_STATUS:
-      return { model: { ...model, status: action.status }, effects: [] };
+    case ActionType.SET_STATUS: {
+      if (action.status === STATUS.CONNECTED) {
+        return { model: { ...model, status: action.status }, effects: [] };
+      }
+      return { model: { ...model, items: [], nextLabel: 1, status: action.status }, effects: [] };
+    }
 
     case ActionType.RESTORE_STATE:
       return {
@@ -249,17 +253,9 @@ export function update(model: Model, action: Action): { model: Model; effects: E
 
     case ActionType.PORT_DISCONNECTED:
       return {
-        model: { ...model, status: 'DISCONNECTED', selectionEnabled: false },
+        model: { ...model, status: STATUS.DISCONNECTED, selectionEnabled: false },
         effects: [{ kind: EffectType.TOGGLE_SELECT_ON_CONTENT, enabled: false }],
       };
-
-    case ActionType.CLOSE_PANEL_REQUESTED: {
-      const fx = {
-        kind: EffectType.CLOSE_PANEL_IF_MATCH,
-        ...(action.tabId !== undefined ? { tabId: action.tabId } : {}),
-      } as const;
-      return { model, effects: [fx] };
-    }
 
     default:
       return { model, effects: [] };

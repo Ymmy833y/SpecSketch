@@ -14,7 +14,7 @@ const C2P = {
 } as const;
 
 const B2P = {
-  CLOSE_PANEL: 'CLOSE_PANEL',
+  ACTIVE_TAB_CHANGED: 'ACTIVE_TAB_CHANGED',
 } as const;
 
 export const MSG_TYPE = { ...P2C, ...C2P, ...B2P } as const;
@@ -35,7 +35,10 @@ export type ContentToPanel =
   | { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } }
   | { type: typeof C2P.MISSING_IDS; payload: { missingIds: number[] } };
 
-export type BackgroundToPanel = { type: typeof B2P.CLOSE_PANEL; payload: { tabId: number } };
+export type BackgroundToPanel = {
+  type: typeof B2P.ACTIVE_TAB_CHANGED;
+  payload: { tabId: number; windowId: number; url?: string; pageKey?: string };
+};
 
 export type RpcRequest = {
   id: string;

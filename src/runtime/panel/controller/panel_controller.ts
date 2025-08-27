@@ -1,4 +1,4 @@
-import { type BackgroundToPanel, type ContentToPanel, MSG_TYPE } from '@common/messages';
+import { BackgroundToPanel, type ContentToPanel, MSG_TYPE } from '@common/messages';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { Action } from '@panel/app/actions';
@@ -15,73 +15,49 @@ import { PanelView } from '@panel/view/panel_view';
 import { STATUS } from '@panel/view/status';
 
 type Connection = Awaited<ReturnType<typeof connectToTab>>;
+type EnsureResult = { ok: true; contextChanged: boolean } | { ok: false };
 
 export class PanelController {
   private model: Model = structuredClone(initialModel);
   private conn: Connection | null = null;
+  private currentWindowId: number | null = null;
+
+  private static REQUIRES_CONN = new Set([
+    EffectType.RENDER_CONTENT,
+    EffectType.TOGGLE_SELECT_ON_CONTENT,
+    EffectType.CLEAR_CONTENT,
+    EffectType.HOVER,
+  ]);
 
   constructor(private view: PanelView) {}
 
   async start(): Promise<void> {
     this.dispatch({ type: ActionType.INIT });
 
-    const tab = await getActiveTab();
-    if (!tab?.id || isRestricted(tab.url)) {
-      this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.RESTRICTED });
+    const { ok } = await this.ensureConnectionAlive({ forceReconnect: true });
+    if (!ok) {
       this.view.render(this.model);
       return;
     }
 
-    const tabId = tab.id!;
-    const key = pageKey(tab.url!);
+    this.registerViewHandlers();
 
-    this.dispatch({ type: ActionType.CONNECTED, tabId, pageKey: key });
-    this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.CONNECTING });
+    this.view.render(this.model);
 
-    this.conn = await connectToTab(tabId);
-    this.conn.onDisconnect(() => this.dispatch({ type: ActionType.PORT_DISCONNECTED }));
+    const w = await chrome.windows.getCurrent();
+    this.currentWindowId = w.id ?? null;
 
-    // Receives messages from Content → Panel.
-    this.conn.port.onMessage.addListener(async (msg: ContentToPanel) => {
-      if (msg?.type === MSG_TYPE.SELECTED) {
-        const newState = await handleSelected(this.model.pageKey, msg.payload.anchors);
-        this.dispatch({
-          type: ActionType.RESTORE_STATE,
-          state: {
-            items: newState.items,
-            nextLabel: newState.nextLabel,
-            defaultSize: newState.defaultSize,
-            defaultColor: newState.defaultColor,
-            defaultShape: newState.defaultShape,
-          },
-        });
-      } else if (msg?.type === MSG_TYPE.MISSING_IDS) {
-        this.dispatch({
-          type: ActionType.SET_MISSING_IDS,
-          missingIds: msg.payload.missingIds,
-        });
-      }
-    });
-
-    // Receives messages from Background (SW) → Panel.
     chrome.runtime.onMessage.addListener((msg: BackgroundToPanel) => {
-      if (msg?.type !== MSG_TYPE.CLOSE_PANEL) return;
-      this.dispatch({ type: ActionType.CLOSE_PANEL_REQUESTED, tabId: msg.payload?.tabId });
-    });
+      if (msg.type !== MSG_TYPE.ACTIVE_TAB_CHANGED) return;
 
-    const st = await getState(key);
-    this.dispatch({
-      type: ActionType.RESTORE_STATE,
-      state: {
-        items: st.items,
-        nextLabel: st.nextLabel,
-        defaultSize: st.defaultSize,
-        defaultColor: st.defaultColor,
-        defaultShape: st.defaultShape,
-      },
-    });
-    this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.CONNECTED });
+      const senderWindowId = msg.payload.windowId;
+      if (this.currentWindowId == null || this.currentWindowId !== senderWindowId) return;
 
+      void this.ensureConnectionAlive({ forceReconnect: true });
+    });
+  }
+
+  private registerViewHandlers() {
     this.view.on(UIEventType.TOGGLE_SELECT, () =>
       this.dispatch({ type: ActionType.TOGGLE_SELECT }),
     );
@@ -137,8 +113,6 @@ export class PanelController {
     this.view.on(UIEventType.ITEM_HOVER_OUT, () =>
       this.dispatch({ type: ActionType.ITEM_HOVER_OUT }),
     );
-
-    this.view.render(this.model);
   }
 
   private dispatch(action: Action): void {
@@ -149,6 +123,12 @@ export class PanelController {
   }
 
   private async execEffects(effects: Effect[]): Promise<void> {
+    const needsConn = effects.some((fx) => PanelController.REQUIRES_CONN.has(fx.kind));
+    if (needsConn) {
+      const r = await this.ensureConnectionAlive();
+      if (!r.ok || r.contextChanged) return;
+    }
+
     for (const fx of effects) {
       switch (fx.kind) {
         case EffectType.RENDER_CONTENT:
@@ -193,13 +173,78 @@ export class PanelController {
             this.dispatch({ type: ActionType.CAPTURE_FAILED, error: e });
           }
           break;
-        case EffectType.CLOSE_PANEL_IF_MATCH:
-          if (fx.tabId == null || fx.tabId === this.model.tabId) window.close();
-          break;
         case EffectType.NOTIFY_ERROR:
           console.error(fx.error);
           break;
       }
     }
+  }
+
+  private async ensureConnectionAlive(opts?: { forceReconnect: boolean }): Promise<EnsureResult> {
+    const prevKey = this.model.pageKey;
+    const force = opts?.forceReconnect === true;
+
+    if (!force) {
+      const pong = await this.conn?.api.ping();
+      if (pong !== undefined) return { ok: true, contextChanged: false };
+    }
+
+    const tab = await getActiveTab();
+    if (!tab?.id || isRestricted(tab.url)) {
+      this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.RESTRICTED });
+      return { ok: false };
+    }
+
+    const newKey = pageKey(tab.url!);
+    const tabId = tab.id!;
+
+    this.dispatch({ type: ActionType.CONNECTED, tabId, pageKey: newKey });
+    this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.CONNECTING });
+
+    // Explicitly close the old port
+    try {
+      this.conn?.port.disconnect();
+    } catch {
+      /* no-op */
+    }
+
+    this.conn = await connectToTab(tabId);
+    this.conn.onDisconnect(() => this.dispatch({ type: ActionType.PORT_DISCONNECTED }));
+    this.conn.port.onMessage.addListener(async (msg: ContentToPanel) => {
+      if (msg?.type === MSG_TYPE.SELECTED) {
+        const s = await handleSelected(this.model.pageKey, msg.payload.anchors);
+        this.dispatch({
+          type: ActionType.RESTORE_STATE,
+          state: {
+            items: s.items,
+            nextLabel: s.nextLabel,
+            defaultSize: s.defaultSize,
+            defaultColor: s.defaultColor,
+            defaultShape: s.defaultShape,
+          },
+        });
+      } else if (msg?.type === MSG_TYPE.MISSING_IDS) {
+        this.dispatch({
+          type: ActionType.SET_MISSING_IDS,
+          missingIds: msg.payload.missingIds,
+        });
+      }
+    });
+
+    const st = await getState(newKey);
+    this.dispatch({
+      type: ActionType.RESTORE_STATE,
+      state: {
+        items: st.items,
+        nextLabel: st.nextLabel,
+        defaultSize: st.defaultSize,
+        defaultColor: st.defaultColor,
+        defaultShape: st.defaultShape,
+      },
+    });
+
+    this.dispatch({ type: ActionType.SET_STATUS, status: STATUS.CONNECTED });
+    const contextChanged = !!prevKey && prevKey !== newKey;
+    return { ok: true, contextChanged };
   }
 }
