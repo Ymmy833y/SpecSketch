@@ -41,5 +41,4 @@ export type Action =
   | { type: ActionType.ITEM_SELECTION_CHANGED; allCheck: boolean }
   | { type: ActionType.ITEM_HOVER_IN; id: number }
   | { type: ActionType.ITEM_HOVER_OUT }
-  | { type: ActionType.PORT_DISCONNECTED }
-  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };
+  | { type: ActionType.PORT_DISCONNECTED };

@@ -32,9 +32,6 @@ export enum EffectType {
    */
   PERSIST_STATE = 'PERSIST_STATE',
 
-  /** Close the panel if the provided tabId matches (or when unspecified) */
-  CLOSE_PANEL_IF_MATCH = 'CLOSE_PANEL_IF_MATCH',
-
   /** Report/log an error (and optionally surface it to the UI) */
   NOTIFY_ERROR = 'NOTIFY_ERROR',
 }
