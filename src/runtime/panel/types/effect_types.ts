@@ -1,3 +1,5 @@
+import { ScreenItem } from '@common/types';
+
 /**
  * EffectType
  * -----------------------------------------------------------------------------
@@ -35,3 +37,22 @@ export enum EffectType {
   /** Report/log an error (and optionally surface it to the UI) */
   NOTIFY_ERROR = 'NOTIFY_ERROR',
 }
+
+export type Effect =
+  | { kind: EffectType.RENDER_CONTENT; items: ScreenItem[] }
+  | { kind: EffectType.TOGGLE_SELECT_ON_CONTENT; enabled: boolean }
+  | { kind: EffectType.CLEAR_CONTENT }
+  | { kind: EffectType.HOVER; id: number | null }
+  | {
+      kind: EffectType.CAPTURE;
+      payload: {
+        tabId: number;
+        format: 'png' | 'jpeg';
+        area: 'full' | 'viewport';
+        quality: number;
+        scale: number;
+      };
+    }
+  | { kind: EffectType.CLEAR_STATE }
+  | { kind: EffectType.PERSIST_STATE }
+  | { kind: EffectType.NOTIFY_ERROR; error: unknown };
