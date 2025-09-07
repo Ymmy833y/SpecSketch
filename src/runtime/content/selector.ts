@@ -14,6 +14,9 @@ export class Selector {
 
   private hoverBox: HTMLDivElement | null = null;
 
+  private cleanupTemp?: () => void;
+  private lastHoverEl?: Element | null;
+
   /**
    * Creates a selector with a callback invoked on selection confirmation.
    * @param onPick - Invoked when a click confirms an element
@@ -37,6 +40,8 @@ export class Selector {
     } else {
       document.removeEventListener('click', this.onClick, true);
       document.removeEventListener('mouseover', this.onMouseOver, true);
+      this.cleanupTemp?.();
+      this.lastHoverEl = null;
       this.removeHover();
     }
   }
@@ -56,6 +61,7 @@ export class Selector {
     if (!el || el.nodeType !== 1) return;
 
     this.onPick(el);
+    this.cleanupTemp?.();
   }
 
   /**
@@ -76,6 +82,47 @@ export class Selector {
     box.style.top = `${rect.top + window.scrollY}px`;
     box.style.width = `${rect.width}px`;
     box.style.height = `${rect.height}px`;
+
+    if (this.lastHoverEl !== el) {
+      this.cleanupTemp?.();
+      this.cleanupTemp = this.tempEnableIfDisabled(el);
+      this.lastHoverEl = el;
+    }
+  }
+
+  /**
+   * Temporarily enables a disabled form control (`<button>`, `<input>`, `<select>`, `<textarea>`)
+   * to allow pointer and click events.
+   *
+   * @param el - Target element; ignored if not a disabled form control.
+   * @returns A cleanup callback that restores its original state (no-op if unchanged).
+   */
+  private tempEnableIfDisabled(el: Element) {
+    const ctrl = el as HTMLElement;
+    if (!('disabled' in ctrl)) return () => {};
+    if (!ctrl.disabled) return () => {};
+
+    const prev = {
+      disabled: ctrl.disabled,
+      aria: ctrl.getAttribute('aria-disabled'),
+      pe: ctrl.style.pointerEvents,
+    };
+
+    // Temporarily enabled (semantics maintained in aria)
+    ctrl.disabled = false;
+    ctrl.setAttribute('aria-disabled', 'true');
+    ctrl.style.pointerEvents = 'auto';
+
+    // Restoration Closure
+    return () => {
+      ctrl.disabled = prev.disabled;
+      if (prev.aria === null) {
+        ctrl.removeAttribute('aria-disabled');
+      } else {
+        ctrl.setAttribute('aria-disabled', prev.aria);
+      }
+      ctrl.style.pointerEvents = prev.pe;
+    };
   }
 
   /**

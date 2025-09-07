@@ -210,4 +210,132 @@ describe('content/selector', () => {
     expect(onPick).toHaveBeenCalledTimes(2);
     sel.setEnabled(false);
   });
+
+  // ===== New tests for "temporary enable disabled element" behavior =====
+
+  it('temporarily enables a disabled button on hover and restores on click', () => {
+    // Arrange
+    const onPick = vi.fn((_: Element) => undefined);
+    const sel = new Selector(onPick);
+    const btn = document.createElement('button');
+    btn.disabled = true;
+    document.body.appendChild(btn);
+
+    sel.setEnabled(true);
+
+    // Act: hover → temporarily enabled
+    mouseover(btn);
+
+    // Assert: while hovered, it should be enabled and aria-disabled="true", pointer-events:auto
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute('aria-disabled')).toBe('true');
+    expect((btn as HTMLElement).style.pointerEvents).toBe('auto');
+
+    // Act: click to confirm selection (cleanup should run)
+    const ev = click(btn);
+
+    // Assert: selection happened and state restored
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick).toHaveBeenCalledWith(btn);
+    expect(ev.defaultPrevented).toBe(true);
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-disabled')).toBeNull();
+    expect((btn as HTMLElement).style.pointerEvents).toBe('');
+
+    sel.setEnabled(false);
+  });
+
+  it('switching hover between disabled controls restores previous and enables current', () => {
+    // Arrange
+    const sel = new Selector(() => undefined);
+    const a = document.createElement('button');
+    const b = document.createElement('input');
+    a.disabled = true;
+    (b as HTMLInputElement).disabled = true;
+    document.body.append(a, b);
+
+    sel.setEnabled(true);
+
+    // Act1: hover A → A enabled, B untouched
+    mouseover(a);
+    expect(a.disabled).toBe(false);
+    expect(a.getAttribute('aria-disabled')).toBe('true');
+
+    // Act2: move to B → A restored, B enabled
+    mouseover(b);
+    expect(a.disabled).toBe(true);
+    expect(a.getAttribute('aria-disabled')).toBeNull();
+    expect(b.disabled).toBe(false);
+    expect(b.getAttribute('aria-disabled')).toBe('true');
+
+    sel.setEnabled(false);
+  });
+
+  it('cleanup runs on disable(): hovered disabled control returns to original state', () => {
+    // Arrange
+    const sel = new Selector(() => undefined);
+    const btn = document.createElement('button');
+    btn.disabled = true;
+    document.body.appendChild(btn);
+
+    sel.setEnabled(true);
+    mouseover(btn); // temporarily enabled
+
+    // Preconditions
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute('aria-disabled')).toBe('true');
+
+    // Act: disabling the selector should restore state
+    sel.setEnabled(false);
+
+    // Assert
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-disabled')).toBeNull();
+    expect((btn as HTMLElement).style.pointerEvents).toBe('');
+  });
+
+  it('restores pre-existing aria-disabled value after click', () => {
+    // Arrange
+    const onPick = vi.fn((_: Element) => undefined);
+    const sel = new Selector(onPick);
+    const btn = document.createElement('button');
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'foo');
+    document.body.appendChild(btn);
+
+    sel.setEnabled(true);
+
+    // Act: hover (overwrite aria-disabled to "true"), then click
+    mouseover(btn);
+    expect(btn.getAttribute('aria-disabled')).toBe('true');
+
+    click(btn);
+
+    // Assert: original aria-disabled restored ("foo")
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-disabled')).toBe('foo');
+
+    sel.setEnabled(false);
+  });
+
+  it('does nothing for non-disabled elements and non-controls on hover', () => {
+    // Arrange
+    const sel = new Selector(() => undefined);
+    const div = document.createElement('div'); // non-control
+    const btn = document.createElement('button'); // control but not disabled
+    document.body.append(div, btn);
+
+    sel.setEnabled(true);
+
+    // Act
+    mouseover(div);
+    expect((div as unknown as { disabled?: boolean }).disabled).toBeUndefined();
+
+    mouseover(btn);
+    expect(btn.disabled).toBe(false); // remains unchanged
+    expect(btn.getAttribute('aria-disabled')).toBeNull();
+    expect(btn.style.pointerEvents).toBe('');
+
+    sel.setEnabled(false);
+  });
 });
