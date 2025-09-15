@@ -103,8 +103,10 @@ describe('panel/messaging/port_rpc', () => {
 
     emitDisconnect();
 
-    await expect(p1).resolves.toEqual({ id: '', ok: false, error: 'disconnected' });
-    await expect(p2).resolves.toEqual({ id: '', ok: false, error: 'disconnected' });
+    await expect(p1).resolves.toEqual({ id: 'a', ok: false, error: 'disconnected' });
+    await expect(p2).resolves.toEqual({ id: 'b', ok: false, error: 'disconnected' });
+
+    expect(rpc.isAlive).toBe(false);
   });
 
   it('cleans pending if postMessage throws and resolves undefined', async () => {
@@ -152,5 +154,24 @@ describe('panel/messaging/port_rpc', () => {
     emitMessage(res);
 
     await expect(p).resolves.toEqual(res);
+  });
+
+  it('returns undefined immediately and does not post when sending after disconnect', async () => {
+    const { port, postMessage, emitDisconnect } = createPortMock();
+    const rpc = new PortRpc(port);
+
+    // Disconnect first and set alive=false
+    emitDisconnect();
+    expect(rpc.isAlive).toBe(false);
+
+    // Send after disconnection (verify both expectReply: true/false)
+    const p1 = rpc.send(makeReq('afterDisc1', true), 1000);
+    const p2 = rpc.send(makeReq('afterDisc2', false), 1000);
+
+    await expect(p1).resolves.toBeUndefined();
+    await expect(p2).resolves.toBeUndefined();
+
+    // No attempt to send is made (avoids Unchecked runtime.lastError)
+    expect(postMessage).not.toHaveBeenCalled();
   });
 });
