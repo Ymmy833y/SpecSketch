@@ -34,6 +34,30 @@ function click(target: EventTarget): MouseEvent {
   return ev;
 }
 
+function pointerdown(target: EventTarget, init?: PointerEventInit): PointerEvent {
+  const options: PointerEventInit = {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    isPrimary: true,
+    ...init,
+  };
+
+  let ev: Event;
+  if (typeof PointerEvent !== 'undefined') {
+    ev = new PointerEvent('pointerdown', options);
+  } else {
+    const me = new MouseEvent('pointerdown', options);
+    if (!('isPrimary' in me)) {
+      Object.defineProperty(me, 'isPrimary', { value: true });
+    }
+    ev = me as unknown as PointerEvent;
+  }
+
+  (target as HTMLElement).dispatchEvent(ev);
+  return ev as PointerEvent;
+}
+
 describe('content/selector', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -126,8 +150,65 @@ describe('content/selector', () => {
     expect(maybeHover).toBeUndefined();
   });
 
-  it('confirms selection on click with default prevented and propagation stopped', () => {
+  it('click is cancelled and propagation stopped when enabled (no onPick)', () => {
     // Arrange
+    const onPick = vi.fn((_: Element) => undefined);
+    const sel = new Selector(onPick);
+    const btn = document.createElement('button');
+    document.body.appendChild(btn);
+    sel.setEnabled(true);
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopPropagation');
+    const stopImmediateSpy = vi.spyOn(
+      Event.prototype as unknown as { stopImmediatePropagation: () => void },
+      'stopImmediatePropagation',
+    );
+
+    // Act
+    const ev = click(btn);
+
+    // Assert
+    expect(onPick).not.toHaveBeenCalled();
+
+    expect(ev.defaultPrevented).toBe(true);
+    expect(stopSpy).toHaveBeenCalled();
+    expect(stopImmediateSpy).toHaveBeenCalled();
+
+    // Cleanup
+    sel.setEnabled(false);
+    stopSpy.mockRestore();
+    stopImmediateSpy.mockRestore();
+  });
+
+  it('click is a no-op when disabled (no preventDefault, no propagation stop)', () => {
+    // Arrange
+    const onPick = vi.fn((_: Element) => undefined);
+    const sel = new Selector(onPick);
+    const btn = document.createElement('button');
+    document.body.appendChild(btn);
+    sel.setEnabled(false);
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopPropagation');
+    const stopImmediateSpy = vi.spyOn(
+      Event.prototype as unknown as { stopImmediatePropagation: () => void },
+      'stopImmediatePropagation',
+    );
+
+    // Act
+    const ev = click(btn);
+
+    // Assert
+    expect(onPick).not.toHaveBeenCalled();
+    expect(ev.defaultPrevented).toBe(false);
+    expect(stopSpy).not.toHaveBeenCalled();
+    expect(stopImmediateSpy).not.toHaveBeenCalled();
+
+    // Cleanup
+    stopSpy.mockRestore();
+    stopImmediateSpy.mockRestore();
+  });
+
+  it('confirms selection on pointerdown with default prevented and propagation stopped', () => {
     const onPick = vi.fn((_: Element) => undefined);
     const sel = new Selector(onPick);
     const btn = document.createElement('button');
@@ -139,7 +220,7 @@ describe('content/selector', () => {
     const stopSpy = vi.spyOn(Event.prototype, 'stopPropagation');
 
     // Act
-    const ev = click(btn);
+    const ev = pointerdown(btn);
 
     // Assert
     expect(onPick).toHaveBeenCalledTimes(1);
@@ -151,7 +232,7 @@ describe('content/selector', () => {
     stopSpy.mockRestore();
   });
 
-  it('ignores clicks while disabled (no onPick, no preventDefault)', () => {
+  it('ignores pointerdown while disabled (no onPick, no preventDefault)', () => {
     // Arrange
     const onPick = vi.fn((_: Element) => undefined);
     const sel = new Selector(onPick);
@@ -161,7 +242,7 @@ describe('content/selector', () => {
     sel.setEnabled(false);
 
     // Act
-    const ev = click(btn);
+    const ev = pointerdown(btn);
 
     // Assert
     expect(onPick).not.toHaveBeenCalled();
@@ -203,17 +284,15 @@ describe('content/selector', () => {
     sel.setEnabled(true);
 
     // Act
-    click(btn);
-    click(btn);
+    pointerdown(btn);
+    pointerdown(btn);
 
-    // Assert: Click twice → Called only twice (no duplicate subscriptions)
+    // Assert
     expect(onPick).toHaveBeenCalledTimes(2);
     sel.setEnabled(false);
   });
 
-  // ===== New tests for "temporary enable disabled element" behavior =====
-
-  it('temporarily enables a disabled button on hover and restores on click', () => {
+  it('temporarily enables a disabled button on hover and restores on pointerdown', () => {
     // Arrange
     const onPick = vi.fn((_: Element) => undefined);
     const sel = new Selector(onPick);
@@ -223,7 +302,7 @@ describe('content/selector', () => {
 
     sel.setEnabled(true);
 
-    // Act: hover → temporarily enabled
+    // Act
     mouseover(btn);
 
     // Assert: while hovered, it should be enabled and aria-disabled="true", pointer-events:auto
@@ -231,10 +310,10 @@ describe('content/selector', () => {
     expect(btn.getAttribute('aria-disabled')).toBe('true');
     expect((btn as HTMLElement).style.pointerEvents).toBe('auto');
 
-    // Act: click to confirm selection (cleanup should run)
-    const ev = click(btn);
+    // Act
+    const ev = pointerdown(btn);
 
-    // Assert: selection happened and state restored
+    // Assert
     expect(onPick).toHaveBeenCalledTimes(1);
     expect(onPick).toHaveBeenCalledWith(btn);
     expect(ev.defaultPrevented).toBe(true);
@@ -279,13 +358,13 @@ describe('content/selector', () => {
     document.body.appendChild(btn);
 
     sel.setEnabled(true);
-    mouseover(btn); // temporarily enabled
+    mouseover(btn);
 
     // Preconditions
     expect(btn.disabled).toBe(false);
     expect(btn.getAttribute('aria-disabled')).toBe('true');
 
-    // Act: disabling the selector should restore state
+    // Act
     sel.setEnabled(false);
 
     // Assert
@@ -294,7 +373,7 @@ describe('content/selector', () => {
     expect((btn as HTMLElement).style.pointerEvents).toBe('');
   });
 
-  it('restores pre-existing aria-disabled value after click', () => {
+  it('restores pre-existing aria-disabled value after pointerdown', () => {
     // Arrange
     const onPick = vi.fn((_: Element) => undefined);
     const sel = new Selector(onPick);
@@ -305,13 +384,13 @@ describe('content/selector', () => {
 
     sel.setEnabled(true);
 
-    // Act: hover (overwrite aria-disabled to "true"), then click
+    // Act
     mouseover(btn);
     expect(btn.getAttribute('aria-disabled')).toBe('true');
 
-    click(btn);
+    pointerdown(btn);
 
-    // Assert: original aria-disabled restored ("foo")
+    // Assert
     expect(btn.disabled).toBe(true);
     expect(btn.getAttribute('aria-disabled')).toBe('foo');
 
