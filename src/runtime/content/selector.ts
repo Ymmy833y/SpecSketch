@@ -10,6 +10,7 @@ export class Selector {
   private enabled = false;
   private onPick: (el: Element) => void;
   private onClick = (ev: MouseEvent) => this.handleClick(ev);
+  private onPointerDown = (ev: PointerEvent) => this.handlePointerDown(ev);
   private onMouseOver = (ev: MouseEvent) => this.highlight(ev);
 
   private hoverBox: HTMLDivElement | null = null;
@@ -36,9 +37,11 @@ export class Selector {
     this.enabled = enabled;
     if (enabled) {
       document.addEventListener('click', this.onClick, true);
+      document.addEventListener('pointerdown', this.onPointerDown, true);
       document.addEventListener('mouseover', this.onMouseOver, true);
     } else {
       document.removeEventListener('click', this.onClick, true);
+      document.removeEventListener('pointerdown', this.onPointerDown, true);
       document.removeEventListener('mouseover', this.onMouseOver, true);
       this.cleanupTemp?.();
       this.lastHoverEl = null;
@@ -47,15 +50,30 @@ export class Selector {
   }
 
   /**
-   * Click handler that prevents default behavior and forwards the element to `onPick`.
+   * Click handler that prevents default behavior, stops propagation,
+   * and ensures no further listeners are invoked.
    *
    * @param ev - Click event
-   * @internal
    */
   private handleClick(ev: MouseEvent) {
     if (!this.enabled) return;
     ev.preventDefault();
     ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+  }
+
+  /**
+   * Pointer down handler that prevents default behavior and forwards the element to `onPick`.
+   *
+   * @param ev - Pointer event
+   */
+  private handlePointerDown(ev: PointerEvent) {
+    if (!this.enabled) return;
+    if (ev.button !== 0 || !ev.isPrimary) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
 
     const el = ev.target as Element | null;
     if (!el || el.nodeType !== 1) return;
@@ -68,7 +86,6 @@ export class Selector {
    * Mouseover handler that repositions the highlight box to the hovered element.
    *
    * @param ev - Mouseover event
-   * @internal
    */
   private highlight(ev: MouseEvent) {
     if (!this.enabled) return;
@@ -127,7 +144,6 @@ export class Selector {
 
   /**
    * Lazily creates the highlight box when needed.
-   * @internal
    */
   private ensureHover() {
     if (this.hoverBox) return;
@@ -144,7 +160,6 @@ export class Selector {
 
   /**
    * Removes the highlight box from the DOM.
-   * @internal
    */
   private removeHover() {
     this.hoverBox?.remove();
