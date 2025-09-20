@@ -18,18 +18,46 @@ export function pageKey(url: string, includeHash = false): string {
 }
 
 /**
- * Checks if a URL is restricted or should not be operated by the extension.
- * Examples: chrome://, edge://, about:, moz-extension://
+ * Determines whether a URL should be excluded from extension operation.
  *
- * @param url - URL to check
- * @returns True if the URL is restricted
+ * Unparseable/unknown schemes are treated as restricted.
+ * Non-web schemes (e.g., view-source:, data:, blob:, filesystem:) are blocked early.
+ * Chrome Web Store pages are always excluded (content scripts are not allowed there).
+ *
+ * @param raw - URL string to evaluate.
+ * @returns `true` if the URL should be skipped by the extension.
  */
-export function isRestricted(url?: string): boolean {
-  return (
-    !url ||
-    url.startsWith('chrome://') ||
-    url.startsWith('edge://') ||
-    url.startsWith('about:') ||
-    url.startsWith('moz-extension://')
-  );
+export function isRestricted(raw?: string): boolean {
+  if (!raw) return true;
+
+  if (
+    raw.startsWith('view-source:') ||
+    raw.startsWith('data:') ||
+    raw.startsWith('blob:') ||
+    raw.startsWith('filesystem:')
+  ) {
+    return true;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    // Invalid or non-standard URL → skip for safety.
+    return true;
+  }
+
+  // Allow-list policy: only operate on typical web pages.
+  const allowed = new Set<string>(['http:', 'https:', 'file:']);
+  if (!allowed.has(url.protocol)) {
+    return true;
+  }
+
+  // Chrome Web Store (current and legacy host) — content scripts are disallowed by platform policy.
+  const webStoreHosts = new Set<string>(['chromewebstore.google.com', 'chrome.google.com']);
+  if (webStoreHosts.has(url.hostname)) {
+    return true;
+  }
+
+  return false;
 }

@@ -56,6 +56,12 @@ describe('common/url', () => {
       expect(isRestricted('')).toBe(true);
     });
 
+    it('returns true when URL parsing fails (invalid/non-standard)', () => {
+      // Arrange / Act / Assert
+      expect(isRestricted('not a url')).toBe(true);
+      expect(isRestricted('http://')).toBe(true); // missing host → URL() throws
+    });
+
     it('flags restricted URL schemes (chrome, edge, about, moz-extension)', () => {
       // Arrange / Act / Assert
       expect(isRestricted('chrome://extensions')).toBe(true);
@@ -64,17 +70,30 @@ describe('common/url', () => {
       expect(isRestricted('moz-extension://abc')).toBe(true);
     });
 
-    it('allows common schemes like http/https/file/data', () => {
+    it('flags special non-web schemes (view-source, data, blob, filesystem)', () => {
+      // Arrange / Act / Assert
+      expect(isRestricted('view-source:https://example.com')).toBe(true);
+      expect(isRestricted('data:text/plain,hello')).toBe(true);
+      expect(isRestricted('blob:https://example.com/uuid')).toBe(true);
+      expect(isRestricted('filesystem:https://example.com/temporary/abc')).toBe(true);
+    });
+
+    it('allows common web schemes http/https/file', () => {
       // Arrange / Act / Assert
       expect(isRestricted('https://example.com')).toBe(false);
       expect(isRestricted('http://example.com')).toBe(false);
       expect(isRestricted('file:///C:/temp.txt')).toBe(false);
-      expect(isRestricted('data:text/plain,hello')).toBe(false);
     });
 
-    it('is case-sensitive and does not match uppercase schemes', () => {
+    it('blocks Chrome Web Store hosts', () => {
       // Arrange / Act / Assert
-      expect(isRestricted('CHROME://extensions')).toBe(false);
+      expect(isRestricted('https://chromewebstore.google.com/detail/xxxx')).toBe(true);
+      expect(isRestricted('https://chrome.google.com/webstore/detail/xxxx')).toBe(true);
+    });
+
+    it('treats uppercase schemes as restricted (URL parsing normalizes the scheme)', () => {
+      // Arrange / Act / Assert
+      expect(isRestricted('CHROME://extensions')).toBe(true);
     });
   });
 });
