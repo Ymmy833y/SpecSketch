@@ -24,15 +24,22 @@ const cssAnchor = (sel: string): Anchor => ({ type: 'css', value: sel }) as unkn
 function makeItem(
   id: number,
   selector: string,
-  opts?: { label?: number; color?: string; size?: number; shape?: string },
+  opts?: { label?: number; color?: string; size?: number; shape?: string; position?: string },
 ): ScreenItem {
-  const { label = id, color = 'indigo', size = 12, shape = 'circle' } = opts ?? {};
+  const {
+    label = id,
+    color = 'indigo',
+    size = 12,
+    shape = 'circle',
+    position = 'left-top-outside',
+  } = opts ?? {};
   return {
     id,
     label,
     color,
     size,
     shape,
+    position,
     anchor: cssAnchor(selector),
   } as unknown as ScreenItem;
 }
@@ -94,12 +101,24 @@ describe('content/overlay', () => {
   });
 
   describe('renderItems', () => {
-    it('adds, updates, and removes boxes with color/shape/size applied', async () => {
+    it('adds, updates, and removes boxes with color/shape/size/position applied', async () => {
       // Arrange
       document.body.innerHTML = `<div id="a"></div><div id="b"></div>`;
       const first: [ScreenItem, ScreenItem] = [
-        makeItem(1, '#a', { label: 1, color: 'Indigo', size: 12, shape: 'circle' }),
-        makeItem(2, '#b', { label: 99, color: 'lime', size: 20, shape: 'square' }),
+        makeItem(1, '#a', {
+          label: 1,
+          color: 'Indigo',
+          size: 12,
+          shape: 'circle',
+          position: 'left-top-outside',
+        }),
+        makeItem(2, '#b', {
+          label: 99,
+          color: 'lime',
+          size: 20,
+          shape: 'square',
+          position: 'right-top-outside',
+        }),
       ];
 
       // Act: initial render
@@ -118,10 +137,12 @@ describe('content/overlay', () => {
       // color is lowercased in class names
       expect(badge1!.className).toContain('spsk-badge-indigo');
       expect(badge1!.className).toContain('spsk-badge--circle');
+      expect(badge1!.className).toContain('spsk-badge--left-top-outside');
       expect(badge1!.style.fontSize).toBe('12px');
 
       expect(badge99!.className).toContain('spsk-badge-lime');
       expect(badge99!.className).toContain('spsk-badge--square');
+      expect(badge99!.className).toContain('spsk-badge--right-top-outside');
       expect(badge99!.style.fontSize).toBe('20px');
 
       // position/size applied from getBoundingClientRect mock in dom.setup.ts
@@ -133,9 +154,15 @@ describe('content/overlay', () => {
       // border width is size/4
       expect(aBox.style.getPropertyValue('--spsk-border-w')).toBe('3px');
 
-      // Act: update item #1 (color/shape/size)
+      // Act: update item #1 (color/shape/size/position)
       const updated = [
-        makeItem(1, '#a', { label: 1, color: 'Pink', size: 16, shape: 'square' }),
+        makeItem(1, '#a', {
+          label: 1,
+          color: 'Pink',
+          size: 16,
+          shape: 'square',
+          position: 'top-outside',
+        }),
         first[1],
       ];
       await renderItems(updated);
@@ -144,6 +171,7 @@ describe('content/overlay', () => {
       expect(badge1).toBeTruthy();
       expect(badge1!.className).toContain('spsk-badge-pink');
       expect(badge1!.className).toContain('spsk-badge--square');
+      expect(badge1!.className).toContain('spsk-badge--top-outside');
       expect(badge1!.style.fontSize).toBe('16px');
 
       // Act: remove item #1 (diff remove)

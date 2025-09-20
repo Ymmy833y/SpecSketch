@@ -81,7 +81,7 @@ export async function renderItems(items: ScreenItem[]) {
     if (t) {
       t.boxEl.className = `spsk-box spsk-box-${color}`;
       t.boxEl.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
-      t.badgeEl.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color}`;
+      t.badgeEl.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color} spsk-badge--${it.position}`;
       t.badgeEl.style.fontSize = `${it.size}px`;
     } else {
       const box = document.createElement('div');
@@ -89,7 +89,7 @@ export async function renderItems(items: ScreenItem[]) {
       box.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
 
       const badge = document.createElement('div');
-      badge.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color}`;
+      badge.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color} spsk-badge--${it.position}`;
       badge.style.fontSize = `${it.size}px`;
       box.appendChild(badge);
 

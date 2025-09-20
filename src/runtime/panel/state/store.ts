@@ -42,6 +42,7 @@ export async function getState(pageKey: string): Promise<ScreenState> {
       defaultSize: 14,
       defaultColor: 'Blue',
       defaultShape: 'circle',
+      defaultPosition: 'left-top-outside',
     }
   );
 }

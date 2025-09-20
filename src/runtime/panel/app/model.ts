@@ -1,4 +1,4 @@
-import type { ItemColor, ItemShape, ScreenItem } from '@common/types';
+import type { ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
 
@@ -14,6 +14,7 @@ export type Model = {
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
+  defaultPosition: ItemPosition;
 
   capture: {
     format: CaptureFormat; // 'png' | 'jpeg'
@@ -37,6 +38,7 @@ export const initialModel: Model = {
   defaultSize: 14,
   defaultColor: 'Blue',
   defaultShape: 'circle',
+  defaultPosition: 'left-top-outside',
   capture: {
     format: 'png',
     area: 'full',

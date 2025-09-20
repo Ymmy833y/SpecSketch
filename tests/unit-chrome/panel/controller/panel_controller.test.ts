@@ -70,6 +70,7 @@ vi.mock('@panel/view/panel_view.ts', () => ({
 
 // ------ Import SUT and dependencies ------
 import { MSG_TYPE } from '@common/messages';
+import { ItemPosition } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { update } from '@panel/app/update';
@@ -102,6 +103,7 @@ const makeItem = (
       | 'Cyan';
     shape: 'circle' | 'square';
     group?: string;
+    position: ItemPosition;
   }> = {},
 ) => ({
   id,
@@ -110,6 +112,7 @@ const makeItem = (
   size: overrides.size ?? 12,
   color: overrides.color ?? 'Red',
   shape: overrides.shape ?? 'circle',
+  position: overrides.position ?? 'left-top-outside',
   ...(overrides.group ? { group: overrides.group } : {}),
 });
 
@@ -287,6 +290,33 @@ describe('panel/controller/panel_controller', () => {
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.TOGGLE_SELECT });
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.CAPTURE_REQUESTED });
     });
+
+    it('view handler BADGE_POSITION_SELECT dispatches SET_BADGE_POSITION with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const position: ItemPosition = 'top-outside';
+      view.emit(UIEventType.BADGE_POSITION_SELECT, { position });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.SET_BADGE_POSITION,
+        position: 'top-outside',
+      });
+    });
   });
 
   describe('ensureConnectionAlive', () => {
@@ -341,6 +371,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 10,
         defaultColor: 'Blue',
         defaultShape: 'square',
+        defaultPosition: 'left-top-outside',
       });
 
       type Exposed = { dispatch: (a: unknown) => void };
@@ -481,6 +512,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
+        defaultPosition: 'left-top-inside',
       });
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.PERSIST_STATE }]);

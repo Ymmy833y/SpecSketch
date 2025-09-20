@@ -29,6 +29,7 @@
   "badge_shape": { "message": "Badge shape" },
   "badge_shape_circle": { "message": "Circle" },
   "badge_shape_square": { "message": "Square" },
+  "badge_position": { "message": "Badge Position" },
 
   "section_selected_items": { "message": "Selected Elements" },
   "empty_hint": { "message": "Turn on the selection mode and click on the element." },
