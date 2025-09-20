@@ -40,6 +40,7 @@ function makeState(partial?: Partial<ScreenState>): ScreenState {
     defaultSize: 14,
     defaultColor: 'Blue',
     defaultShape: 'circle',
+    defaultPosition: 'left-top-outside',
     ...(partial ?? {}),
   };
 }
@@ -68,6 +69,7 @@ describe('panel/state/store', () => {
         defaultSize: 14,
         defaultColor: 'Blue',
         defaultShape: 'circle',
+        defaultPosition: 'left-top-outside',
       });
       expect(storageSet).not.toHaveBeenCalled();
     }, 1000);

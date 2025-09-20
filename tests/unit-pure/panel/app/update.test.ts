@@ -20,7 +20,7 @@ function makeItem(
   id: number,
   group: string | undefined,
   label: number,
-  extra?: Partial<Pick<ScreenItem, 'size' | 'color' | 'shape'>>,
+  extra?: Partial<Pick<ScreenItem, 'size' | 'color' | 'shape' | 'position'>>,
 ): ScreenItem {
   return {
     id,
@@ -29,6 +29,7 @@ function makeItem(
     size: extra?.size ?? 12,
     color: extra?.color ?? 'Red',
     shape: extra?.shape ?? 'circle',
+    position: extra?.position ?? 'left-top-outside',
   } as unknown as ScreenItem;
 }
 
@@ -42,6 +43,7 @@ function baseModel(overrides?: Partial<Model>): Model {
     defaultSize: 12,
     defaultColor: 'Red',
     defaultShape: 'circle',
+    defaultPosition: 'left-top-outside',
     missingIds: [] as number[],
     selectionEnabled: false,
     selectItems: [] as number[],
@@ -484,5 +486,27 @@ describe('panel/app/update', () => {
 
     expect(out.model).toBe(model);
     expect(out.effects).toEqual([]);
+  });
+
+  it('SET_BADGE_POSITION: updates only selected items and persists+renders', () => {
+    const items = [
+      makeItem(1, '', 1, { position: 'left-top-outside' }),
+      makeItem(2, '', 2, { position: 'right-top-outside' }),
+    ];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const action = {
+      type: ActionType.SET_BADGE_POSITION,
+      position: 'top-outside',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.defaultPosition).toBe('top-outside');
+    expect(out.model.items.find((i) => i.id === 1)?.position).toBe('left-top-outside');
+    expect(out.model.items.find((i) => i.id === 2)?.position).toBe('top-outside');
+
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
   });
 });

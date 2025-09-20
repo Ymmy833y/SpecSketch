@@ -36,6 +36,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
         size: state.defaultSize,
         color: state.defaultColor,
         shape: state.defaultShape,
+        position: state.defaultPosition,
       };
       state.items.push(it);
     }

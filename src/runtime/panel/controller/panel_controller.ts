@@ -73,6 +73,9 @@ export class PanelController {
       this.dispatch({ type: ActionType.SET_BADGE_SHAPE, shape }),
     );
     this.view.on(UIEventType.BADGE_DELETE, () => this.dispatch({ type: ActionType.BADGE_DELETE }));
+    this.view.on(UIEventType.BADGE_POSITION_SELECT, ({ position }) =>
+      this.dispatch({ type: ActionType.SET_BADGE_POSITION, position }),
+    );
 
     this.view.on(UIEventType.TOGGLE_CAPTURE_PANEL, () =>
       this.dispatch({ type: ActionType.TOGGLE_CAPTURE_PANEL }),
@@ -150,6 +153,7 @@ export class PanelController {
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultPosition: this.model.defaultPosition,
           });
           break;
         case EffectType.PERSIST_STATE: {
@@ -161,6 +165,7 @@ export class PanelController {
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultPosition: this.model.defaultPosition,
           });
           break;
         }

@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .pos-btn {
+    @apply transition duration-150 bg-white text-slate-900 focus-visible:outline-none
+      focus-visible:ring-2 focus-visible:ring-indigo-400 data-[selected=true]:bg-indigo-600
+      data-[selected=true]:text-white data-[selected=true]:shadow-lg;
+  }
+
+  .pos-btn--glyph {
+    @apply w-6 h-6 rounded-full flex items-center justify-center hover:bg-indigo-300;
+  }
+
+  .dot {
+    @apply block rounded-full w-1.5 h-1.5 bg-indigo-400;
+  }
+
+  .pos-btn {
+    @apply border border-indigo-400;
+  }
+}

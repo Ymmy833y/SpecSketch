@@ -1,8 +1,10 @@
 import i18n from '@common/i18n';
 import {
   isItemColor,
+  isItemPosition,
   isItemShape,
   type ItemColor,
+  ItemPosition,
   type ItemShape,
   type ScreenItem,
 } from '@common/types';
@@ -64,6 +66,8 @@ export class PanelView {
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
     badgeDeleteButton: HTMLButtonElement;
+    badgePositionButtons: NodeListOf<HTMLButtonElement>;
+    badgePositionLabel: HTMLSpanElement;
 
     selectItemAllCheckbox: HTMLInputElement;
   };
@@ -110,6 +114,8 @@ export class PanelView {
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
       badgeDeleteButton: this.$('#badge-delete-button'),
+      badgePositionButtons: this.$all<HTMLButtonElement>('#badge-position-pop button'),
+      badgePositionLabel: this.$('#badge-position-label'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
     };
@@ -171,6 +177,14 @@ export class PanelView {
       this.emit(UIEventType.BADGE_DELETE, undefined);
     });
 
+    this.els.badgePositionButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const raw = btn.dataset.positionName ?? '';
+        const position = isItemPosition(raw) ? (raw as ItemPosition) : 'left-top-outside';
+        this.emit(UIEventType.BADGE_POSITION_SELECT, { position });
+      });
+    });
+
     this.updateQualityVisibility();
 
     this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
@@ -220,6 +234,7 @@ export class PanelView {
     this.els.badgeSizeRange.value = String(model.defaultSize);
     this.applyBadgeColorUI(model.defaultColor);
     this.els.badgeShapeSelect.value = model.defaultShape;
+    this.applyBadgePositonUI(model.defaultPosition);
   }
 
   private renderStatus(key: StatusKey): void {
@@ -650,6 +665,13 @@ export class PanelView {
     this.els.badgeColorLabel.textContent = color;
     this.els.badgeColorDot.className = 'inline-block w-4 h-4 rounded-full';
     this.els.badgeColorDot.classList.add(this.getBadgeColorStyleName(color));
+  }
+  private applyBadgePositonUI(position: ItemPosition): void {
+    this.els.badgePositionButtons.forEach((button) => {
+      const selected = button.dataset.positionName === position;
+      button.setAttribute('data-selected', selected ? 'true' : 'false');
+    });
+    this.els.badgePositionLabel.textContent = position.replaceAll('-', ' ');
   }
 
   private $<T extends Element>(selector: string): T {

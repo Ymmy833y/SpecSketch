@@ -1,4 +1,4 @@
-import { isItemColor, isItemShape } from '@common/types';
+import { isItemColor, isItemPosition, isItemShape, ITEM_POSITION_VALUES } from '@common/types';
 import { describe, expect, it } from 'vitest';
 
 describe('common/types', () => {
@@ -99,6 +99,64 @@ describe('common/types', () => {
 
       // Assert
       expect(shapes).toEqual(['circle', 'square']);
+    });
+  });
+
+  describe('isItemPosition', () => {
+    it('returns true for all allowed ItemPosition literals (ITEM_POSITION_VALUES)', () => {
+      // Arrange
+      const allowed = ITEM_POSITION_VALUES;
+
+      // Act & Assert
+      for (const p of allowed) {
+        expect(isItemPosition(p)).toBe(true);
+      }
+    });
+
+    it('returns false for null', () => {
+      // Arrange
+      const v = null;
+
+      // Act
+      const ok = isItemPosition(v);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false for disallowed values (case/spacing/unknown/non-string)', () => {
+      // Arrange
+      const invalids = [
+        'Right-top-outside', // case mismatch
+        'right top outside', // spaces instead of hyphens
+        'right-top-out-side', // extra hyphen
+        'middle', // unknown value
+        '', // empty
+        42, // non-string
+      ];
+
+      // Act & Assert
+      for (const v of invalids) {
+        expect(isItemPosition(v)).toBe(false);
+      }
+    });
+
+    it('acts as a type guard in Array.filter', () => {
+      // Arrange
+      const mixed: (string | null)[] = [
+        'left-top-outside',
+        'Right-top-outside',
+        null,
+        'center',
+        'top-outside',
+        'bottom_inside',
+      ];
+
+      // Act
+      const positions = mixed.filter(isItemPosition);
+
+      // Assert
+      expect(positions).toEqual(['left-top-outside', 'center', 'top-outside']);
     });
   });
 });

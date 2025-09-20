@@ -36,14 +36,16 @@ vi.mock('@panel/view/status', () => {
 vi.mock('@common/types', () => {
   const validColors = new Set(['Blue', 'Red', 'Gray']);
   const validShapes = new Set(['circle', 'square']);
+  const validPositions = new Set(['left-top-outside', 'right-top-outside', 'top-outside']);
   return {
     isItemColor: (v: unknown) => typeof v === 'string' && validColors.has(v),
     isItemShape: (v: unknown) => typeof v === 'string' && validShapes.has(v),
+    isItemPosition: (v: unknown) => typeof v === 'string' && validPositions.has(v),
   };
 });
 
 // ---- Import SUT after mocks ----
-import type { ItemColor, ItemShape, ScreenItem } from '@common/types';
+import type { ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
 import { Model } from '@panel/app/model';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
@@ -96,6 +98,12 @@ const basePanelHtml = () => `
       <option value="square">square</option>
     </select>
     <button id="badge-delete-button" type="button">Delete</button>
+    <span id="badge-position-label"></span>
+    <div id="badge-position-pop">
+      <button type="button" data-position-name="left-top-outside"></button>
+      <button type="button" data-position-name="right-top-outside"></button>
+      <button type="button" data-position-name="top-outside"></button>
+    </div>    
   </div>
 
   <div id="list-wrap">
@@ -142,6 +150,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultSize: 16,
     defaultColor: 'Gray' as ItemColor,
     defaultShape: 'circle' as ItemShape,
+    defaultPosition: 'left-top-outside' as ItemPosition,
     ...model,
   };
   view.render(m);
@@ -475,5 +484,53 @@ describe('panel/view/panel_view', () => {
       (document.querySelector('input[name="item-select"][value="all"]') as HTMLInputElement)
         .checked,
     ).toBe(true);
+  });
+
+  it('emits BADGE_POSITION_SELECT when a position button is clicked (with fallback for invalid)', () => {
+    const v = setupView();
+    const onPos = vi.fn();
+    v.on(UIEventType.BADGE_POSITION_SELECT, onPos);
+
+    renderWithModel(v);
+
+    const rightTopBtn = document.querySelector(
+      '#badge-position-pop button[data-position-name="right-top-outside"]',
+    ) as HTMLButtonElement;
+    rightTopBtn.click();
+    expect(onPos).toHaveBeenCalledWith({ position: 'right-top-outside' });
+
+    rightTopBtn.dataset.positionName = 'invalid-pos';
+    rightTopBtn.click();
+
+    const last = lastCallArg<{ position: ItemPosition }>(onPos);
+    expect(last).toEqual({ position: 'left-top-outside' });
+  });
+
+  it('applyBadgePositonUI marks the selected button and updates the label text on render', () => {
+    const v = setupView();
+
+    renderWithModel(v, { defaultPosition: 'right-top-outside' as ItemPosition });
+
+    const label = document.querySelector('#badge-position-label') as HTMLElement;
+    const leftTopBtn = document.querySelector(
+      '#badge-position-pop button[data-position-name="left-top-outside"]',
+    ) as HTMLButtonElement;
+    const rightTopBtn = document.querySelector(
+      '#badge-position-pop button[data-position-name="right-top-outside"]',
+    ) as HTMLButtonElement;
+    const topOutsideBtn = document.querySelector(
+      '#badge-position-pop button[data-position-name="top-outside"]',
+    ) as HTMLButtonElement;
+
+    expect(label.textContent).toBe('right top outside');
+    expect(rightTopBtn.getAttribute('data-selected')).toBe('true');
+    expect(leftTopBtn.getAttribute('data-selected')).toBe('false');
+    expect(topOutsideBtn.getAttribute('data-selected')).toBe('false');
+
+    renderWithModel(v, { defaultPosition: 'top-outside' as ItemPosition });
+    expect(label.textContent).toBe('top outside');
+    expect(topOutsideBtn.getAttribute('data-selected')).toBe('true');
+    expect(leftTopBtn.getAttribute('data-selected')).toBe('false');
+    expect(rightTopBtn.getAttribute('data-selected')).toBe('false');
   });
 });

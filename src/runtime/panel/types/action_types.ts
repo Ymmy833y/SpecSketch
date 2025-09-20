@@ -1,4 +1,4 @@
-import type { Anchor, ItemColor, ItemShape, ScreenItem } from '@common/types';
+import type { Anchor, ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
 
@@ -50,6 +50,9 @@ export enum ActionType {
 
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
+
+  /** Update default badge position (also apply to existing items) */
+  SET_BADGE_POSITION = 'SET_BADGE_POSITION',
 
   /** Update capture format (png/jpeg) */
   SET_CAPTURE_FORMAT = 'SET_CAPTURE_FORMAT',
@@ -118,6 +121,7 @@ export type Action =
   | { type: ActionType.SET_BADGE_SIZE; size: number }
   | { type: ActionType.SET_BADGE_COLOR; color: ItemColor }
   | { type: ActionType.SET_BADGE_SHAPE; shape: ItemShape }
+  | { type: ActionType.SET_BADGE_POSITION; position: ItemPosition }
   | { type: ActionType.SET_CAPTURE_FORMAT; format: CaptureFormat }
   | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }
   | { type: ActionType.SET_CAPTURE_QUALITY; quality: number }

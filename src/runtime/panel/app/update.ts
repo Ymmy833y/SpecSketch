@@ -112,6 +112,18 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       };
     }
 
+    case ActionType.SET_BADGE_POSITION: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { position: action.position } : {}),
+      }));
+
+      return {
+        model: { ...model, defaultPosition: action.position, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
     case ActionType.SET_CAPTURE_FORMAT:
       return {
         model: { ...model, capture: { ...model.capture, format: action.format } },

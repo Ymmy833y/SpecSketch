@@ -49,7 +49,6 @@
 
 .spsk-badge {
   position: absolute;
-  top: -10px; left: -10px;
   font: 12px/1 system-ui, sans-serif;
   color: #fff;
   z-index: 1;
@@ -151,4 +150,56 @@
 }
 .spsk-badge-cyan {
   background: rgba(6, 182, 212, 1);
+}
+
+.spsk-badge--right-top-outside {
+  top: 0; right: 0; transform: translate(50%, -50%);
+}
+.spsk-badge--right-outside {
+  top: 50%; right: 0; transform: translate(50%, -50%);
+}
+.spsk-badge--right-bottom-outside {
+  right: 0; bottom: 0; transform: translate(50%, 50%);
+}
+.spsk-badge--top-outside {
+  top: 0; left: 50%; transform: translate(-50%, -50%);
+}
+.spsk-badge--bottom-outside {
+  bottom: 0; left: 50%; transform: translate(-50%, 50%);
+}
+.spsk-badge--left-top-outside {
+  top: 0; left: 0; transform: translate(-50%, -50%);
+}
+.spsk-badge--left-outside {
+  top: 50%; left: 0; transform: translate(-50%, -50%);
+}
+.spsk-badge--left-bottom-outside {
+  left: 0; bottom: 0; transform: translate(-50%, 50%);
+}
+.spsk-badge--right-top-inside {
+  top: 0; right: 0;
+}
+.spsk-badge--right-inside {
+  top: 50%; right: 0; transform: translate(0, -50%);
+}
+.spsk-badge--right-bottom-inside {
+  right: 0; bottom: 0;
+}
+.spsk-badge--top-inside {
+  top: 0; left: 50%; transform: translate(-50%, 0);
+}
+.spsk-badge--bottom-inside {
+  bottom: 0; left: 50%; transform: translate(-50%, 0);
+}
+.spsk-badge--left-top-inside {
+  top: 0; left: 0;
+}
+.spsk-badge--left-inside {
+  top: 50%; left: 0; transform: translate(0, -50%);
+}
+.spsk-badge--left-bottom-inside {
+  left: 0; bottom: 0;
+}
+.spsk-badge--center {
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
 }
