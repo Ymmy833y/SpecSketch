@@ -16,6 +16,8 @@ let rafPending = false;
 
 let hoveredId: number | null = null;
 
+let listenersAttached = false;
+
 /**
  * Mounts the on-page overlay (Shadow DOM) that draws selection boxes.
  * Also sets up scroll/resize listeners to reschedule position updates.
@@ -23,35 +25,49 @@ let hoveredId: number | null = null;
  * @remarks Idempotent: repeated calls won't mount twice.
  */
 export async function mountOverlay() {
-  if (rootEl) return;
-  const host = document.createElement('div');
-  host.id = 'spsk-root';
-  (document.documentElement || document.body).appendChild(host);
-  shadowRoot = host.attachShadow({ mode: 'open' });
+  if (rootEl && shadowRoot) return;
 
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = chrome.runtime.getURL('styles/overlay.css');
-  shadowRoot.appendChild(link);
+  let host = document.getElementById('spsk-root') as HTMLElement | null;
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'spsk-root';
+    (document.documentElement || document.body).appendChild(host);
+  }
 
-  rootEl = document.createElement('div');
-  rootEl.className = 'spsk-overlay';
-  shadowRoot.appendChild(rootEl);
+  shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
 
-  // Redraw trigger
-  const schedule = () => {
-    if (rafPending) return;
-    rafPending = true;
-    requestAnimationFrame(() => {
-      rafPending = false;
-      updatePositions();
-    });
-  };
-  window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule, { passive: true });
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('scroll', schedule, { passive: true });
-    window.visualViewport.addEventListener('resize', schedule, { passive: true });
+  const cssHref = chrome.runtime.getURL('styles/overlay.css');
+  let link = shadowRoot.querySelector<HTMLLinkElement>(`link[rel="stylesheet"][href="${cssHref}"]`);
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = cssHref;
+    shadowRoot.appendChild(link);
+  }
+
+  rootEl = shadowRoot.querySelector<HTMLElement>('div.spsk-overlay');
+  if (!rootEl) {
+    rootEl = document.createElement('div');
+    rootEl.className = 'spsk-overlay';
+    shadowRoot.appendChild(rootEl);
+  }
+
+  if (!listenersAttached) {
+    const schedule = () => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        updatePositions();
+      });
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+      window.visualViewport.addEventListener('resize', schedule, { passive: true });
+    }
+    listenersAttached = true;
   }
 }
 
