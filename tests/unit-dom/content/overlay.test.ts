@@ -98,6 +98,49 @@ describe('content/overlay', () => {
       const overlays = shadow.querySelectorAll('.spsk-overlay');
       expect(overlays.length).toBe(1);
     }, 3000);
+
+    it('attaches scroll/resize listeners only once even on repeated mounts', async () => {
+      const addSpy = vi.spyOn(window, 'addEventListener');
+
+      await mountOverlay();
+      await mountOverlay(); // should NOT reattach listeners
+
+      const scrollCalls = addSpy.mock.calls.filter(([ev]) => ev === 'scroll').length;
+      const resizeCalls = addSpy.mock.calls.filter(([ev]) => ev === 'resize').length;
+
+      expect(scrollCalls).toBe(1);
+      expect(resizeCalls).toBe(1);
+
+      addSpy.mockRestore();
+    }, 3000);
+
+    it('reuses existing #spsk-root host and .spsk-overlay if present', async () => {
+      // Pre-seed existing host with ShadowRoot and overlay (no stylesheet link on purpose)
+      const host = document.createElement('div');
+      host.id = 'spsk-root';
+      document.body.appendChild(host);
+      const sr = host.attachShadow({ mode: 'open' });
+      const existingOverlay = document.createElement('div');
+      existingOverlay.className = 'spsk-overlay';
+      sr.appendChild(existingOverlay);
+
+      // Act
+      await mountOverlay();
+
+      // Assert: host is still one, overlay is still one (reused), stylesheet is exactly one
+      const hosts = document.querySelectorAll('#spsk-root');
+      expect(hosts.length).toBe(1);
+
+      const shadow = getShadow();
+      expect(shadow).toBe(sr);
+      const overlays = shadow.querySelectorAll('.spsk-overlay');
+      expect(overlays.length).toBe(1);
+
+      const links = shadow.querySelectorAll('link[rel="stylesheet"]');
+      expect(links.length).toBe(1);
+      const href = (links[0] as HTMLLinkElement).href;
+      expect(href).toContain('/styles/overlay.css');
+    }, 3000);
   });
 
   describe('renderItems', () => {

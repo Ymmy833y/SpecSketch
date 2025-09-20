@@ -12,7 +12,7 @@
   --spsk-accent: var(--spsk-border-color);
   --spsk-hl-outline-w: 2px;
   --spsk-hl-glow-w: 0px;
-  --spsk-hl-fill: color-mix(in srgb, var(--spsk-accent) 30%, transparent);
+  --spsk-hl-fill: color-mix(in srgb, var(--spsk-accent) 10%, transparent);
   transition: box-shadow .12s ease, transform .12s ease, opacity .12s ease;
 }
 .spsk-box::before {
