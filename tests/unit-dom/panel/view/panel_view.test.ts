@@ -335,11 +335,15 @@ describe('panel/view/panel_view', () => {
     expect(sections.length).toBe(3);
 
     // Unaffiliated → A → B
-    expect((sections[0]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent).toBe(
-      '(Ungrouped)',
-    );
-    expect((sections[1]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent).toBe('A');
-    expect((sections[2]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent).toBe('B');
+    expect(
+      (sections[0]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent,
+    ).toBe('(Ungrouped)');
+    expect(
+      (sections[1]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent,
+    ).toBe('A');
+    expect(
+      (sections[2]!.querySelector('span.select-item-gh-title') as HTMLElement).textContent,
+    ).toBe('B');
 
     // Missing item warning chip
     const missingChip = sections[0]!.querySelector('li span.chip-warn');
