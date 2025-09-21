@@ -15,6 +15,13 @@
         left: anchor(start);
         margin-top: 2px;
       }
+      #badge-position-pop[popover] {
+        inset: auto;
+        position-anchor: --badge-position-trigger;
+        top: anchor(bottom);
+        left: anchor(start);
+        margin-top: 2px;
+      }
     }
   </style>
 </head>
@@ -36,7 +43,7 @@
       <p data-i18n="panel_tagline" class="tagline"></p>
     </header>
 
-    <div class="flex gap-1 mb-6">
+    <div class="flex gap-1 mb-4">
       <button id="toggle-select" class="btn" aria-pressed="false">
         <span class="inline-block w-3 h-3 rounded-full bg-slate-300" id="toggle-select-icon" data-role="icon"></span>
         <span id="toggle-select-label" data-i18n="toggle_off">Select mode: OFF</span>
@@ -51,7 +58,7 @@
       </span>
     </div>
 
-    <div id="capture-options" class="hidden mb-6 card">
+    <div id="capture-options" class="hidden mb-4 card">
       <div class="card-head">
         <h2 class="section-title" data-i18n="section_capture_options">Capture options</h2>
         <span class="hint-xs" data-i18n="hint_applies_on_capture">Applied when capturing</span>
