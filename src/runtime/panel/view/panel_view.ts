@@ -1,4 +1,5 @@
 import i18n from '@common/i18n';
+import { getIcon } from '@common/icons';
 import {
   isItemColor,
   isItemPosition,
@@ -13,21 +14,6 @@ import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@p
 
 import type { Model } from '../app/model';
 import { type UIEventPayloadMap, UIEventType } from '../types/ui_event_types';
-
-const STATUS_BASE_BODY = [
-  'inline-flex',
-  'items-center',
-  'gap-1',
-  'rounded-full',
-  'border',
-  'px-2',
-  'py-1',
-  'text-xs',
-  'transition-colors',
-] as const;
-const TOGGLE_ICON_BASE = ['inline-block', 'w-3', 'h-3', 'rounded-full'] as const;
-const CAPTURE_OPTION_COLLAPSED = '▼';
-const CAPTURE_OPTION_EXPANDED = '▲';
 
 function byLabelThenId(a: { label: number; id: number }, b: { label: number; id: number }) {
   if (a.label !== b.label) return a.label - b.label;
@@ -81,6 +67,8 @@ export class PanelView {
   private dragStartIndex = -1;
 
   private hoverOutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private collapsedGroups = new Set<string>();
 
   constructor(private doc: Document) {
     i18n.localize(doc);
@@ -223,13 +211,7 @@ export class PanelView {
     this.els.captureScaleRange.value = String(model.capture.scale);
     this.updateQualityVisibility(model.capture.format);
 
-    const expanded = model.capture.panelExpanded;
-    this.els.captureOptionsToggle.setAttribute('aria-expanded', String(expanded));
-    this.els.captureOptionsToggle.textContent = expanded
-      ? CAPTURE_OPTION_EXPANDED
-      : CAPTURE_OPTION_COLLAPSED;
-    this.els.captureOptionsPanel.classList.toggle('hidden', !expanded);
-
+    this.applyCaptureOptionsToggleUI(model.capture.panelExpanded);
     this.els.badgeSizeNumber.value = String(model.defaultSize);
     this.els.badgeSizeRange.value = String(model.defaultSize);
     this.applyBadgeColorUI(model.defaultColor);
@@ -241,10 +223,10 @@ export class PanelView {
     const style = STATUS_LABEL_STYLE[key];
     const el = this.els.status;
     el.className = '';
-    el.classList.add(...STATUS_BASE_BODY, ...style.body);
+    el.classList.add('connect-status', ...style.body);
 
     const dot = this.doc.createElement('span');
-    dot.classList.add('h-1.5', 'w-1.5', 'rounded-full', ...style.dot);
+    dot.classList.add('connect-status-dot', ...style.dot);
 
     const text = this.doc.createElement('span');
     text.textContent = getStatusMessage(key);
@@ -256,7 +238,7 @@ export class PanelView {
   private renderToggle(enabled: boolean): void {
     const icon = this.els.toggleIcon;
     icon.className = '';
-    icon.classList.add(...TOGGLE_ICON_BASE, enabled ? 'bg-indigo-500' : 'bg-slate-300');
+    icon.classList.add('select-toggle-icon', enabled ? 'bg-indigo-500' : 'bg-slate-300');
     this.els.toggleLabel.textContent = i18n.get(enabled ? 'toggle_on' : 'toggle_off');
   }
 
@@ -302,22 +284,17 @@ export class PanelView {
     selectItems: number[],
     missingIds: number[],
   ): HTMLElement {
-    const section = this.el(
-      'section',
-      'rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden',
-    );
+    const isCollapsed = this.collapsedGroups.has(gKey);
+
+    const section = this.el('section', 'select-item-section');
 
     // header
-    const header = this.el(
-      'div',
-      'flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/40',
-    );
+    const header = this.el('div', 'select-item-header');
+
     // checkbox
-    const checkboxWrap = this.el('div', 'shrink-0 self-stretch flex items-center');
-    const checkbox = this.el(
-      'input',
-      'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600',
-    ) as HTMLInputElement;
+    const checkboxWrap = this.el('div', 'spsk-checkwrap');
+    const checkbox = this.el('input', 'spsk-checkbox spsk-checkbox--normal') as HTMLInputElement;
+
     checkbox.type = 'checkbox';
     checkbox.name = 'item-select';
     checkbox.value = gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey;
@@ -332,22 +309,47 @@ export class PanelView {
     checkboxWrap.append(checkbox);
     const title = this.el(
       'span',
-      'text-xs font-medium text-slate-600 dark:text-slate-300',
+      'select-item-gh-title',
       gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey,
     );
-    const left = this.el('div', 'flex items-center gap-2 min-w-0 flex-1');
+    const left = this.el('div', 'select-item-gh-left');
     left.append(checkboxWrap, title);
-    const count = this.el('span', 'text-[11px] text-slate-400', String(gItems.length));
-    header.append(left, count);
+    const count = this.el('span', 'select-item-gh-count', String(gItems.length));
+
+    const toggleBtn = this.el('button', 'select-item-gh-toggle') as HTMLButtonElement;
+    toggleBtn.type = 'button';
+    toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    const { d, viewBox } = isCollapsed ? getIcon('caretRight') : getIcon('caretDown');
+    const toggleIcon = this.createSvgIcon(d, { className: 'icon-sm', viewBox });
+    const togglePath = toggleIcon.querySelector('path') as SVGPathElement;
+    toggleBtn.append(toggleIcon);
+
+    header.append(left, count, toggleBtn);
 
     // ul
-    const ul = this.el('ul', 'divide-y divide-slate-200 dark:divide-slate-800') as HTMLUListElement;
+    const ul = this.el('ul', 'select-item-list') as HTMLUListElement;
+    if (isCollapsed) ul.classList.add('hidden');
     this.attachUlDnDHandlers(ul);
 
     for (const it of gItems.sort(byLabelThenId)) {
       const selectChecked = selectItems.includes(it.id);
       ul.appendChild(this.renderItem(it, existingGroups, selectChecked, missingIds));
     }
+
+    toggleBtn.addEventListener('click', () => {
+      const currentlyCollapsed = this.collapsedGroups.has(gKey);
+      if (currentlyCollapsed) {
+        this.collapsedGroups.delete(gKey);
+        ul.classList.remove('hidden');
+        togglePath.setAttribute('d', getIcon('caretDown').d);
+        toggleBtn.setAttribute('aria-expanded', 'true');
+      } else {
+        this.collapsedGroups.add(gKey);
+        ul.classList.add('hidden');
+        togglePath.setAttribute('d', getIcon('caretRight').d);
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
 
     section.append(header, ul);
     return section;
@@ -361,10 +363,11 @@ export class PanelView {
   ): HTMLLIElement {
     const isMissing = missingIds.includes(it.id);
 
-    const liStyle = isMissing
-      ? 'group flex items-center gap-2 p-3 hover:bg-amber-50 dark:hover:bg-amber-800/60 bg-amber-100 dark:bg-amber-900/30'
-      : 'group flex items-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60';
-    const li = this.el('li', liStyle) as HTMLLIElement;
+    const liBase = 'select-item';
+    const li = this.el(
+      'li',
+      isMissing ? `group ${liBase} select-item--warn` : liBase,
+    ) as HTMLLIElement;
     li.dataset.id = String(it.id);
     li.draggable = true;
 
@@ -398,10 +401,10 @@ export class PanelView {
     });
 
     // checkbox
-    const checkboxWrap = this.el('div', 'shrink-0 self-stretch flex items-center');
+    const checkboxWrap = this.el('div', 'spsk-checkwrap');
     const checkboxStyle = isMissing
-      ? 'h-4 w-4 border border-amber-300 dark:border-amber-700 outline-none focus:ring-2 focus:ring-amber-500 accent-amber-600'
-      : 'h-4 w-4 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 accent-indigo-600';
+      ? 'spsk-checkbox spsk-checkbox--warn'
+      : 'spsk-checkbox spsk-checkbox--normal';
     const checkbox = this.el('input', checkboxStyle) as HTMLInputElement;
     checkbox.type = 'checkbox';
     checkbox.name = 'item-select';
@@ -414,9 +417,7 @@ export class PanelView {
     checkboxWrap.append(checkbox);
 
     // badge
-    const badgeStyle = isMissing
-      ? 'inline-flex h-6 w-6 items-center justify-center rounded-md bg-amber-600/10 text-amber-700 dark:text-amber-300 text-xs font-semibold'
-      : 'inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-xs font-semibold';
+    const badgeStyle = isMissing ? 'spsk-badge spsk-badge--warn' : 'spsk-badge spsk-badge--norm';
     const badge = this.el('span', badgeStyle, String(it.label));
 
     // main (missingIcon, anchor)
@@ -427,20 +428,17 @@ export class PanelView {
       this.emit(UIEventType.ITEM_HOVER_IN, { id: it.id });
     });
     if (isMissing) {
-      const chip = this.el(
-        'span',
-        'inline-flex items-center gap-1 py-1 text-amber-800 dark:text-amber-200 text-[11px] font-medium',
-      );
-      const warnPath =
-        'M9.049 2.927a1.5 1.5 0 012.902 0l6.41 11.94A1.5 1.5 0 0117.01 17H2.99a1.5 1.5 0 01-1.351-2.133l6.41-11.94zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 001-1V7a1 1 0 10-2 0v3a1 1 0 001 1z';
-      const icon = this.createSvgIcon(warnPath, {
+      const chip = this.el('span', 'chip-warn');
+      const { d, viewBox } = getIcon('warn');
+      const icon = this.createSvgIcon(d, {
         className: 'h-3.5 w-3.5',
+        viewBox,
       });
       const label = this.el('span', undefined, i18n.get('missing_item'));
       chip.append(icon, label);
       main.append(chip);
     }
-    const anchor = this.el('div', 'text-sm font-medium truncate', it.anchor.value);
+    const anchor = this.el('div', 'anchor', it.anchor.value);
     main.append(anchor);
 
     // group select
@@ -453,10 +451,7 @@ export class PanelView {
   private buildGroupSelect(it: ScreenItem, existingGroups: string[]): HTMLElement {
     const groupWrap = this.el('div', 'min-w-0');
 
-    const selectEl = this.el(
-      'select',
-      'block rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-2 py-1',
-    ) as HTMLSelectElement;
+    const selectEl = this.el('select', 'select-item-select') as HTMLSelectElement;
     selectEl.style.maxWidth = '10rem';
 
     // options
@@ -471,23 +466,20 @@ export class PanelView {
     const showCreateInput = (prevValue: string) => {
       selectEl.classList.add('hidden');
 
-      const input = this.el(
-        'input',
-        'w-40 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-2 py-1',
-      ) as HTMLInputElement;
+      const input = this.el('input', 'select-item-input') as HTMLInputElement;
       input.type = 'text';
       input.placeholder = i18n.get('group_new_placeholder');
 
       const okBtn = this.el(
         'button',
-        'rounded-md border border-slate-300 dark:border-slate-700 px-2 py-1 text-sm',
+        'select-item-btn select-item-btn--outline',
         i18n.get('common_create'),
       ) as HTMLButtonElement;
       okBtn.type = 'button';
 
       const cancelBtn = this.el(
         'button',
-        'rounded-md border border-transparent px-2 py-1 text-sm text-slate-500',
+        'select-item-btn select-item-btn--ghost',
         i18n.get('common_cancel'),
       ) as HTMLButtonElement;
       cancelBtn.type = 'button';
@@ -653,6 +645,15 @@ export class PanelView {
   private disabledAllButtons(isDisabled: boolean): void {
     this.doc.querySelectorAll('button').forEach((btn) => (btn.disabled = isDisabled));
   }
+  private applyCaptureOptionsToggleUI(expanded: boolean) {
+    this.els.captureOptionsToggle.setAttribute('aria-expanded', String(expanded));
+    const { d, viewBox } = expanded ? getIcon('caretDownFill') : getIcon('caretRightFill');
+    this.els.captureOptionsToggle.innerHTML = '';
+    this.els.captureOptionsToggle.appendChild(
+      this.createSvgIcon(d, { viewBox, className: 'h-4 w-4' }),
+    );
+    this.els.captureOptionsPanel.classList.toggle('hidden', !expanded);
+  }
   private getBadgeColorStyleName(color: ItemColor): string {
     const colorName = color === 'Gray' ? 'slate' : color;
     return `bg-${colorName.toLowerCase()}-500`;
@@ -702,7 +703,7 @@ export class PanelView {
   }
 
   private createSvgIcon(
-    paths: string | Array<string | { d: string; attrs?: Record<string, string> }>,
+    d: string,
     opts: {
       className?: string;
       viewBox?: string;
@@ -721,17 +722,10 @@ export class PanelView {
       for (const [k, v] of Object.entries(opts.attrs)) svg.setAttribute(k, v);
     }
 
-    const list = Array.isArray(paths) ? paths : [paths];
-    for (const p of list) {
-      const pathEl = document.createElementNS(SVG_NS, 'path');
-      if (typeof p === 'string') {
-        pathEl.setAttribute('d', p);
-      } else {
-        pathEl.setAttribute('d', p.d);
-        if (p.attrs) for (const [k, v] of Object.entries(p.attrs)) pathEl.setAttribute(k, v);
-      }
-      svg.appendChild(pathEl);
-    }
+    const pathEl = document.createElementNS(SVG_NS, 'path');
+    pathEl.setAttribute('d', d);
+    svg.appendChild(pathEl);
+
     return svg;
   }
 }

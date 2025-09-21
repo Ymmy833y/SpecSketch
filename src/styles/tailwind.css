@@ -124,8 +124,8 @@
 
   .pos-btn {
     @apply transition duration-150 bg-white text-slate-900 focus-visible:outline-none
-      focus-visible:ring-2 focus-visible:ring-indigo-400 data-[selected=true]:bg-indigo-600
-      data-[selected=true]:text-white data-[selected=true]:shadow-lg;
+           focus-visible:ring-2 focus-visible:ring-indigo-400 data-[selected=true]:bg-indigo-600
+           data-[selected=true]:text-white data-[selected=true]:shadow-lg;
   }
   .pos-btn--glyph {
     @apply w-6 h-6 rounded-full flex items-center justify-center hover:bg-indigo-300;
@@ -135,5 +135,93 @@
   }
   .pos-btn {
     @apply border border-indigo-400;
+  }
+
+  .connect-status { 
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors; 
+  }
+  .connect-status-dot { 
+    @apply h-1.5 w-1.5 rounded-full; 
+  }
+  .select-toggle-icon { 
+    @apply inline-block w-3 h-3 rounded-full; 
+  }
+
+  .select-item-section { 
+    @apply rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden; 
+  }
+  .select-item-header { 
+    @apply flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/40; 
+  }
+  .select-item-gh-left { 
+    @apply flex items-center gap-2 min-w-0 flex-1; 
+  }
+  .select-item-gh-title { 
+    @apply text-xs font-medium text-slate-600 dark:text-slate-300 truncate; 
+  }
+  .select-item-gh-count { 
+    @apply text-[11px] text-slate-400; 
+  }
+  .select-item-gh-toggle { 
+    @apply shrink-0 ml-3 text-[11px] text-slate-500 hover:text-slate-700 transition-colors; 
+  }
+  .select-item-list { 
+    @apply divide-y divide-slate-200 dark:divide-slate-800; 
+  }
+  .select-item { 
+    @apply flex items-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60; 
+  }
+  .select-item--warn { 
+    @apply hover:bg-amber-50 dark:hover:bg-amber-800/60 bg-amber-100 dark:bg-amber-900/30; 
+  }
+  .select-item-select { 
+    @apply block rounded-md border border-slate-300 dark:border-slate-700 
+           bg-white dark:bg-slate-900 text-sm px-2 py-1; 
+  }
+  .select-item-input { 
+    @apply w-40 rounded-md border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-900 text-sm px-2 py-1; 
+  }
+  .select-item-btn { 
+    @apply rounded-md px-2 py-1 text-sm; 
+  }
+  .select-item-btn--outline { 
+    @apply border border-slate-300 dark:border-slate-700; 
+  }
+  .select-item-btn--ghost { 
+    @apply border border-transparent text-slate-500; 
+  }
+
+  .spsk-checkwrap { 
+    @apply shrink-0 self-stretch flex items-center; 
+  }
+  .spsk-checkbox { 
+    @apply h-4 w-4 border outline-none focus:ring-2; 
+  }
+  .spsk-checkbox--normal { 
+    @apply border-slate-300 dark:border-slate-700 focus:ring-indigo-500 accent-indigo-600; 
+  }
+  .spsk-checkbox--warn { 
+    @apply border-amber-300 dark:border-amber-700 focus:ring-amber-500 accent-amber-600; 
+  }
+  .spsk-badge { 
+    @apply inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold; 
+  }
+  .spsk-badge--norm { 
+    @apply bg-indigo-600/10 text-indigo-700 dark:text-indigo-300; 
+  }
+  .spsk-badge--warn { 
+    @apply bg-amber-600/10 text-amber-700 dark:text-amber-300; 
+  }
+
+  .anchor { 
+    @apply text-sm font-medium truncate; 
+  }
+  .chip-warn { 
+    @apply inline-flex items-center gap-1 py-1 text-amber-800 dark:text-amber-200 
+           text-[11px] font-medium; 
+  }
+  .icon-sm { 
+    @apply h-4 w-4; 
   }
 }
