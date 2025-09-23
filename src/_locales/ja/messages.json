@@ -30,6 +30,7 @@
   "badge_shape_circle": { "message": "丸" },
   "badge_shape_square": { "message": "四角" },
   "badge_position": { "message": "位置" },
+  "badge_group": { "message": "グループ" },
 
   "section_selected_items": { "message": "選択済みの要素" },
   "empty_hint": { "message": "選択モードをONにして、要素をクリックしてください。" },
@@ -39,7 +40,10 @@
   "group_ungrouped": { "message": "未所属" },
   "group_new_placeholder": { "message": "グループ名" },
 
+  "create_group_title": { "message": "グループを作成" },
+  "create_group_subtitle": { "message": "新しいグループ名を入力してください。" },
+
   "common_create": { "message": "作成" },
   "common_delete": { "message": "削除" },
-  "common_cancel": { "message": "取消" }
+  "common_cancel": { "message": "キャンセル" }
 }

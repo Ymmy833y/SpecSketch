@@ -97,9 +97,10 @@ export class PanelController {
       this.dispatch({ type: ActionType.REORDER_ITEMS, fromId, fromIndex, toIndex }),
     );
 
-    this.view.on(UIEventType.SET_ITEM_GROUP, ({ id, group }) =>
-      this.dispatch({ type: ActionType.SET_ITEM_GROUP, id, group }),
+    this.view.on(UIEventType.SET_GROUP, ({ group }) =>
+      this.dispatch({ type: ActionType.SET_GROUP, group }),
     );
+
     this.view.on(
       UIEventType.ITEM_SELECTION_CHANGED,
       (
@@ -149,11 +150,11 @@ export class PanelController {
           await setState(this.model.pageKey, {
             items: this.model.items,
             nextId: 1,
-            nextLabel: this.model.nextLabel,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
             defaultPosition: this.model.defaultPosition,
+            defaultGroup: this.model.defaultGroup,
           });
           break;
         case EffectType.PERSIST_STATE: {
@@ -161,11 +162,11 @@ export class PanelController {
           await setState(this.model.pageKey, {
             ...prev,
             items: this.model.items,
-            nextLabel: this.model.nextLabel,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
             defaultPosition: this.model.defaultPosition,
+            defaultGroup: this.model.defaultGroup,
           });
           break;
         }
@@ -221,10 +222,11 @@ export class PanelController {
           type: ActionType.RESTORE_STATE,
           state: {
             items: s.items,
-            nextLabel: s.nextLabel,
             defaultSize: s.defaultSize,
             defaultColor: s.defaultColor,
             defaultShape: s.defaultShape,
+            defaultPosition: s.defaultPosition,
+            defaultGroup: s.defaultGroup,
           },
         });
       } else if (msg?.type === MSG_TYPE.MISSING_IDS) {
@@ -240,10 +242,11 @@ export class PanelController {
       type: ActionType.RESTORE_STATE,
       state: {
         items: st.items,
-        nextLabel: st.nextLabel,
         defaultSize: st.defaultSize,
         defaultColor: st.defaultColor,
         defaultShape: st.defaultShape,
+        defaultPosition: st.defaultPosition,
+        defaultGroup: st.defaultGroup,
       },
     });
 

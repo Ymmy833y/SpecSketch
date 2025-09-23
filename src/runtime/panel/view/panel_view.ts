@@ -8,6 +8,8 @@ import {
   ItemPosition,
   type ItemShape,
   type ScreenItem,
+  UNGROUPED,
+  UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
@@ -54,12 +56,17 @@ export class PanelView {
     badgeDeleteButton: HTMLButtonElement;
     badgePositionButtons: NodeListOf<HTMLButtonElement>;
     badgePositionLabel: HTMLSpanElement;
+    badgeGroupSelect: HTMLSelectElement;
+
+    groupNameModal: HTMLDivElement;
+    groupNameInput: HTMLInputElement;
+    groupNameCancelBtn: HTMLButtonElement;
+    groupNameCreatelBtn: HTMLButtonElement;
 
     selectItemAllCheckbox: HTMLInputElement;
   };
 
-  private readonly CREATE_VALUE = '__create__';
-  private readonly NOGROUP = '__nogroup__';
+  private readonly NEW_GROUP = '__newgroup__';
   private HOVER_OUT_DELAY = 1000;
 
   private dragEl: HTMLLIElement | null = null;
@@ -104,6 +111,11 @@ export class PanelView {
       badgeDeleteButton: this.$('#badge-delete-button'),
       badgePositionButtons: this.$all<HTMLButtonElement>('#badge-position-pop button'),
       badgePositionLabel: this.$('#badge-position-label'),
+      badgeGroupSelect: this.$('#badge-group-select'),
+      groupNameModal: this.$('#group-name-modal'),
+      groupNameInput: this.$('#group-name-input'),
+      groupNameCancelBtn: this.$('#group-name-cancel-btn'),
+      groupNameCreatelBtn: this.$('#group-name-create-btn'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
     };
@@ -173,6 +185,27 @@ export class PanelView {
       });
     });
 
+    this.els.badgeGroupSelect.addEventListener('change', () => {
+      const value = this.els.badgeGroupSelect.value ?? UNGROUPED;
+      const group = value === UNGROUPED ? UNGROUPED_VALUE : value;
+      if (group === this.NEW_GROUP) {
+        this.els.groupNameModal.classList.remove('hidden');
+      }
+      this.emit(UIEventType.SET_GROUP, { group });
+    });
+
+    this.els.groupNameCancelBtn.addEventListener('click', () => {
+      this.els.groupNameModal.classList.add('hidden');
+    });
+
+    this.els.groupNameCreatelBtn.addEventListener('click', () => {
+      const value = this.els.groupNameInput.value ?? UNGROUPED;
+      const group = value === UNGROUPED || value === this.NEW_GROUP ? UNGROUPED_VALUE : value;
+      this.emit(UIEventType.SET_GROUP, { group });
+      this.els.groupNameModal.classList.add('hidden');
+      this.els.groupNameInput.value = '';
+    });
+
     this.updateQualityVisibility();
 
     this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
@@ -217,6 +250,7 @@ export class PanelView {
     this.applyBadgeColorUI(model.defaultColor);
     this.els.badgeShapeSelect.value = model.defaultShape;
     this.applyBadgePositonUI(model.defaultPosition);
+    this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
   }
 
   private renderStatus(key: StatusKey): void {
@@ -254,24 +288,17 @@ export class PanelView {
     }
     this.els.empty.classList.add('hidden');
 
-    const existingGroups = this.getExistingGroups(items);
     const groups = this.groupByGroup(items);
 
     const groupKeys = Array.from(groups.keys()).sort((a, b) => {
-      if (a === this.NOGROUP) return -1;
-      if (b === this.NOGROUP) return 1;
+      if (a === UNGROUPED) return -1;
+      if (b === UNGROUPED) return 1;
       return a.localeCompare(b);
     });
 
     const frag = this.doc.createDocumentFragment();
     for (const gKey of groupKeys) {
-      const section = this.renderGroupSection(
-        gKey,
-        groups.get(gKey)!,
-        existingGroups,
-        selectItems,
-        missingIds,
-      );
+      const section = this.renderGroupSection(gKey, groups.get(gKey)!, selectItems, missingIds);
       frag.appendChild(section);
     }
     this.els.list.replaceChildren(frag);
@@ -280,7 +307,6 @@ export class PanelView {
   private renderGroupSection(
     gKey: string,
     gItems: ScreenItem[],
-    existingGroups: string[],
     selectItems: number[],
     missingIds: number[],
   ): HTMLElement {
@@ -297,12 +323,12 @@ export class PanelView {
 
     checkbox.type = 'checkbox';
     checkbox.name = 'item-select';
-    checkbox.value = gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey;
+    checkbox.value = gKey === UNGROUPED ? i18n.get('group_ungrouped') : gKey;
     checkbox.checked = gItems.every((it) => selectItems.includes(it.id));
     checkbox.addEventListener('change', (e) => {
       const selected = (e.target as HTMLInputElement).checked;
       this.emit(UIEventType.ITEM_SELECTION_CHANGED, {
-        group: gKey === this.NOGROUP ? '' : gKey,
+        group: gKey === UNGROUPED ? UNGROUPED_VALUE : gKey,
         isCheck: selected,
       });
     });
@@ -310,7 +336,7 @@ export class PanelView {
     const title = this.el(
       'span',
       'select-item-gh-title',
-      gKey === this.NOGROUP ? i18n.get('group_ungrouped') : gKey,
+      gKey === UNGROUPED ? i18n.get('group_ungrouped') : gKey,
     );
     const left = this.el('div', 'select-item-gh-left');
     left.append(checkboxWrap, title);
@@ -333,7 +359,7 @@ export class PanelView {
 
     for (const it of gItems.sort(byLabelThenId)) {
       const selectChecked = selectItems.includes(it.id);
-      ul.appendChild(this.renderItem(it, existingGroups, selectChecked, missingIds));
+      ul.appendChild(this.renderItem(it, selectChecked, missingIds));
     }
 
     toggleBtn.addEventListener('click', () => {
@@ -355,12 +381,7 @@ export class PanelView {
     return section;
   }
 
-  private renderItem(
-    it: ScreenItem,
-    existingGroups: string[],
-    selectChecked: boolean,
-    missingIds: number[],
-  ): HTMLLIElement {
+  private renderItem(it: ScreenItem, selectChecked: boolean, missingIds: number[]): HTMLLIElement {
     const isMissing = missingIds.includes(it.id);
 
     const liBase = 'select-item';
@@ -441,101 +462,8 @@ export class PanelView {
     const anchor = this.el('div', 'anchor', it.anchor.value);
     main.append(anchor);
 
-    // group select
-    const groupWrap = this.buildGroupSelect(it, existingGroups);
-
-    li.append(checkboxWrap, badge, main, groupWrap);
+    li.append(checkboxWrap, badge, main);
     return li;
-  }
-
-  private buildGroupSelect(it: ScreenItem, existingGroups: string[]): HTMLElement {
-    const groupWrap = this.el('div', 'min-w-0');
-
-    const selectEl = this.el('select', 'select-item-select') as HTMLSelectElement;
-    selectEl.style.maxWidth = '10rem';
-
-    // options
-    selectEl.append(this.makeOpt('', i18n.get('group_ungrouped'), !it.group || !it.group.trim()));
-    for (const g of existingGroups) {
-      selectEl.append(this.makeOpt(g, g, it.group?.trim() === g));
-    }
-    const createOpt = this.makeOpt(this.CREATE_VALUE, i18n.get('common_create'));
-    selectEl.append(createOpt);
-
-    // Inline input UI for create
-    const showCreateInput = (prevValue: string) => {
-      selectEl.classList.add('hidden');
-
-      const input = this.el('input', 'select-item-input') as HTMLInputElement;
-      input.type = 'text';
-      input.placeholder = i18n.get('group_new_placeholder');
-
-      const okBtn = this.el(
-        'button',
-        'select-item-btn select-item-btn--outline',
-        i18n.get('common_create'),
-      ) as HTMLButtonElement;
-      okBtn.type = 'button';
-
-      const cancelBtn = this.el(
-        'button',
-        'select-item-btn select-item-btn--ghost',
-        i18n.get('common_cancel'),
-      ) as HTMLButtonElement;
-      cancelBtn.type = 'button';
-
-      const inputWrap = this.el('div', 'flex items-center gap-2');
-      inputWrap.append(input, okBtn, cancelBtn);
-      groupWrap.append(inputWrap);
-
-      const cleanup = () => {
-        inputWrap.remove();
-        selectEl.classList.remove('hidden');
-      };
-
-      const commit = () => {
-        const name = input.value.trim();
-        // Undo any missing entries
-        if (!name) {
-          selectEl.value = prevValue;
-          cleanup();
-          return;
-        }
-        this.emit(UIEventType.SET_ITEM_GROUP, { id: it.id, group: name });
-        cleanup();
-      };
-
-      okBtn.addEventListener('click', commit);
-      cancelBtn.addEventListener('click', () => {
-        selectEl.value = prevValue;
-        cleanup();
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') commit();
-        if (e.key === 'Escape') {
-          selectEl.value = prevValue;
-          cleanup();
-        }
-      });
-
-      input.focus();
-    };
-
-    selectEl.addEventListener('change', () => {
-      const prev = (it.group ?? '').trim();
-      const val = selectEl.value;
-      if (val === this.CREATE_VALUE) {
-        showCreateInput(prev);
-        return;
-      }
-      const nextGroup = val.length ? val : '';
-      if ((prev || '') !== nextGroup) {
-        this.emit(UIEventType.SET_ITEM_GROUP, { id: it.id, group: nextGroup });
-      }
-    });
-
-    groupWrap.append(selectEl);
-    return groupWrap;
   }
 
   private scheduleHoverOut() {
@@ -586,7 +514,7 @@ export class PanelView {
   private groupByGroup(items: ScreenItem[]): Map<string, ScreenItem[]> {
     const m = new Map<string, ScreenItem[]>();
     for (const it of items) {
-      const key = (it.group ?? '').trim() || this.NOGROUP;
+      const key = (it.group ?? UNGROUPED_VALUE).trim() || UNGROUPED;
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(it);
     }
@@ -673,6 +601,19 @@ export class PanelView {
       button.setAttribute('data-selected', selected ? 'true' : 'false');
     });
     this.els.badgePositionLabel.textContent = position.replaceAll('-', ' ');
+  }
+  private applyBadgeGroupSelectUI(existingGroups: string[], defautGroup: string): void {
+    this.els.badgeGroupSelect.innerHTML = '';
+    this.els.badgeGroupSelect.append(
+      this.makeOpt(UNGROUPED, i18n.get('group_ungrouped'), defautGroup === UNGROUPED),
+    );
+    for (const group of existingGroups) {
+      const normalize = (g?: string) => (g ?? '').trim();
+      const value = normalize(group);
+      this.els.badgeGroupSelect.append(this.makeOpt(value, group, defautGroup === group));
+    }
+    const createOpt = this.makeOpt(this.NEW_GROUP, i18n.get('common_create'));
+    this.els.badgeGroupSelect.append(createOpt);
   }
 
   private $<T extends Element>(selector: string): T {

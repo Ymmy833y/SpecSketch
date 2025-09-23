@@ -1,4 +1,11 @@
-import type { Anchor, ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
+import type {
+  Anchor,
+  ItemColor,
+  ItemGroup,
+  ItemPosition,
+  ItemShape,
+  ScreenItem,
+} from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
 
@@ -82,7 +89,7 @@ export enum ActionType {
   REORDER_ITEMS = 'REORDER_ITEMS',
 
   /** Update a group of elements */
-  SET_ITEM_GROUP = 'SET_ITEM_GROUP',
+  SET_GROUP = 'SET_GROUP',
 
   /** Port disconnected (lost connection to Content/Service Worker) */
   PORT_DISCONNECTED = 'PORT_DISCONNECTED',
@@ -108,10 +115,11 @@ export type Action =
       type: ActionType.RESTORE_STATE;
       state: {
         items: ScreenItem[];
-        nextLabel: number;
         defaultSize: number;
         defaultColor: ItemColor;
         defaultShape: ItemShape;
+        defaultPosition: ItemPosition;
+        defaultGroup: ItemGroup;
       };
     }
   | { type: ActionType.SET_MISSING_IDS; missingIds: number[] }
@@ -132,7 +140,7 @@ export type Action =
   | { type: ActionType.CAPTURE_SUCCEEDED }
   | { type: ActionType.CAPTURE_FAILED; error: unknown }
   | { type: ActionType.REORDER_ITEMS; fromId: number; fromIndex: number; toIndex: number }
-  | { type: ActionType.SET_ITEM_GROUP; id: number; group: string }
+  | { type: ActionType.SET_GROUP; group: string }
   | { type: ActionType.ITEM_SELECTION_CHANGED; id: number; isCheck: boolean }
   | { type: ActionType.ITEM_SELECTION_CHANGED; group: string; isCheck: boolean }
   | { type: ActionType.ITEM_SELECTION_CHANGED; allCheck: boolean }

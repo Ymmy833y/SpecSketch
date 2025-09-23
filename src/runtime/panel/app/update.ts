@@ -1,4 +1,4 @@
-import type { ScreenItem } from '@common/types';
+import { type ScreenItem, UNGROUPED_VALUE } from '@common/types';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 import { STATUS } from '@panel/view/status';
 
@@ -6,8 +6,6 @@ import { Action, ActionType } from '../types/action_types';
 import { Effect, EffectType } from '../types/effect_types';
 
 import type { Model } from './model';
-
-const NOGROUP = '' as const;
 
 export function update(model: Model, action: Action): { model: Model; effects: Effect[] } {
   switch (action.type) {
@@ -21,7 +19,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       if (action.status === STATUS.CONNECTED) {
         return { model: { ...model, status: action.status }, effects: [] };
       }
-      return { model: { ...model, items: [], nextLabel: 1, status: action.status }, effects: [] };
+      return { model: { ...model, items: [], status: action.status }, effects: [] };
     }
 
     case ActionType.RESTORE_STATE:
@@ -29,10 +27,11 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         model: {
           ...model,
           items: action.state.items,
-          nextLabel: action.state.nextLabel,
           defaultSize: action.state.defaultSize,
           defaultColor: action.state.defaultColor,
           defaultShape: action.state.defaultShape,
+          defaultPosition: action.state.defaultPosition,
+          defaultGroup: action.state.defaultGroup,
         },
         effects: [{ kind: EffectType.RENDER_CONTENT, items: action.state.items }],
       };
@@ -53,7 +52,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
 
     case ActionType.CLEAR_ALL:
       return {
-        model: { ...model, items: [], nextLabel: 1 },
+        model: { ...model, items: [] },
         effects: [{ kind: EffectType.CLEAR_CONTENT }, { kind: EffectType.CLEAR_STATE }],
       };
 
@@ -105,9 +104,9 @@ export function update(model: Model, action: Action): { model: Model; effects: E
 
     case ActionType.BADGE_DELETE: {
       const itemsMarkedForRelabel = model.items.filter((it) => !model.selectItems.includes(it.id));
-      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
+      const items = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
       return {
-        model: { ...model, items, nextLabel },
+        model: { ...model, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
@@ -120,6 +119,19 @@ export function update(model: Model, action: Action): { model: Model; effects: E
 
       return {
         model: { ...model, defaultPosition: action.position, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_GROUP: {
+      const itemsMarkedForRelabel = updateGroupAndDeferRelabel(
+        model.items,
+        model.selectItems,
+        action.group,
+      );
+      const items = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
+      return {
+        model: { ...model, defaultGroup: action.group, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
@@ -177,22 +189,9 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         action.fromIndex,
         action.toIndex,
       );
-      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
+      const items = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
       return {
-        model: { ...model, items, nextLabel },
-        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
-      };
-    }
-
-    case ActionType.SET_ITEM_GROUP: {
-      const itemsMarkedForRelabel = updateGroupAndDeferRelabel(
-        model.items,
-        action.id,
-        action.group,
-      );
-      const { items, nextLabel } = normalizeGroupLabelsAndCountUngrouped(itemsMarkedForRelabel);
-      return {
-        model: { ...model, items, nextLabel },
+        model: { ...model, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
@@ -289,37 +288,34 @@ function reorderItemLabel(items: ScreenItem[], fromId: number, fromIndex: number
 }
 
 /**
- * Updates the group of a specific item and *defers* label normalization.
+ * Bumps the label of selected items that already belong to the trimmed target group, while deferring label normalization.
  *
  * Notes
- * - This function does **not** reorder or compact labels for any group.
- *   Call `relabelConsecutivePerGroup()` afterwards to normalize labels to 1..n per group.
+ * - The function only touches items whose `id` is in `selectItems` and whose current `group` matches `nextGroupRaw` (after trimming).
+ * - Labels are reassigned to large descending numbers so that `relabelConsecutivePerGroup()` can later compact them.
  *
- * @param items - The current list of items.
- * @param id - The ID of the target item whose group is to be updated.
- * @param nextGroupRaw - The target group name. Empty string ("") represents "no group".
- * @returns A new array where only the target item is updated when the group changes; otherwise the original array.
+ * @param items - Full list of screen items.
+ * @param selectItems - IDs of the items that should receive a temporary label bump.
+ * @param nextGroupRaw - Target group name; trimmed before comparison.
+ * @returns A new array where the matching items gain a temporary high-priority label; other items are untouched.
  */
 function updateGroupAndDeferRelabel(
   items: ScreenItem[],
-  id: number,
+  selectItems: number[],
   nextGroupRaw: string,
 ): ScreenItem[] {
   const normalize = (g?: string) => (g ?? '').trim();
   const nextGroup = normalize(nextGroupRaw);
-
-  const idx = items.findIndex((it) => it.id === id);
-  if (idx < 0) return items;
-
-  const target = items[idx]!;
-  const currGroup = normalize(target.group);
-
-  // If the item already belongs to the target group, skip the operation.
-  if (currGroup === nextGroup) {
-    return items;
-  }
-
-  return items.map((it) => (it.id === id ? { ...it, group: nextGroup, label: Infinity } : it));
+  let updateItemCnt = 0;
+  return items
+    .sort((a, b) => b.id - a.id)
+    .map((item) => {
+      if (selectItems.includes(item.id) && item.group !== nextGroup) {
+        const label = Number.MAX_SAFE_INTEGER - updateItemCnt++;
+        return { ...item, group: nextGroup, label };
+      }
+      return item;
+    });
 }
 
 function applyItemSelectionChangedById(id: number, isCheck: boolean, selectItems: number[]) {
@@ -338,7 +334,9 @@ function applyItemSelectionChangedForGroup(
   items: ScreenItem[],
 ) {
   const g = group.trim();
-  const groupIds = items.filter((it) => (it.group ?? NOGROUP).trim() === g).map((it) => it.id);
+  const groupIds = items
+    .filter((it) => (it.group ?? UNGROUPED_VALUE).trim() === g)
+    .map((it) => it.id);
 
   if (groupIds.length === 0) return selectItems;
   if (isCheck) {

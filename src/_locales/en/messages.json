@@ -30,6 +30,7 @@
   "badge_shape_circle": { "message": "Circle" },
   "badge_shape_square": { "message": "Square" },
   "badge_position": { "message": "Badge Position" },
+  "badge_group": { "message": "Badge Group" },
 
   "section_selected_items": { "message": "Selected Elements" },
   "empty_hint": { "message": "Turn on the selection mode and click on the element." },
@@ -38,6 +39,9 @@
 
   "group_ungrouped": { "message": "Ungrouped" },
   "group_new_placeholder": { "message": "New group name" },
+  
+  "create_group_title": { "message": "Create Group" },
+  "create_group_subtitle": { "message": "Please enter a new group name." },
 
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },

@@ -1,4 +1,4 @@
-import type { ScreenState } from '@common/types';
+import { type ScreenState, UNGROUPED } from '@common/types';
 
 const ROOT_KEY = 'screenStateByPage';
 type StateMap = Record<string, ScreenState>;
@@ -38,11 +38,11 @@ export async function getState(pageKey: string): Promise<ScreenState> {
     map[pageKey] ?? {
       items: [],
       nextId: 1,
-      nextLabel: 1,
       defaultSize: 14,
       defaultColor: 'Blue',
       defaultShape: 'circle',
       defaultPosition: 'left-top-outside',
+      defaultGroup: UNGROUPED,
     }
   );
 }
