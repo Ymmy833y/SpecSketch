@@ -15,6 +15,7 @@
         left: anchor(start);
         margin-top: 2px;
       }
+
       #badge-position-pop[popover] {
         inset: auto;
         position-anchor: --badge-position-trigger;
@@ -211,7 +212,7 @@
               </div>
 
               <div>
-                <label for="badge-shape-select" class="label-xs" data-i18n="common_delete">Badge Delete</label>
+                <label for="badge-delete-select" class="label-xs" data-i18n="common_delete">Badge Delete</label>
                 <button id="badge-delete-button" type="button" class="btn-icon btn-icon--danger" aria-label="Delete">
                   <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" clip-rule="evenodd"
@@ -223,7 +224,7 @@
           </div>
 
           <div>
-            <div class="grid grid-cols-[1fr_1fr_auto] gap-4 items-end">
+            <div class="grid grid-cols-[1fr_auto] gap-4 items-end">
               <div>
                 <label for="badge-position-button" class="label-xs" data-i18n="badge_position">Badge Position</label>
                 <button id="badge-position-button" type="button" class="btn-field" popovertarget="badge-position-pop"
@@ -316,6 +317,12 @@
                   </div>
                 </div>
               </div>
+              <div>
+                <label for="badge-group-select" class="label-xs" data-i18n="badge_group">Badge group</label>
+                <select id="badge-group-select" name="badgeGroup" class="select">
+                  <option value="__ungrouped__" selected data-i18n="group_ungrouped">Ungrouped</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -336,6 +343,21 @@
       </div>
 
       <div id="select-list" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <div id="group-name-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
+    <div class="modal-card">
+      <h2 class="modal-title" data-i18n="create_group_title"></h2>
+      <p class="modal-subtitle" data-i18n="create_group_subtitle"></p>
+      <label class="modal-label">
+        <span data-i18n="group_new_placeholder"></span>
+        <input id="group-name-input" type="text" class="modal-input"/>
+      </label>
+      <div class="modal-actions">
+        <button id="group-name-cancel-btn" class="modal-btn" data-i18n="common_cancel"></button>
+        <button id="group-name-create-btn" class="modal-btn modal-btn--primary" data-i18n="common_create" disabled></button>
+      </div>
     </div>
   </div>
 
