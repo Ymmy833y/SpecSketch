@@ -35,6 +35,9 @@ export enum UIEventType {
   /** Badge position picked (popover buttons) */
   BADGE_POSITION_SELECT = 'BADGE_POSITION_SELECT',
 
+  /** Update a group of elements */
+  SET_GROUP = 'SET_GROUP',
+
   /** Capture format changed (radio) */
   CAPTURE_FORMAT_CHANGE = 'CAPTURE_FORMAT_CHANGE',
 
@@ -52,9 +55,6 @@ export enum UIEventType {
 
   /** Reordering selected items (drag and drop) */
   REORDER_ITEMS = 'REORDER_ITEMS',
-
-  /** Update a group of elements */
-  SET_ITEM_GROUP = 'SET_ITEM_GROUP',
 
   /** Emitted when an item's edit-selection checkbox changes state */
   ITEM_SELECTION_CHANGED = 'ITEM_SELECTION_CHANGED',
@@ -82,6 +82,7 @@ export type UIEventPayloadMap = {
   [UIEventType.BADGE_SHAPE_CHANGE]: { shape: ItemShape };
   [UIEventType.BADGE_DELETE]: undefined;
   [UIEventType.BADGE_POSITION_SELECT]: { position: ItemPosition };
+  [UIEventType.SET_GROUP]: { group: string };
 
   [UIEventType.CAPTURE_FORMAT_CHANGE]: { format: CaptureFormat };
   [UIEventType.CAPTURE_AREA_CHANGE]: { area: CaptureArea };
@@ -91,7 +92,6 @@ export type UIEventPayloadMap = {
   [UIEventType.TOGGLE_CAPTURE_PANEL]: undefined;
 
   [UIEventType.REORDER_ITEMS]: { fromId: number; fromIndex: number; toIndex: number };
-  [UIEventType.SET_ITEM_GROUP]: { id: number; group: string };
   [UIEventType.ITEM_SELECTION_CHANGED]:
     | { id: number; isCheck: boolean }
     | { group: string; isCheck: boolean }

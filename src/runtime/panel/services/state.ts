@@ -6,8 +6,6 @@ type Patch = {
   removedIds?: number[];
 };
 
-const NOGROUP = '' as const;
-
 /**
  * Applies a patch (add/update/remove) to the state for the given page key,
  * relabels sequentially if any removal occurred, persists the result,
@@ -28,7 +26,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
   if (patch.added?.length) {
     for (const a of patch.added) {
       const id = state.nextId++;
-      const label = state.nextLabel;
+      const label = Infinity;
       const it: ScreenItem = {
         id,
         label,
@@ -37,13 +35,12 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
         color: state.defaultColor,
         shape: state.defaultShape,
         position: state.defaultPosition,
+        group: state.defaultGroup,
       };
       state.items.push(it);
     }
   }
-  ({ items: state.items, nextLabel: state.nextLabel } = normalizeGroupLabelsAndCountUngrouped(
-    state.items,
-  ));
+  state.items = normalizeGroupLabelsAndCountUngrouped(state.items);
 
   await setState(pageKey, state);
   return state;
@@ -92,11 +89,8 @@ export async function handleSelected(pageKey: string, anchors: Anchor[]): Promis
  * @param items - The original list of items (treated immutably).
  * @returns An object containing the normalized items and the no-group count.
  */
-export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): {
-  items: ScreenItem[];
-  nextLabel: number;
-} {
-  const normalize = (g?: string) => (g ?? NOGROUP).trim(); // '' is unified as UnGroup
+export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): ScreenItem[] {
+  const normalize = (g?: string) => (g ?? '').trim(); // '' is unified as UnGroup
 
   // Bucket [index, item] for each group
   const buckets = new Map<string, Array<{ index: number; item: ScreenItem }>>();
@@ -122,7 +116,5 @@ export function normalizeGroupLabelsAndCountUngrouped(items: ScreenItem[]): {
       }
     });
   }
-  const noGroupCount = buckets.get(NOGROUP)?.length ?? 0;
-
-  return { items: out, nextLabel: noGroupCount + 1 };
+  return out;
 }

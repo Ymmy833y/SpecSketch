@@ -1,4 +1,4 @@
-import type { ScreenItem } from '@common/types';
+import { type ScreenItem } from '@common/types';
 import type { Model } from '@panel/app/model';
 import { update } from '@panel/app/update';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -39,11 +39,11 @@ function baseModel(overrides?: Partial<Model>): Model {
     pageKey: '',
     status: STATUS.CONNECTED,
     items: [] as ScreenItem[],
-    nextLabel: 1,
     defaultSize: 12,
     defaultColor: 'Red',
     defaultShape: 'circle',
     defaultPosition: 'left-top-outside',
+    defaultGroup: '',
     missingIds: [] as number[],
     selectionEnabled: false,
     selectItems: [] as number[],
@@ -63,7 +63,7 @@ describe('panel/app/update', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     norm.mockReset();
-    norm.mockImplementation((items: ScreenItem[]) => ({ items, nextLabel: 999 }));
+    norm.mockImplementation((items: ScreenItem[]) => items);
   });
 
   it('INIT: returns original model and no effects', () => {
@@ -104,20 +104,22 @@ describe('panel/app/update', () => {
       type: ActionType.RESTORE_STATE,
       state: {
         items,
-        nextLabel: 5,
         defaultSize: 20,
         defaultColor: 'Blue',
         defaultShape: 'square',
+        defaultPosition: 'right-top-outside',
+        defaultGroup: 'test',
       },
     } as unknown as Action;
 
     const out = update(model, action);
 
     expect(out.model.items).toEqual(items);
-    expect(out.model.nextLabel).toBe(5);
     expect(out.model.defaultSize).toBe(20);
     expect(out.model.defaultColor).toBe('Blue');
     expect(out.model.defaultShape).toBe('square');
+    expect(out.model.defaultPosition).toBe('right-top-outside');
+    expect(out.model.defaultGroup).toBe('test');
     expect(out.effects).toEqual([{ kind: EffectType.RENDER_CONTENT, items }]);
   });
 
@@ -142,13 +144,12 @@ describe('panel/app/update', () => {
   });
 
   it('CLEAR_ALL: clears items and nextLabel, emits CLEAR effects', () => {
-    const model = baseModel({ items: [makeItem(1, '', 1)], nextLabel: 10 });
+    const model = baseModel({ items: [makeItem(1, '', 1)] });
     const action = { type: ActionType.CLEAR_ALL } as unknown as Action;
 
     const out = update(model, action);
 
     expect(out.model.items).toEqual([]);
-    expect(out.model.nextLabel).toBe(1);
     expect(out.effects).toEqual([
       { kind: EffectType.CLEAR_CONTENT },
       { kind: EffectType.CLEAR_STATE },
@@ -232,7 +233,6 @@ describe('panel/app/update', () => {
     expect(calledWith.map((i) => i.id)).toEqual([1]);
 
     expect(out.model.items.map((i) => i.id)).toEqual([1]);
-    expect(out.model.nextLabel).toBe(999);
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
   });
@@ -314,7 +314,6 @@ describe('panel/app/update', () => {
     const [[calledWith]] = norm.mock.calls as [[ScreenItem[]], ...unknown[]];
     const moved = calledWith.find((i) => i.id === 3)!;
     expect(moved.label).toBeCloseTo(0.1, 6);
-    expect(out.model.nextLabel).toBe(999);
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
   });
@@ -376,32 +375,6 @@ describe('panel/app/update', () => {
     } as unknown as Action;
 
     expect(() => update(model, action)).toThrow(RangeError);
-  });
-
-  it('SET_ITEM_GROUP: updates group and sets label=Infinity before normalization', () => {
-    const items = [makeItem(1, 'A', 1), makeItem(2, 'B', 1)];
-    const model = baseModel({ items });
-    const action = { type: ActionType.SET_ITEM_GROUP, id: 1, group: 'B' } as unknown as Action;
-
-    update(model, action);
-
-    expect(norm).toHaveBeenCalled();
-    const [[calledWith]] = norm.mock.calls as [[ScreenItem[]], ...unknown[]];
-    const changed = calledWith.find((i) => i.id === 1)!;
-    expect((changed as unknown as { group?: string }).group).toBe('B');
-    expect(changed.label).toBe(Infinity);
-  });
-
-  it('SET_ITEM_GROUP: same group keeps array untouched before normalization', () => {
-    const items = [makeItem(1, 'A', 1), makeItem(2, 'B', 1)];
-    const model = baseModel({ items });
-    const action = { type: ActionType.SET_ITEM_GROUP, id: 1, group: 'A' } as unknown as Action;
-
-    update(model, action);
-
-    expect(norm).toHaveBeenCalled();
-    const [[calledWith]] = norm.mock.calls as [[ScreenItem[]], ...unknown[]];
-    expect(calledWith).toEqual(items);
   });
 
   it('ITEM_SELECTION_CHANGED by id: add and remove', () => {
@@ -508,5 +481,94 @@ describe('panel/app/update', () => {
 
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('SET_STATUS: when status becomes non-CONNECTED, items are cleared', () => {
+    const model = baseModel({
+      status: 'CONNECTED' as unknown as Model['status'],
+      items: [makeItem(1, 'G', 1)],
+    });
+    const action = { type: ActionType.SET_STATUS, status: 'DISCONNECTED' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.status).toBe('DISCONNECTED');
+    expect(out.model.items).toEqual([]);
+    expect(out.effects).toEqual([]);
+  });
+
+  it('SET_GROUP: updates selected items group, defers relabel with large numbers, then persists+renders', () => {
+    // id:2,1 is the selection target. It is assumed that the labels will be equivalent to MAX_SAFE_INTEGER,
+    // MAX_SAFE_INTEGER-1 in descending order of id.
+    const items = [makeItem(1, 'A', 1), makeItem(2, 'A', 2), makeItem(3, 'B', 1)];
+    const model = baseModel({ items, selectItems: [1, 2] });
+    const action = { type: ActionType.SET_GROUP, group: 'B' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(norm).toHaveBeenCalled();
+    // The default group will contain the passed value.
+    expect(out.model.defaultGroup).toBe('B');
+
+    const after = out.model.items;
+    const s1 = after.find((i) => i.id === 1)!;
+    const s2 = after.find((i) => i.id === 2)!;
+    const other = after.find((i) => i.id === 3)!;
+
+    expect(s1.group).toBe('B');
+    expect(s2.group).toBe('B');
+    expect(other.group).toBe('B');
+
+    // The label is assumed to be overwritten with a very large value as a "temporary value before normalization.
+    const THRESHOLD = 1e12;
+    expect(s1.label).toBeGreaterThan(THRESHOLD);
+    expect(s2.label).toBeGreaterThan(THRESHOLD);
+    // Since the ids are processed in descending order, id=2 is larger
+    expect(s2.label).toBeGreaterThan(s1.label);
+
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('ITEM_SELECTION_CHANGED by group: UNGROUPED_VALUE selects and unselects items with undefined group', () => {
+    const items = [makeItem(1, undefined, 1), makeItem(2, 'X', 2)];
+    const model = baseModel({ items, selectItems: [] });
+
+    // Undefined is selected by specifying UNGROUPED_VALUE
+    const added = update(model, {
+      type: ActionType.ITEM_SELECTION_CHANGED,
+      group: '',
+      isCheck: true,
+    } as unknown as Action);
+    expect(new Set(added.model.selectItems)).toEqual(new Set([1]));
+
+    const removed = update(added.model, {
+      type: ActionType.ITEM_SELECTION_CHANGED,
+      group: '',
+      isCheck: false,
+    } as unknown as Action);
+    expect(removed.model.selectItems).toEqual([]);
+  });
+
+  it('ITEM_SELECTION_CHANGED by group: non-existing group leaves selection unchanged', () => {
+    const items = [makeItem(1, 'A', 1), makeItem(2, 'B', 2)];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const out = update(model, {
+      type: ActionType.ITEM_SELECTION_CHANGED,
+      group: 'NO_SUCH_GROUP',
+      isCheck: true,
+    } as unknown as Action);
+
+    expect(out.model.selectItems).toEqual([2]);
+    expect(out.effects).toEqual([]);
+  });
+
+  it('CAPTURE_SUCCEEDED: no changes and no effects', () => {
+    const model = baseModel();
+    const out = update(model, { type: ActionType.CAPTURE_SUCCEEDED } as unknown as Action);
+
+    expect(out.model).toBe(model);
+    expect(out.effects).toEqual([]);
   });
 });

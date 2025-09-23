@@ -84,6 +84,11 @@ export function isItemPosition(v: unknown): v is ItemPosition {
   return typeof v === 'string' && (ITEM_POSITION_VALUES as readonly string[]).includes(v);
 }
 
+export type Ungrouped = '__ungrouped__';
+export const UNGROUPED: Ungrouped = '__ungrouped__' as const;
+export const UNGROUPED_VALUE = '' as const;
+export type ItemGroup = Ungrouped | string;
+
 export type ScreenItem = {
   id: number;
   label: number;
@@ -98,9 +103,9 @@ export type ScreenItem = {
 export type ScreenState = {
   items: ScreenItem[];
   nextId: number;
-  nextLabel: number;
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
   defaultPosition: ItemPosition;
+  defaultGroup: ItemGroup;
 };

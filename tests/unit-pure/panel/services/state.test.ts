@@ -1,4 +1,4 @@
-import type { Anchor, ScreenItem, ScreenState } from '@common/types';
+import { type Anchor, type ScreenItem, type ScreenState } from '@common/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@panel/state/store', () => {
@@ -33,16 +33,18 @@ const makeItem = (id: number, label: number, anchor: Anchor, group?: string): Sc
   size: 16 as ScreenItem['size'],
   color: 'indigo' as ScreenItem['color'],
   shape: 'square' as ScreenItem['shape'],
+  position: 'left-top-outside' as ScreenItem['position'],
   ...(group !== undefined ? { group } : {}),
 });
 
-const makeState = (items: ScreenItem[], nextId: number, nextLabel: number): ScreenState => ({
+const makeState = (items: ScreenItem[], nextId: number): ScreenState => ({
   items,
   nextId,
-  nextLabel,
   defaultSize: 16 as ScreenItem['size'],
   defaultColor: 'indigo' as ScreenItem['color'],
   defaultShape: 'square' as ScreenItem['shape'],
+  defaultPosition: 'left-top-outside' as ScreenItem['position'],
+  defaultGroup: '',
 });
 
 describe('panel/services/state', () => {
@@ -56,7 +58,7 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
       const i3 = makeItem(3, 3, css('#c'));
-      const initial = makeState([i1, i2, i3], 4, 4);
+      const initial = makeState([i1, i2, i3], 4);
       vi.mocked(getState).mockResolvedValueOnce(initial);
 
       // Act
@@ -65,21 +67,18 @@ describe('panel/services/state', () => {
       // Assert
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2]);
-      expect(next.nextLabel).toBe(3);
 
       expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
       const persisted = vi.mocked(setState).mock.calls[0]?.[1] as ScreenState;
       expect(persisted.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
     });
 
-    it('adds anchors using defaults, normalizes labels, advances nextId/nextLabel, and persists', async () => {
+    it('adds anchors using defaults, normalizes labels, advances nextId, and persists', async () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
 
-      vi.mocked(getState)
-        .mockResolvedValueOnce(makeState([i1, i2], 3, 3)) // handleSelected
-        .mockResolvedValueOnce(makeState([i1, i2], 3, 3)); // applyPatch
+      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
 
       // Act
       const next = await applyPatch(PAGE, {
@@ -90,12 +89,13 @@ describe('panel/services/state', () => {
       expect(next.items).toHaveLength(4);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2, 3, 4]);
       expect(next.nextId).toBe(5);
-      expect(next.nextLabel).toBe(5);
 
-      const addedOne = next.items.find((it: ScreenItem) => it.anchor.value === '#x')!;
-      expect(addedOne.size).toBe(next.defaultSize);
-      expect(addedOne.color).toBe(next.defaultColor);
-      expect(addedOne.shape).toBe(next.defaultShape);
+      const addedX = next.items.find((it: ScreenItem) => it.anchor.value === '#x')!;
+      expect(addedX.size).toBe(next.defaultSize);
+      expect(addedX.color).toBe(next.defaultColor);
+      expect(addedX.shape).toBe(next.defaultShape);
+      expect(addedX.position).toBe(next.defaultPosition);
+      expect(addedX.group ?? '').toBe(next.defaultGroup);
 
       expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
     });
@@ -104,7 +104,7 @@ describe('panel/services/state', () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3, 3));
+      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
 
       // Act
       const next = await applyPatch(PAGE, {});
@@ -124,7 +124,9 @@ describe('panel/services/state', () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3, 3));
+      vi.mocked(getState)
+        .mockResolvedValueOnce(makeState([i1, i2], 3)) // for handleSelected
+        .mockResolvedValueOnce(makeState([i1, i2], 3)); // for applyPatch
 
       // Act
       const next = await handleSelected(PAGE, [css('#a')]);
@@ -140,8 +142,8 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
 
       vi.mocked(getState)
-        .mockResolvedValueOnce(makeState([i1], 2, 2))
-        .mockResolvedValueOnce(makeState([i1], 2, 2));
+        .mockResolvedValueOnce(makeState([i1], 2))
+        .mockResolvedValueOnce(makeState([i1], 2));
 
       // Act
       const next = await handleSelected(PAGE, [css('#b'), css('#b')]);
@@ -158,8 +160,8 @@ describe('panel/services/state', () => {
       const i2 = makeItem(2, 2, css('#c'));
 
       vi.mocked(getState)
-        .mockResolvedValueOnce(makeState([i1, i2], 3, 3))
-        .mockResolvedValueOnce(makeState([i1, i2], 3, 3));
+        .mockResolvedValueOnce(makeState([i1, i2], 3))
+        .mockResolvedValueOnce(makeState([i1, i2], 3));
 
       // Act
       const next = await handleSelected(PAGE, [css('#a'), css('#b'), css('#b')]);
@@ -173,7 +175,7 @@ describe('panel/services/state', () => {
   });
 
   describe('normalizeGroupLabelsAndCountUngrouped', () => {
-    it('relabels within each group and computes nextLabel from ungrouped count', () => {
+    it('relabels within each group (1..n per group); ungrouped are relabeled independently', () => {
       // Arrange
       const a1 = makeItem(1, 2, css('#a'), 'A'); // label 2
       const a2 = makeItem(2, 1, css('#b'), 'A'); // label 1
@@ -181,28 +183,13 @@ describe('panel/services/state', () => {
       const a3 = makeItem(4, 2, css('#d'), 'A'); // label 2 (dup)
 
       // Act
-      const { items: out, nextLabel } = normalizeGroupLabelsAndCountUngrouped([a1, a2, u1, a3]);
+      const out = normalizeGroupLabelsAndCountUngrouped([a1, a2, u1, a3]);
 
       // Assert
       expect(out.find((it: ScreenItem) => it.id === 1)?.label).toBe(2);
       expect(out.find((it: ScreenItem) => it.id === 2)?.label).toBe(1);
       expect(out.find((it: ScreenItem) => it.id === 4)?.label).toBe(3);
       expect(out.find((it: ScreenItem) => it.id === 3)?.label).toBe(1);
-      expect(nextLabel).toBe(2); // ungrouped=1 → 1+1
-    });
-
-    it('normalizes groups by trimming and treating undefined/blank as no-group', () => {
-      // Arrange
-      const gA1 = makeItem(1, 2, css('#a'), ' A ');
-      const gA2 = makeItem(2, 1, css('#b'), 'A');
-      const no1 = makeItem(3, 1, css('#c'), ' ');
-      const no2 = makeItem(4, 1, css('#d')); // undefined
-
-      // Act
-      const { nextLabel } = normalizeGroupLabelsAndCountUngrouped([gA1, gA2, no1, no2]);
-
-      // Assert
-      expect(nextLabel).toBe(3);
     });
   });
 });

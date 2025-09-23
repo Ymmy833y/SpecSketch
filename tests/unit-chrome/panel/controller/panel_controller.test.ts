@@ -70,7 +70,7 @@ vi.mock('@panel/view/panel_view.ts', () => ({
 
 // ------ Import SUT and dependencies ------
 import { MSG_TYPE } from '@common/messages';
-import { ItemPosition } from '@common/types';
+import { ItemPosition, UNGROUPED_VALUE } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { update } from '@panel/app/update';
@@ -367,11 +367,11 @@ describe('panel/controller/panel_controller', () => {
       vi.mocked(getState).mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
-        nextLabel: 3,
         defaultSize: 10,
         defaultColor: 'Blue',
         defaultShape: 'square',
         defaultPosition: 'left-top-outside',
+        defaultGroup: UNGROUPED_VALUE,
       });
 
       type Exposed = { dispatch: (a: unknown) => void };
@@ -398,7 +398,6 @@ describe('panel/controller/panel_controller', () => {
         type: ActionType.RESTORE_STATE,
         state: expect.objectContaining({
           items: [makeItem(1), makeItem(2)],
-          nextLabel: 3,
           defaultShape: 'square',
         }),
       });
@@ -476,6 +475,8 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 20,
         defaultColor: 'Green',
         defaultShape: 'square',
+        defaultGroup: 'right-top-outside',
+        defaultPosition: '',
       };
       type Exposed = { ensureConnectionAlive: () => Promise<unknown> };
       const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
@@ -486,10 +487,11 @@ describe('panel/controller/panel_controller', () => {
       expect(setState).toHaveBeenCalledWith('key://local', {
         items: [makeItem(1), makeItem(2), makeItem(3)],
         nextId: 1,
-        nextLabel: 9,
         defaultSize: 20,
         defaultColor: 'Green',
         defaultShape: 'square',
+        defaultGroup: 'right-top-outside',
+        defaultPosition: '',
       });
     });
 
@@ -504,15 +506,17 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 18,
         defaultColor: 'Purple',
         defaultShape: 'square',
+        defaultGroup: 'right-top-outside',
+        defaultPosition: '',
       };
       vi.mocked(getState).mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
-        nextLabel: 1,
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
         defaultPosition: 'left-top-inside',
+        defaultGroup: '',
       });
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.PERSIST_STATE }]);
@@ -523,10 +527,11 @@ describe('panel/controller/panel_controller', () => {
         expect.objectContaining({
           items: [makeItem(100, { color: 'Purple', shape: 'square' })],
           nextId: 5,
-          nextLabel: 7,
           defaultSize: 18,
           defaultColor: 'Purple',
           defaultShape: 'square',
+          defaultGroup: 'right-top-outside',
+          defaultPosition: '',
         }),
       );
     });

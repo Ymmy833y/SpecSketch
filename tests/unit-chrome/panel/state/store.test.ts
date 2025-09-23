@@ -1,4 +1,4 @@
-import type { ScreenState } from '@common/types';
+import { type ScreenState, UNGROUPED_VALUE } from '@common/types';
 import { getState, setState } from '@panel/state/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,11 +36,11 @@ function makeState(partial?: Partial<ScreenState>): ScreenState {
   return {
     items: [],
     nextId: 1,
-    nextLabel: 1,
     defaultSize: 14,
     defaultColor: 'Blue',
     defaultShape: 'circle',
     defaultPosition: 'left-top-outside',
+    defaultGroup: UNGROUPED_VALUE,
     ...(partial ?? {}),
   };
 }
@@ -65,11 +65,11 @@ describe('panel/state/store', () => {
       expect(state).toEqual({
         items: [],
         nextId: 1,
-        nextLabel: 1,
         defaultSize: 14,
         defaultColor: 'Blue',
         defaultShape: 'circle',
         defaultPosition: 'left-top-outside',
+        defaultGroup: '',
       });
       expect(storageSet).not.toHaveBeenCalled();
     }, 1000);
@@ -78,10 +78,10 @@ describe('panel/state/store', () => {
       // Arrange
       const stored: ScreenState = makeState({
         nextId: 5,
-        nextLabel: 7,
         defaultSize: 16,
         defaultColor: 'Blue',
         defaultShape: 'square',
+        defaultGroup: UNGROUPED_VALUE,
       });
       useMemoryBackedStorage({ 'page-1': stored });
 
@@ -129,8 +129,8 @@ describe('panel/state/store', () => {
 
     it('setState overwrites existing key value', async () => {
       // Arrange
-      const oldState: ScreenState = makeState({ nextLabel: 3, defaultShape: 'circle' });
-      const nextState: ScreenState = makeState({ nextLabel: 99, defaultShape: 'square' });
+      const oldState: ScreenState = makeState({ defaultShape: 'circle' });
+      const nextState: ScreenState = makeState({ defaultShape: 'square' });
       useMemoryBackedStorage({ a: oldState });
 
       // Act

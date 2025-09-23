@@ -1,4 +1,11 @@
-import type { ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
+import {
+  type ItemColor,
+  ItemGroup,
+  type ItemPosition,
+  type ItemShape,
+  type ScreenItem,
+  UNGROUPED_VALUE,
+} from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
 
@@ -10,11 +17,11 @@ export type Model = {
   selectionEnabled: boolean;
   items: ScreenItem[];
 
-  nextLabel: number;
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
   defaultPosition: ItemPosition;
+  defaultGroup: ItemGroup;
 
   capture: {
     format: CaptureFormat; // 'png' | 'jpeg'
@@ -34,11 +41,11 @@ export const initialModel: Model = {
   pageKey: '',
   selectionEnabled: false,
   items: [],
-  nextLabel: 1,
   defaultSize: 14,
   defaultColor: 'Blue',
   defaultShape: 'circle',
   defaultPosition: 'left-top-outside',
+  defaultGroup: UNGROUPED_VALUE,
   capture: {
     format: 'png',
     area: 'full',
