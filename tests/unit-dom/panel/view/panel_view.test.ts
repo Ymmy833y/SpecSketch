@@ -41,11 +41,39 @@ vi.mock('@common/types', () => {
     isItemColor: (v: unknown) => typeof v === 'string' && validColors.has(v),
     isItemShape: (v: unknown) => typeof v === 'string' && validShapes.has(v),
     isItemPosition: (v: unknown) => typeof v === 'string' && validPositions.has(v),
+    UNGROUPED: '__ungrouped__',
+  };
+});
+
+vi.mock('@common/icons', () => {
+  return {
+    getIcon: (name: string) => {
+      switch (name) {
+        case 'caretRight':
+          return { d: 'M2 2L10 10', viewBox: '0 0 20 20' };
+        case 'caretDown':
+          return { d: 'M2 2L10 2', viewBox: '0 0 20 20' };
+        case 'caretRightFill':
+          return { d: 'M3 3L11 11', viewBox: '0 0 20 20' };
+        case 'caretDownFill':
+          return { d: 'M3 3L11 3', viewBox: '0 0 20 20' };
+        case 'warn':
+          return { d: 'M1 1L1 1', viewBox: '0 0 20 20' };
+        default:
+          return { d: 'M0 0L0 0', viewBox: '0 0 20 20' };
+      }
+    },
   };
 });
 
 // ---- Import SUT after mocks ----
-import type { ItemColor, ItemPosition, ItemShape, ScreenItem } from '@common/types';
+import {
+  type ItemColor,
+  ItemGroup,
+  type ItemPosition,
+  type ItemShape,
+  type ScreenItem,
+} from '@common/types';
 import { Model } from '@panel/app/model';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
@@ -103,7 +131,8 @@ const basePanelHtml = () => `
       <button type="button" data-position-name="left-top-outside"></button>
       <button type="button" data-position-name="right-top-outside"></button>
       <button type="button" data-position-name="top-outside"></button>
-    </div>    
+    </div>
+    <select id="badge-group-select"></select>
   </div>
 
   <div id="list-wrap">
@@ -111,6 +140,11 @@ const basePanelHtml = () => `
     <span id="select-count">0</span>
     <div id="select-empty" class="hidden">Empty</div>
     <div id="select-list"></div>
+  </div>
+  <div id="group-name-modal" class="hidden">
+    <input id="group-name-input"/>
+    <button id="group-name-cancel-btn"></button>
+    <button id="group-name-create-btn"></button>
   </div>
 </div>
 `;
@@ -134,7 +168,6 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
   const m: Model = {
     tabId: 1,
     pageKey: 'test',
-    nextLabel: 1,
     status: STATUS.CONNECTED,
     selectionEnabled: true,
     items: [] as ScreenItem[],
@@ -151,6 +184,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultColor: 'Gray' as ItemColor,
     defaultShape: 'circle' as ItemShape,
     defaultPosition: 'left-top-outside' as ItemPosition,
+    defaultGroup: '' as ItemGroup,
     ...model,
   };
   view.render(m);
@@ -429,37 +463,6 @@ describe('panel/view/panel_view', () => {
     expect(payload.toIndex).toBe(1);
   });
 
-  it('creates a new group via inline input or cancels/empty safely', () => {
-    const v = setupView();
-    const onSetGroup = vi.fn();
-    v.on(UIEventType.SET_ITEM_GROUP, onSetGroup);
-
-    const items = [makeItem(5, 1, 'X', '')];
-    renderWithModel(v, { items, selectItems: [] });
-
-    // Get the select of unassigned sections (in the first li)
-    const sel = document.querySelector('#select-list li select') as HTMLSelectElement;
-    // Select __create__ → inline input appears
-    sel.value = '__create__';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-
-    // Input -> OK
-    const input = sel.parentElement!.querySelector('input[type="text"]') as HTMLInputElement;
-    const ok = sel.parentElement!.querySelector('button[type="button"]') as HTMLButtonElement;
-    input.value = 'NewG';
-    ok.click();
-    expect(onSetGroup).toHaveBeenCalledWith({ id: 5, group: 'NewG' });
-
-    // If you create it again and confirm it as empty, it will not be emitted and will return to its original value.
-    sel.value = '__create__';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-    const input2 = sel.parentElement!.querySelector('input[type="text"]') as HTMLInputElement;
-    const ok2 = sel.parentElement!.querySelector('button[type="button"]') as HTMLButtonElement;
-    input2.value = '';
-    ok2.click();
-    expect(onSetGroup).toHaveBeenCalledTimes(1);
-  });
-
   it('toggle label text follows selectionEnabled (ON/OFF)', () => {
     const v = setupView();
     renderWithModel(v, { selectionEnabled: false });
@@ -536,5 +539,280 @@ describe('panel/view/panel_view', () => {
     expect(topOutsideBtn.getAttribute('data-selected')).toBe('true');
     expect(leftTopBtn.getAttribute('data-selected')).toBe('false');
     expect(rightTopBtn.getAttribute('data-selected')).toBe('false');
+  });
+
+  it('applies capture options toggle UI by render (aria-expanded, icon svg, panel visibility)', () => {
+    const v = setupView();
+
+    // panelExpanded=false
+    renderWithModel(v, {
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    const toggle = document.querySelector('#capture-options-toggle')!;
+    const panel = document.querySelector('#capture-options')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(panel).toHaveClass('hidden');
+    expect(toggle.querySelector('svg')).toBeInTheDocument();
+
+    // panelExpanded=true
+    renderWithModel(v, {
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: true },
+    });
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(panel).not.toHaveClass('hidden');
+    expect(toggle.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('emits CAPTURE_QUALITY_CHANGE when jpeg quality inputs change (after switching to jpeg)', () => {
+    const v = setupView();
+    const onQuality = vi.fn();
+    v.on(UIEventType.CAPTURE_QUALITY_CHANGE, onQuality);
+
+    renderWithModel(v, {
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+
+    // jpeg
+    const jpegRadio = document.querySelector(
+      'input[name="capture-format"][value="jpeg"]',
+    ) as HTMLInputElement;
+    jpegRadio.checked = true;
+    jpegRadio.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const qNum = document.querySelector('#jpeg-quality-number') as HTMLInputElement;
+    const qRange = document.querySelector('#jpeg-quality-range') as HTMLInputElement;
+
+    // number
+    qNum.value = '90';
+    qNum.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(onQuality).toHaveBeenCalled();
+    expect(lastCallArg<{ quality: number }>(onQuality)?.quality).toBe(90);
+
+    // range
+    onQuality.mockClear();
+    qRange.value = '85';
+    qRange.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(onQuality).toHaveBeenCalled();
+    expect(lastCallArg<{ quality: number }>(onQuality)?.quality).toBe(85);
+  });
+
+  it('badge color UI reflects selected color (aria-selected & label), and toggles correctly', () => {
+    const v = setupView();
+
+    renderWithModel(v, { defaultColor: 'Gray' });
+    const label = document.querySelector('#badge-color-label') as HTMLElement;
+    const grayBtn = document.querySelector(
+      '#badge-color-pop button[data-color-name="Gray"]',
+    ) as HTMLButtonElement;
+    const blueBtn = document.querySelector(
+      '#badge-color-pop button[data-color-name="Blue"]',
+    ) as HTMLButtonElement;
+
+    // Gray is selected
+    expect(label.textContent).toBe('Gray');
+    expect(grayBtn.getAttribute('aria-selected')).toBe('true');
+    expect(blueBtn.getAttribute('aria-selected')).toBe('false');
+
+    // Redraw to Blue
+    renderWithModel(v, { defaultColor: 'Blue' });
+    expect((document.querySelector('#badge-color-label') as HTMLElement).textContent).toBe('Blue');
+
+    const grayBtn2 = document.querySelector(
+      '#badge-color-pop button[data-color-name="Gray"]',
+    ) as HTMLButtonElement;
+    const blueBtn2 = document.querySelector(
+      '#badge-color-pop button[data-color-name="Blue"]',
+    ) as HTMLButtonElement;
+    expect(blueBtn2.getAttribute('aria-selected')).toBe('true');
+    expect(grayBtn2.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('badge group select is populated with (Ungrouped), existing groups (sorted), and Create option; default selected properly', () => {
+    const v = setupView();
+
+    const items = [
+      makeItem(1, 1, 'a', 'Zeta'),
+      makeItem(2, 2, 'b', 'Alpha'),
+      makeItem(3, 3, 'c', 'Alpha'), // Duplicate groups only once
+      makeItem(4, 4, 'd', ''), // Sky is not included (UNGROUPED is included separately)
+    ];
+    renderWithModel(v, {
+      items,
+      defaultGroup: 'Alpha',
+    });
+
+    const sel = document.querySelector('#badge-group-select') as HTMLSelectElement;
+    const opts = Array.from(sel.querySelectorAll('option')).map((o) => ({
+      value: o.value,
+      text: o.textContent,
+      selected: o.selected,
+    }));
+
+    // Expected order: (Ungrouped) / Alpha / Zeta / Create
+    expect(opts.map((o) => o.text)).toEqual(['(Ungrouped)', 'Alpha', 'Zeta', 'Create']);
+    expect(opts[1]!.selected).toBe(true);
+  });
+
+  it('selecting NEW_GROUP shows modal and emits SET_GROUP, then create button emits new group and hides modal', () => {
+    const v = setupView();
+    const onSetGroup = vi.fn();
+    v.on(UIEventType.SET_GROUP, onSetGroup);
+
+    const items = [makeItem(1, 1, 'a', 'A')];
+    renderWithModel(v, { items, defaultGroup: '__ungrouped__' });
+
+    const sel = document.querySelector('#badge-group-select') as HTMLSelectElement;
+    // Select Create(option value="__newgroup__")
+    const createOpt = Array.from(sel.options).find((o) => o.textContent === 'Create')!;
+    sel.value = createOpt.value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // First, it is emitted with the NEW_GROUP value and displayed modally.
+    expect(onSetGroup).toHaveBeenCalled();
+    const first = lastCallArg<{ group: string }>(onSetGroup)!;
+    expect(first.group).toBe('__newgroup__');
+    const modal = document.querySelector('#group-name-modal') as HTMLDivElement;
+    expect(modal).not.toHaveClass('hidden');
+
+    // Enter → Confirm with Create button
+    const input = document.querySelector('#group-name-input') as HTMLInputElement;
+    input.value = 'MyGroup';
+    const createBtn = document.querySelector('#group-name-create-btn') as HTMLButtonElement;
+    createBtn.click();
+
+    // Emit with real group name & close modal
+    const final = lastCallArg<{ group: string }>(onSetGroup)!;
+    expect(final.group).toBe('MyGroup');
+    expect(modal).toHaveClass('hidden');
+    expect(input.value).toBe('');
+  });
+
+  it('group collapse toggle updates aria-expanded, list visibility, and caret path', () => {
+    const v = setupView();
+
+    const items = [makeItem(1, 1, 'a', 'A'), makeItem(2, 2, 'b', 'A')];
+    renderWithModel(v, { items });
+
+    const sections = Array.from(document.querySelectorAll('#select-list section'));
+    const section = sections.find(
+      (s) => s.querySelector('.select-item-gh-title')?.textContent === 'A',
+    )!;
+    const toggleBtn = section.querySelector('button.select-item-gh-toggle') as HTMLButtonElement;
+    const ul = section.querySelector('ul') as HTMLUListElement;
+    const path = toggleBtn.querySelector('svg path') as SVGPathElement;
+
+    // Expanded state
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
+    expect(ul).not.toHaveClass('hidden');
+    const d1 = path.getAttribute('d');
+
+    // Click to collapse
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
+    expect(ul).toHaveClass('hidden');
+    const d2 = path.getAttribute('d');
+    expect(d2).not.toBeNull();
+    expect(d2).not.toEqual(d1);
+
+    // Click again to expand
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
+    expect(ul).not.toHaveClass('hidden');
+  });
+
+  it('hover-in is suppressed for missing items and during drag operation', () => {
+    const v = setupView();
+    const onIn = vi.fn();
+    v.on(UIEventType.ITEM_HOVER_IN, onIn);
+
+    // missing item
+    const items = [makeItem(1, 1, 'x', 'G')];
+    renderWithModel(v, { items, missingIds: [1] });
+
+    const main = document.querySelector('#select-list li div.min-w-0.flex-1') as HTMLElement;
+    main.dispatchEvent(new Event('pointerenter', { bubbles: true }));
+    expect(onIn).not.toHaveBeenCalled();
+
+    // drag
+    renderWithModel(v, { items, missingIds: [] });
+    const li = document.querySelector('#select-list li') as HTMLLIElement;
+    li.dispatchEvent(new Event('dragstart', { bubbles: true }));
+
+    const main2 = document.querySelector('#select-list li div.min-w-0.flex-1') as HTMLElement;
+    main2.dispatchEvent(new Event('pointerenter', { bubbles: true }));
+    expect(onIn).not.toHaveBeenCalled(); // Suppressed during drag
+  });
+
+  it('pointerenter on list cancels scheduled hover-out', async () => {
+    const v = setupView();
+    const onOut = vi.fn();
+    v.on(UIEventType.ITEM_HOVER_OUT, onOut);
+
+    const items = [makeItem(1, 1, 'x', 'G')];
+    renderWithModel(v, { items });
+
+    vi.useFakeTimers();
+
+    const list = document.querySelector('#select-list') as HTMLElement;
+    // Hover-out after 1 second with pointerleave
+    list.dispatchEvent(new Event('pointerleave'));
+    list.dispatchEvent(new Event('pointerenter', { bubbles: true }));
+    vi.advanceTimersByTime(1000);
+    await vi.runAllTimersAsync();
+    expect(onOut).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it('does not reorder across different ULs (cross-group DnD is ignored)', () => {
+    const v = setupView();
+    const onReorder = vi.fn();
+    v.on(UIEventType.REORDER_ITEMS, onReorder);
+
+    // A/B only (2 sections) without Ungrouped
+    const items = [makeItem(1, 1, 'a', 'A'), makeItem(2, 2, 'b', 'B')];
+    renderWithModel(v, { items });
+
+    // Identify the section in question by title text (regardless of whether Ungrouped is present)
+    const sections = Array.from(document.querySelectorAll('#select-list section'));
+    const pickByTitle = (title: string) =>
+      sections.find((s) => s.querySelector('.select-item-gh-title')?.textContent === title)!;
+
+    const sectionA = pickByTitle('A');
+    const sectionB = pickByTitle('B');
+
+    const aUl = sectionA.querySelector('ul') as HTMLUListElement;
+    const bUl = sectionB.querySelector('ul') as HTMLUListElement;
+
+    const aLi = aUl.querySelector('li') as HTMLLIElement;
+    const bLi = bUl.querySelector('li') as HTMLLIElement;
+
+    // Drag start on side A
+    aLi.dispatchEvent(new Event('dragstart', { bubbles: true }));
+
+    // Even if you drag over on the B side, it should be ignored because the parent UL is different.
+    const rect = bLi.getBoundingClientRect();
+    const dragoverEv = new Event('dragover', { bubbles: true }) as unknown as DragEvent;
+    Object.defineProperty(dragoverEv, 'clientY', {
+      value: rect.top + rect.height / 2,
+      configurable: true,
+    });
+    bLi.dispatchEvent(dragoverEv);
+
+    // dragend
+    aLi.dispatchEvent(new Event('dragend', { bubbles: true }));
+
+    // REORDER_ITEMS does not fire because it is between different ULs
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('toggle icon color class follows selectionEnabled (bg-indigo-500 vs bg-slate-300)', () => {
+    const v = setupView();
+
+    renderWithModel(v, { selectionEnabled: false });
+    expect(document.querySelector('#toggle-select-icon')!.className).toContain('bg-slate-300');
+
+    renderWithModel(v, { selectionEnabled: true });
+    expect(document.querySelector('#toggle-select-icon')!.className).toContain('bg-indigo-500');
   });
 });

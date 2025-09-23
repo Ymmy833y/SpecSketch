@@ -4,7 +4,7 @@ import {
   type ItemPosition,
   type ItemShape,
   type ScreenItem,
-  UNGROUPED,
+  UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
@@ -45,7 +45,7 @@ export const initialModel: Model = {
   defaultColor: 'Blue',
   defaultShape: 'circle',
   defaultPosition: 'left-top-outside',
-  defaultGroup: UNGROUPED,
+  defaultGroup: UNGROUPED_VALUE,
   capture: {
     format: 'png',
     area: 'full',
