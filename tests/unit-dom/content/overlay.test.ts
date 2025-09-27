@@ -24,7 +24,14 @@ const cssAnchor = (sel: string): Anchor => ({ type: 'css', value: sel }) as unkn
 function makeItem(
   id: number,
   selector: string,
-  opts?: { label?: number; color?: string; size?: number; shape?: string; position?: string },
+  opts?: {
+    label?: number;
+    color?: string;
+    size?: number;
+    shape?: string;
+    position?: string;
+    comment?: string;
+  },
 ): ScreenItem {
   const {
     label = id,
@@ -32,6 +39,7 @@ function makeItem(
     size = 12,
     shape = 'circle',
     position = 'left-top-outside',
+    comment,
   } = opts ?? {};
   return {
     id,
@@ -40,6 +48,7 @@ function makeItem(
     size,
     shape,
     position,
+    comment,
     anchor: cssAnchor(selector),
   } as unknown as ScreenItem;
 }
@@ -55,6 +64,11 @@ function getShadow(): ShadowRoot {
 function findBadgeByText(root: ParentNode, text: string): HTMLDivElement | undefined {
   const nodes = Array.from(root.querySelectorAll('.spsk-badge'));
   return nodes.find((n) => n.textContent === text) as HTMLDivElement | undefined;
+}
+
+function findCommentElFromBadge(badge?: HTMLDivElement | null): HTMLDivElement | null {
+  if (!badge) return null;
+  return badge.parentElement?.querySelector('.spsk-comment') as HTMLDivElement | null;
 }
 
 beforeEach(async () => {
@@ -178,12 +192,12 @@ describe('content/overlay', () => {
       expect(badge99).toBeTruthy();
 
       // color is lowercased in class names
-      expect(badge1!.className).toContain('spsk-badge-indigo');
+      expect(badge1!.className).toContain('spsk-badge--indigo');
       expect(badge1!.className).toContain('spsk-badge--circle');
       expect(badge1!.className).toContain('spsk-badge--left-top-outside');
       expect(badge1!.style.fontSize).toBe('12px');
 
-      expect(badge99!.className).toContain('spsk-badge-lime');
+      expect(badge99!.className).toContain('spsk-badge--lime');
       expect(badge99!.className).toContain('spsk-badge--square');
       expect(badge99!.className).toContain('spsk-badge--right-top-outside');
       expect(badge99!.style.fontSize).toBe('20px');
@@ -212,7 +226,7 @@ describe('content/overlay', () => {
 
       // Assert: updated
       expect(badge1).toBeTruthy();
-      expect(badge1!.className).toContain('spsk-badge-pink');
+      expect(badge1!.className).toContain('spsk-badge--pink');
       expect(badge1!.className).toContain('spsk-badge--square');
       expect(badge1!.className).toContain('spsk-badge--top-outside');
       expect(badge1!.style.fontSize).toBe('16px');
@@ -220,8 +234,91 @@ describe('content/overlay', () => {
       // Act: remove item #1 (diff remove)
       await renderItems([first[1]]);
 
-      // Assert: one box remains with label "99"
+      // Assert: one box remains with label "99" and "1" is gone
       expect(findBadgeByText(shadow, '99')).toBeTruthy();
+      expect(findBadgeByText(shadow, '1')).toBeUndefined();
+      expect(shadow.querySelectorAll('.spsk-box').length).toBe(1);
+    }, 5000);
+
+    it('does not duplicate DOM on update (Tracked entry is reused)', async () => {
+      document.body.innerHTML = `<div id="x"></div>`;
+      const i1 = makeItem(10, '#x', { label: 10, color: 'indigo', size: 12 });
+
+      await renderItems([i1]);
+      const shadow = getShadow();
+      const firstBoxes = shadow.querySelectorAll('.spsk-box');
+      expect(firstBoxes.length).toBe(1);
+
+      // same id with different visual props → should update in place
+      const i1b = makeItem(10, '#x', {
+        label: 11,
+        color: 'pink',
+        size: 24,
+        shape: 'square',
+        position: 'top-inside',
+      });
+      await renderItems([i1b]);
+
+      const secondBoxes = shadow.querySelectorAll('.spsk-box');
+      expect(secondBoxes.length).toBe(1); // not duplicated
+
+      const badge = findBadgeByText(shadow, '11');
+      expect(badge).toBeTruthy();
+      expect(badge!.className).toContain('spsk-badge--pink');
+      expect(badge!.className).toContain('spsk-badge--square');
+      expect(badge!.className).toContain('spsk-badge--top-inside');
+      expect(badge!.style.fontSize).toBe('24px');
+
+      // CSS var for border width = size/4
+      const box = badge!.parentElement as HTMLDivElement;
+      expect(box.style.getPropertyValue('--spsk-border-w')).toBe('6px');
+    }, 5000);
+
+    it('toggles comment visibility and font size, and keeps .spsk-comment class', async () => {
+      document.body.innerHTML = `<div id="c"></div>`;
+      const i = makeItem(1, '#c', { label: 1, comment: 'hello', size: 16 });
+
+      await renderItems([i]);
+      const shadow = getShadow();
+      const badge = findBadgeByText(shadow, '1')!;
+      const commentEl = findCommentElFromBadge(badge)!;
+
+      // initial: visible with text and font-size
+      expect(commentEl).toBeTruthy();
+      expect(commentEl.className).toContain('spsk-comment');
+      expect(commentEl.textContent).toBe('hello');
+      expect(commentEl.style.display).toBe('inline');
+      expect(commentEl.style.fontSize).toBe('16px');
+
+      // update: remove comment -> hidden and cleared
+      const iNoComment = makeItem(1, '#c', { label: 1, comment: '', size: 20 });
+      await renderItems([iNoComment]);
+
+      expect(commentEl.textContent).toBe('');
+      expect(commentEl.style.display).toBe('none');
+      // font-size may remain from previous style or be updated; after applyVisualState it should be updated to 20px when comment reappears
+
+      // update: comment appears again with new size
+      const iCommentAgain = makeItem(1, '#c', { label: 1, comment: 'world', size: 20 });
+      await renderItems([iCommentAgain]);
+
+      expect(commentEl.textContent).toBe('world');
+      expect(commentEl.style.display).toBe('inline');
+      expect(commentEl.style.fontSize).toBe('20px');
+    }, 5000);
+
+    it('removes all boxes when called with an empty array (diff remove)', async () => {
+      document.body.innerHTML = `<div id="a"></div><div id="b"></div>`;
+      await renderItems([makeItem(1, '#a'), makeItem(2, '#b')]);
+
+      const shadow = getShadow();
+      expect(shadow.querySelectorAll('.spsk-box').length).toBe(2);
+
+      await renderItems([]); // disappear all
+
+      expect(shadow.querySelectorAll('.spsk-box').length).toBe(0);
+      expect(findBadgeByText(shadow, '1')).toBeUndefined();
+      expect(findBadgeByText(shadow, '2')).toBeUndefined();
     }, 5000);
   });
 

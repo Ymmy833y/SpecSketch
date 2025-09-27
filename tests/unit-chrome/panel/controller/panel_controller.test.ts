@@ -317,6 +317,64 @@ describe('panel/controller/panel_controller', () => {
         position: 'top-outside',
       });
     });
+
+    it('view handler ITEM_COMMENT_APPLY dispatches UPDATE_ITEM_COMMENT with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const id = 7;
+      const comment = 'line1\nline2';
+      view.emit(UIEventType.ITEM_COMMENT_APPLY, { id, comment });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.UPDATE_ITEM_COMMENT,
+        id,
+        comment,
+      });
+    });
+
+    it('view handler ITEM_COMMENT_APPLY dispatches UPDATE_ITEM_COMMENT with empty comment (clear)', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const id = 42;
+      const comment = ''; // clear
+      view.emit(UIEventType.ITEM_COMMENT_APPLY, { id, comment });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.UPDATE_ITEM_COMMENT,
+        id,
+        comment: '',
+      });
+    });
   });
 
   describe('ensureConnectionAlive', () => {

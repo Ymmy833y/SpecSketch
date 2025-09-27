@@ -43,7 +43,10 @@
   "create_group_title": { "message": "Create Group" },
   "create_group_subtitle": { "message": "Please enter a new group name." },
 
+  "comment_edit_title": { "message": "Edit Comment" },
+
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },
+  "common_apply": { "message": "Apply" },
   "common_cancel": { "message": "Cancel" }
 }
