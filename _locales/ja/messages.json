@@ -43,7 +43,10 @@
   "create_group_title": { "message": "グループを作成" },
   "create_group_subtitle": { "message": "新しいグループ名を入力してください。" },
 
+  "comment_edit_title": { "message": "コメントを編集" },
+
   "common_create": { "message": "作成" },
   "common_delete": { "message": "削除" },
+  "common_apply": { "message": "適用" },
   "common_cancel": { "message": "キャンセル" }
 }
