@@ -11,8 +11,10 @@ describe('common/messages', () => {
         'RENDER',
         'CLEAR',
         'HOVER',
+        'MEASURE_SIZE',
         'SELECTED',
         'MISSING_IDS',
+        'CONTENT_SIZE_RESULT',
         'ACTIVE_TAB_CHANGED',
       ];
 

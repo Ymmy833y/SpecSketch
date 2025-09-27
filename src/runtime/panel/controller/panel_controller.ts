@@ -61,7 +61,9 @@ export class PanelController {
       this.dispatch({ type: ActionType.TOGGLE_SELECT }),
     );
     this.view.on(UIEventType.CLEAR, () => this.dispatch({ type: ActionType.CLEAR_ALL }));
-    this.view.on(UIEventType.CAPTURE, () => this.dispatch({ type: ActionType.CAPTURE_REQUESTED }));
+    this.view.on(UIEventType.CAPTURE, () =>
+      this.dispatch({ type: ActionType.MEASURE_CONTENT_SIZE }),
+    );
 
     this.view.on(UIEventType.BADGE_SIZE_CHANGE, ({ size }) =>
       this.dispatch({ type: ActionType.SET_BADGE_SIZE, size }),
@@ -173,6 +175,9 @@ export class PanelController {
           });
           break;
         }
+        case EffectType.MEASURE_CONTENT_SIZE:
+          await this.conn?.api.measureSize();
+          break;
         case EffectType.CAPTURE:
           try {
             await capture(fx.payload);
@@ -236,6 +241,11 @@ export class PanelController {
         this.dispatch({
           type: ActionType.SET_MISSING_IDS,
           missingIds: msg.payload.missingIds,
+        });
+      } else if (msg?.type === MSG_TYPE.CONTENT_SIZE_RESULT) {
+        this.dispatch({
+          type: ActionType.CAPTURE_REQUESTED,
+          contentSize: msg.payload,
         });
       }
     });

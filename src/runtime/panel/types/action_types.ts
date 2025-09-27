@@ -1,5 +1,6 @@
 import type {
   Anchor,
+  ContentSize,
   ItemColor,
   ItemGroup,
   ItemPosition,
@@ -76,6 +77,9 @@ export enum ActionType {
   /** Toggle capture options dropdown (expand/collapse) */
   TOGGLE_CAPTURE_PANEL = 'TOGGLE_CAPTURE_PANEL',
 
+  /** request measuring the content size */
+  MEASURE_CONTENT_SIZE = 'MEASURE_CONTENT_SIZE',
+
   /** Request to run a capture */
   CAPTURE_REQUESTED = 'CAPTURE_REQUESTED',
 
@@ -139,7 +143,8 @@ export type Action =
   | { type: ActionType.SET_CAPTURE_SCALE; scale: number }
   | { type: ActionType.BADGE_DELETE }
   | { type: ActionType.TOGGLE_CAPTURE_PANEL }
-  | { type: ActionType.CAPTURE_REQUESTED }
+  | { type: ActionType.MEASURE_CONTENT_SIZE }
+  | { type: ActionType.CAPTURE_REQUESTED; contentSize: ContentSize }
   | { type: ActionType.CAPTURE_SUCCEEDED }
   | { type: ActionType.CAPTURE_FAILED; error: unknown }
   | { type: ActionType.REORDER_ITEMS; fromId: number; fromIndex: number; toIndex: number }

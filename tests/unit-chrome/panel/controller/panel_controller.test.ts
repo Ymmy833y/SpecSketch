@@ -163,6 +163,7 @@ function makeConnStub() {
       toggleSelect: vi.fn(async (_enabled: boolean) => undefined),
       clear: vi.fn(async () => undefined),
       hover: vi.fn(async (_id: number | null) => undefined),
+      measureSize: vi.fn(async () => undefined),
     },
     _fireDisconnect() {
       for (const cb of onDisconnectHandlers) cb();
@@ -288,7 +289,7 @@ describe('panel/controller/panel_controller', () => {
       view.emit(UIEventType.CAPTURE);
 
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.TOGGLE_SELECT });
-      expect(dispatch).toHaveBeenCalledWith({ type: ActionType.CAPTURE_REQUESTED });
+      expect(dispatch).toHaveBeenCalledWith({ type: ActionType.MEASURE_CONTENT_SIZE });
     });
 
     it('view handler BADGE_POSITION_SELECT dispatches SET_BADGE_POSITION with payload', async () => {
@@ -461,6 +462,54 @@ describe('panel/controller/panel_controller', () => {
       });
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.SET_STATUS, status: 'CONNECTED' });
     });
+
+    it('on CONTENT_SIZE_RESULT message, dispatches CAPTURE_REQUESTED with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'old-key';
+
+      const conn = makeConnStub();
+      vi.mocked(connectToTab).mockResolvedValue(conn as unknown as never);
+
+      vi.mocked(getActiveTab).mockResolvedValue(
+        makeTab({ url: 'https://example.com/content-size' }),
+      );
+      vi.mocked(getState).mockResolvedValue({
+        items: [],
+        nextId: 1,
+        defaultSize: 12,
+        defaultColor: 'Red',
+        defaultShape: 'circle',
+        defaultPosition: 'left-top-outside',
+        defaultGroup: UNGROUPED_VALUE,
+      });
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await callPrivate<{ ok: true; contextChanged: boolean }>(pc, 'ensureConnectionAlive', {
+        forceReconnect: true,
+      });
+
+      const add = conn.port.onMessage.addListener as unknown as MockInstance<
+        (cb: (msg: unknown) => void) => void
+      >;
+      expect(add).toHaveBeenCalledTimes(1);
+      const onMsg = add.mock.calls[0]?.[0] as (msg: unknown) => void;
+
+      // Message fired: CONTENT_SIZE_RESULT
+      const payload = { width: 1280, height: 720 };
+      onMsg({ type: MSG_TYPE.CONTENT_SIZE_RESULT, payload });
+
+      // CAPTURE_REQUESTED is dispatched as expected
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.CAPTURE_REQUESTED,
+        contentSize: payload,
+      });
+    });
   });
 
   describe('execEffects', () => {
@@ -627,6 +676,28 @@ describe('panel/controller/panel_controller', () => {
       ]);
 
       expect(spyErr).toHaveBeenCalledWith('oops');
+    });
+
+    it('delegates MEASURE_CONTENT_SIZE to content API (api.measureSize)', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      const conn = makeConnStub();
+      (pc as unknown as Record<string, unknown>)['conn'] = conn;
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.MEASURE_CONTENT_SIZE },
+      ]);
+
+      expect(conn.api.measureSize).toHaveBeenCalledTimes(1);
     });
   });
 

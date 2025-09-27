@@ -1,4 +1,4 @@
-import { ScreenItem } from '@common/types';
+import { ContentSize, ScreenItem } from '@common/types';
 
 /**
  * EffectType
@@ -22,6 +22,9 @@ export enum EffectType {
   /** item hover */
   HOVER = 'HOVER',
 
+  /** request measuring the content size */
+  MEASURE_CONTENT_SIZE = 'MEASURE_CONTENT_SIZE',
+
   /** Run a capture with the given parameters (tabId/format/area/quality/scale) */
   CAPTURE = 'CAPTURE',
 
@@ -43,6 +46,7 @@ export type Effect =
   | { kind: EffectType.TOGGLE_SELECT_ON_CONTENT; enabled: boolean }
   | { kind: EffectType.CLEAR_CONTENT }
   | { kind: EffectType.HOVER; id: number | null }
+  | { kind: EffectType.MEASURE_CONTENT_SIZE }
   | {
       kind: EffectType.CAPTURE;
       payload: {
@@ -51,6 +55,7 @@ export type Effect =
         area: 'full' | 'viewport';
         quality: number;
         scale: number;
+        contentSize: ContentSize;
       };
     }
   | { kind: EffectType.CLEAR_STATE }
