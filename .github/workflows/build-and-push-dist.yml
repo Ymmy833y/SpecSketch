@@ -29,6 +29,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Setup Aikido Safe Chain
+        run: |
+            npm i -g @aikidosec/safe-chain
+            safe-chain setup-ci
+
       - name: Install deps
         run: |
           if [ -f package-lock.json ]; then
