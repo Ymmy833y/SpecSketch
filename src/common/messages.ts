@@ -1,4 +1,4 @@
-import type { Anchor, ScreenItem } from './types';
+import type { Anchor, ContentSize, ScreenItem } from './types';
 
 const P2C = {
   PING: 'PING',
@@ -6,11 +6,13 @@ const P2C = {
   RENDER: 'RENDER',
   CLEAR: 'CLEAR',
   HOVER: 'HOVER',
+  MEASURE_SIZE: 'MEASURE_SIZE',
 } as const;
 
 const C2P = {
   SELECTED: 'SELECTED',
   MISSING_IDS: 'MISSING_IDS',
+  CONTENT_SIZE_RESULT: 'CONTENT_SIZE_RESULT',
 } as const;
 
 const B2P = {
@@ -29,11 +31,13 @@ export type PanelToContent =
   | { type: typeof P2C.TOGGLE_SELECT; payload: { enabled: boolean } }
   | { type: typeof P2C.RENDER; payload: { items: ScreenItem[] } }
   | { type: typeof P2C.CLEAR }
-  | { type: typeof P2C.HOVER; payload: { id: number | null } };
+  | { type: typeof P2C.HOVER; payload: { id: number | null } }
+  | { type: typeof P2C.MEASURE_SIZE };
 
 export type ContentToPanel =
   | { type: typeof C2P.SELECTED; payload: { anchors: Anchor[] } }
-  | { type: typeof C2P.MISSING_IDS; payload: { missingIds: number[] } };
+  | { type: typeof C2P.MISSING_IDS; payload: { missingIds: number[] } }
+  | { type: typeof C2P.CONTENT_SIZE_RESULT; payload: ContentSize };
 
 export type BackgroundToPanel = {
   type: typeof B2P.ACTIVE_TAB_CHANGED;

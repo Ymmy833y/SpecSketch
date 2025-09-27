@@ -3,6 +3,7 @@ import { MSG_TYPE, type PanelToContent } from '@common/messages';
 import type { ScreenItem } from '@common/types';
 
 import { buildCssAnchor } from './anchor';
+import { measureContentSize } from './measure';
 import {
   clearOverlay,
   getMissingIds,
@@ -45,6 +46,10 @@ chrome.runtime.onConnect.addListener(async (p) => {
       case MSG_TYPE.HOVER:
         await highlightOverlay(msg.payload.id);
         break;
+      case MSG_TYPE.MEASURE_SIZE: {
+        const payload = measureContentSize();
+        p.postMessage({ type: MSG_TYPE.CONTENT_SIZE_RESULT, payload });
+      }
     }
   });
 

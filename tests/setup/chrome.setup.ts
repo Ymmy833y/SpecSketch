@@ -10,6 +10,10 @@ const makePort = (name: string) => ({
   disconnect: vi.fn(),
 });
 
+const onDetachListeners: Array<
+  (source: chrome.debugger.Debuggee, reason: chrome.debugger.DetachReason) => void
+> = [];
+
 globalThis.chrome = {
   runtime: {
     id: 'test-ext-id',
@@ -46,6 +50,19 @@ globalThis.chrome = {
     sendCommand: vi.fn((_t: unknown, _m: string, _p?: unknown, cb?: (res?: unknown) => void) =>
       cb?.({}),
     ),
+    onDetach: {
+      addListener: vi.fn(
+        (fn: (source: chrome.debugger.Debuggee, reason: chrome.debugger.DetachReason) => void) => {
+          onDetachListeners.push(fn);
+        },
+      ),
+      removeListener: vi.fn(
+        (fn: (source: chrome.debugger.Debuggee, reason: chrome.debugger.DetachReason) => void) => {
+          const i = onDetachListeners.indexOf(fn);
+          if (i >= 0) onDetachListeners.splice(i, 1);
+        },
+      ),
+    },
   },
   scripting: {
     executeScript: vi.fn(async (_opts: { target: { tabId: number }; files: string[] }) => []),
@@ -72,6 +89,7 @@ Object.defineProperty(chrome.runtime, 'lastError', {
     return __lastError__;
   },
 });
+
 export function simulateLastError<T>(message: string, fn: () => T): T {
   __lastError__ = { message };
   try {
@@ -79,6 +97,16 @@ export function simulateLastError<T>(message: string, fn: () => T): T {
   } finally {
     __lastError__ = undefined;
   }
+}
+
+export const DETACH_REASON = {
+  TARGET_CLOSED: 'target_closed' as unknown as chrome.debugger.DetachReason,
+} as const;
+export function emitDebuggerOnDetach(
+  source: chrome.debugger.Debuggee,
+  reason: chrome.debugger.DetachReason,
+): void {
+  for (const fn of onDetachListeners) fn(source, reason);
 }
 
 (globalThis.chrome as any).windows = {

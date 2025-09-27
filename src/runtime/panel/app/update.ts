@@ -157,9 +157,16 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         effects: [],
       };
 
-    case ActionType.CAPTURE_REQUESTED:
-      if (model.tabId == null)
+    case ActionType.MEASURE_CONTENT_SIZE:
+      return {
+        model,
+        effects: [{ kind: EffectType.MEASURE_CONTENT_SIZE }],
+      };
+
+    case ActionType.CAPTURE_REQUESTED: {
+      if (model.tabId == null) {
         return { model, effects: [{ kind: EffectType.NOTIFY_ERROR, error: 'No tabId' }] };
+      }
       return {
         model,
         effects: [
@@ -171,10 +178,12 @@ export function update(model: Model, action: Action): { model: Model; effects: E
               area: model.capture.area,
               quality: model.capture.quality,
               scale: model.capture.scale,
+              contentSize: action.contentSize,
             },
           },
         ],
       };
+    }
 
     case ActionType.CAPTURE_SUCCEEDED:
       return { model, effects: [] };

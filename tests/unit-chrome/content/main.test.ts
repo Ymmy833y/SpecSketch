@@ -15,6 +15,8 @@ vi.mock('@common/messages', () => ({
     HOVER: 'HOVER',
     SELECTED: 'SELECTED',
     MISSING_IDS: 'MISSING_IDS',
+    MEASURE_SIZE: 'MEASURE_SIZE',
+    CONTENT_SIZE_RESULT: 'CONTENT_SIZE_RESULT',
   },
 }));
 
@@ -48,6 +50,11 @@ vi.mock('@content/selector', () => {
 
 vi.mock('@content/anchor', () => ({
   buildCssAnchor: (_el: Element) => 'CSS>>div:nth-of-type(1)',
+}));
+
+const measureContentSizeMock = vi.fn(() => ({ width: 1024, height: 3000 }));
+vi.mock('@content/measure', () => ({
+  measureContentSize: measureContentSizeMock,
 }));
 
 // ---- Helpers ----
@@ -208,6 +215,30 @@ describe('content/main', () => {
 
     // Assert — highlightOverlay called with id
     expect(highlightOverlayMock).toHaveBeenCalledWith(1);
+  });
+
+  it('measures content size and posts CONTENT_SIZE_RESULT on MEASURE_SIZE', async () => {
+    // Arrange — connect panel and get its onMessage handler
+    await importSutFresh();
+    const onConnect = getOnConnectHandler();
+    const panel = createPort('panel:tab-1');
+    await onConnect(panel);
+    const onMsg = getOnMessageHandler(panel);
+
+    // Stub measure result explicitly (optional override)
+    measureContentSizeMock.mockReturnValueOnce({ width: 1280, height: 2400 });
+
+    // Act — send MEASURE_SIZE
+    await onMsg({ type: 'MEASURE_SIZE' });
+
+    // Assert — measure called and result posted as CONTENT_SIZE_RESULT
+    expect(measureContentSizeMock).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(panel.postMessage)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'CONTENT_SIZE_RESULT',
+        payload: { width: 1280, height: 2400 },
+      }),
+    );
   });
 
   it('does cleanup on port disconnect', async () => {

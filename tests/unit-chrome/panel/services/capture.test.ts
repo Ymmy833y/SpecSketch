@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, MockInstance, vi } from 'v
 // ---- Module mocks (declare BEFORE importing SUT) ----
 vi.mock('@infra/cdp/cdp_client', () => {
   return {
-    attach: vi.fn(async (_target: unknown) => undefined),
-    detach: vi.fn(async (_target: unknown) => undefined),
+    attachOwned: vi.fn(async (_target: unknown) => true), // must return boolean so that detach runs
+    detachOwned: vi.fn(async (_target: unknown) => undefined),
     send: vi.fn(async (_target: unknown, _method: string, _params?: unknown) => ({})),
   };
 });
@@ -15,12 +15,12 @@ vi.mock('@common/url', () => ({
 
 // ---- Import SUT & mocked modules ----
 import { isRestricted } from '@common/url';
-import { attach, detach, send } from '@infra/cdp/cdp_client';
+import { attachOwned, detachOwned, send } from '@infra/cdp/cdp_client';
 import { capture } from '@panel/services/capture';
 
 // Typed mock handles
-const attachMock = vi.mocked(attach);
-const detachMock = vi.mocked(detach);
+const attachOwnedMock = vi.mocked(attachOwned);
+const detachOwnedMock = vi.mocked(detachOwned);
 const sendMock = vi.mocked(send);
 const isRestrictedMock = vi.mocked(isRestricted);
 
@@ -31,11 +31,13 @@ type DownloadPromiseSig = (options: chrome.downloads.DownloadOptions) => Promise
 const tabsGetMock = chrome.tabs.get as unknown as MockInstance<TabsGetPromiseSig>;
 const downloadMock = chrome.downloads.download as unknown as MockInstance<DownloadPromiseSig>;
 
+const DEFAULT_CONTENT_SIZE = { width: 800, height: 1200 } as const;
+
 describe('panel/services/capture', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    attachMock.mockClear();
-    detachMock.mockClear();
+    attachOwnedMock.mockClear();
+    detachOwnedMock.mockClear();
     sendMock.mockClear();
     isRestrictedMock.mockClear();
     tabsGetMock.mockClear();
@@ -80,10 +82,10 @@ describe('panel/services/capture', () => {
     } as unknown as chrome.tabs.Tab);
     isRestrictedMock.mockReturnValue(true);
 
-    const res = await capture({ tabId: 1, settleMs: 0 });
+    const res = await capture({ tabId: 1, settleMs: 0, contentSize: DEFAULT_CONTENT_SIZE });
 
     expect(res).toBeUndefined();
-    expect(attachMock).not.toHaveBeenCalled();
+    expect(attachOwnedMock).not.toHaveBeenCalled();
     expect(downloadMock).not.toHaveBeenCalled();
   }, 3000);
 
@@ -94,10 +96,10 @@ describe('panel/services/capture', () => {
       title: 'NoId',
     } as unknown as chrome.tabs.Tab);
 
-    const res = await capture({ tabId: 999, settleMs: 0 });
+    const res = await capture({ tabId: 999, settleMs: 0, contentSize: DEFAULT_CONTENT_SIZE });
 
     expect(res).toBeUndefined();
-    expect(attachMock).not.toHaveBeenCalled();
+    expect(attachOwnedMock).not.toHaveBeenCalled();
   }, 3000);
 
   it('captures full page (png, default bringToFront) with device metrics override, then clears & detaches', async () => {
@@ -117,7 +119,7 @@ describe('panel/services/capture', () => {
 
     // Use fake timers only for the short settle wait to avoid flakiness
     vi.useFakeTimers();
-    const p = capture({ tabId: 1, settleMs: 10 }); // small wait for stability
+    const p = capture({ tabId: 1, settleMs: 10, contentSize: DEFAULT_CONTENT_SIZE }); // small wait for stability
     await vi.runAllTimersAsync();
     const downloadId = await p;
     vi.useRealTimers();
@@ -125,8 +127,8 @@ describe('panel/services/capture', () => {
     expect(downloadId).toBe(123);
 
     // attach/detach
-    expect(attachMock).toHaveBeenCalledTimes(1);
-    expect(detachMock).toHaveBeenCalledTimes(1);
+    expect(attachOwnedMock).toHaveBeenCalledTimes(1);
+    expect(detachOwnedMock).toHaveBeenCalledTimes(1);
 
     // Called sequence essentials
     const methods = calls.map((c) => c.method);
@@ -136,7 +138,7 @@ describe('panel/services/capture', () => {
     expect(methods).toContain('Page.captureScreenshot');
     expect(methods).toContain('Emulation.clearDeviceMetricsOverride');
 
-    // Inspect capture params
+    // Inspect capture params: use contentSize for full-page clip
     const cap = calls.find((c) => c.method === 'Page.captureScreenshot')!;
     const capParams = cap.params as {
       format: string;
@@ -162,22 +164,6 @@ describe('panel/services/capture', () => {
   }, 5000);
 
   it('captures viewport (jpeg) without override, clamps quality to 100, bringToFront=false', async () => {
-    // Layout for viewport path
-    sendMock.mockImplementation(async (_t, method, _params?: unknown) => {
-      if (method === 'Page.getLayoutMetrics') {
-        return {
-          cssVisualViewport: {
-            pageX: 10.5,
-            pageY: 20.8,
-            clientWidth: 640.3,
-            clientHeight: 480.2,
-          },
-        };
-      }
-      if (method === 'Page.captureScreenshot') return { data: 'BASE64DATA' };
-      return {};
-    });
-
     const calls: Array<{ method: string; params?: unknown }> = [];
     sendMock.mockImplementation(async (_t, method, params?: unknown) => {
       calls.push({ method, params });
@@ -203,6 +189,7 @@ describe('panel/services/capture', () => {
       scale: 2,
       bringToFront: false,
       settleMs: 0,
+      contentSize: DEFAULT_CONTENT_SIZE, // still required by type; unused for viewport
     });
 
     expect(id).toBe(123);
@@ -235,8 +222,10 @@ describe('panel/services/capture', () => {
       return {};
     });
 
-    await expect(capture({ tabId: 1, settleMs: 0 })).rejects.toThrow('boom');
-    expect(detachMock).toHaveBeenCalledTimes(1);
+    await expect(
+      capture({ tabId: 1, settleMs: 0, contentSize: DEFAULT_CONTENT_SIZE }),
+    ).rejects.toThrow('boom');
+    expect(detachOwnedMock).toHaveBeenCalledTimes(1);
   }, 3000);
 
   it('suppresses errors from Emulation.clearDeviceMetricsOverride and still returns downloadId', async () => {
@@ -254,13 +243,13 @@ describe('panel/services/capture', () => {
     });
 
     vi.useFakeTimers();
-    const p = capture({ tabId: 1, settleMs: 5 });
+    const p = capture({ tabId: 1, settleMs: 5, contentSize: { width: 500, height: 700 } });
     await vi.runAllTimersAsync();
     const result = await p;
     vi.useRealTimers();
 
     expect(result).toBe(123);
-    expect(detachMock).toHaveBeenCalledTimes(1);
+    expect(detachOwnedMock).toHaveBeenCalledTimes(1);
 
     const methods = calls.map((c) => c.method);
     expect(methods).toContain('Emulation.setDeviceMetricsOverride');

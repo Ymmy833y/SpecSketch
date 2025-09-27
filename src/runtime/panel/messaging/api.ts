@@ -59,6 +59,13 @@ export class PanelApi {
   }
 
   /**
+   * Sends a request to measure the current content size.
+   */
+  measureSize() {
+    return this.send({ type: MSG_TYPE.MEASURE_SIZE });
+  }
+
+  /**
    * Performs a connectivity health check (round-trip).
    * Sent as a request expecting a reply.
    *

@@ -110,3 +110,8 @@ export type ScreenState = {
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 };
+
+export type ContentSize = {
+  width: number;
+  height: number;
+};

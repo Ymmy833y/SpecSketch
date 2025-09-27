@@ -1,11 +1,13 @@
+import { ContentSize } from '@common/types';
 import { isRestricted } from '@common/url';
-import { attach, type Debuggee, detach, send } from '@infra/cdp/cdp_client';
+import { attachOwned, type Debuggee, detachOwned, send } from '@infra/cdp/cdp_client';
 
 export type CaptureFormat = 'png' | 'jpeg';
 export type CaptureArea = 'full' | 'viewport';
 
 export type CaptureOptions = {
   tabId: number;
+  contentSize: ContentSize;
   format?: CaptureFormat; // default: png
   area?: CaptureArea; // default: full
   quality?: number; // only for jpeg, 0–100
@@ -94,21 +96,6 @@ function makeFilename(tab: chrome.tabs.Tab, fmt: CaptureFormat): string {
 }
 
 /**
- * Returns the page's total scrollable content size in CSS pixels (for full-page capture).
- * @param target - DevTools Protocol target tab (`chrome.debugger.Debuggee`).
- * @returns Promise resolving to `{ width, height }` in CSS pixels.
- */
-async function getContentCssSize(target: Debuggee): Promise<{ width: number; height: number }> {
-  const lm = await send<{ cssContentSize?: { width: number; height: number } }>(
-    target,
-    'Page.getLayoutMetrics',
-  );
-  const width = Math.max(1, Math.ceil(lm.cssContentSize?.width ?? 1) | 0);
-  const height = Math.max(1, Math.ceil(lm.cssContentSize?.height ?? 1) | 0);
-  return { width, height };
-}
-
-/**
  * Returns the current visual viewport rectangle in CSS pixels (for viewport capture).
  * @param target - DevTools Protocol target tab (`chrome.debugger.Debuggee`).
  * @returns Promise resolving to `{ x, y, width, height }` in CSS pixels.
@@ -137,12 +124,14 @@ async function getViewportCssRect(target: Debuggee): Promise<{
  * @param target - DevTools Protocol target tab (`chrome.debugger.Debuggee`).
  * @param area - Capture area: `'full'` (entire page) or `'viewport'` (visible area).
  * @param scale - Image scale factor applied to `clip.scale`.
- * @returns `CaptureGeometry` indicating whether to use device metrics override and the `clip` for `Page.captureScreenshot`.
+ * @param contentSize - Measured page content size in CSS pixels used when `area` is `'full'`.
+ * @returns `CaptureGeometry` describing whether device metrics override is required and the clip rectangle for `Page.captureScreenshot`.
  */
 async function resolveGeometry(
   target: Debuggee,
   area: CaptureArea,
   scale: number,
+  contentSize: ContentSize,
 ): Promise<CaptureGeometry> {
   if (area === 'viewport') {
     // No override required: Clip the current display area with clip
@@ -153,26 +142,25 @@ async function resolveGeometry(
       captureBeyondViewport: true,
       shouldScrollTop: false,
     };
-  } else {
-    // If full size, override and capture all at once
-    const { width, height } = await getContentCssSize(target);
-    return {
-      useOverride: true,
-      metrics: {
-        width,
-        height,
-        deviceScaleFactor: 1,
-        mobile: false,
-        screenWidth: width,
-        screenHeight: height,
-        positionX: 0,
-        positionY: 0,
-      },
-      clip: { x: 0, y: 0, width, height, scale },
-      captureBeyondViewport: true,
-      shouldScrollTop: true,
-    };
   }
+  const width = Math.max(1, Math.ceil(contentSize.width) | 0);
+  const height = Math.max(1, Math.ceil(contentSize.height) | 0);
+  return {
+    useOverride: true,
+    metrics: {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: false,
+      screenWidth: width,
+      screenHeight: height,
+      positionX: 0,
+      positionY: 0,
+    },
+    clip: { x: 0, y: 0, width, height, scale },
+    captureBeyondViewport: true,
+    shouldScrollTop: true,
+  };
 }
 
 /**
@@ -194,16 +182,16 @@ export async function capture(opts: CaptureOptions): Promise<number | undefined>
   const scale = opts.scale ?? 1;
   const area: CaptureArea = opts.area ?? 'full';
 
-  await attach(target);
-
+  let didAttach = false;
   let usedOverride = false;
   try {
+    didAttach = await attachOwned(target);
     await send(target, 'Page.enable');
     if (opts.bringToFront ?? true) {
       await send(target, 'Page.bringToFront');
     }
 
-    const geom = await resolveGeometry(target, area, scale);
+    const geom = await resolveGeometry(target, area, scale, opts.contentSize);
 
     if (geom.shouldScrollTop) {
       await send(target, 'Runtime.evaluate', { expression: 'window.scrollTo(0,0)' });
@@ -242,11 +230,12 @@ export async function capture(opts: CaptureOptions): Promise<number | undefined>
         /* no-op */
       }
     }
-    // Always detach
-    try {
-      await detach(target);
-    } catch {
-      /* no-op */
+    if (didAttach) {
+      try {
+        await detachOwned(target);
+      } catch {
+        /* no-op */
+      }
     }
   }
 }
