@@ -146,6 +146,12 @@ const basePanelHtml = () => `
     <button id="group-name-cancel-btn"></button>
     <button id="group-name-create-btn"></button>
   </div>
+  <div id="item-comment-modal" class="hidden">
+    <textarea id="item-comment-input"></textarea>
+    <input id="item-comment-id-input"/>
+    <button id="item-comment-cancel-btn"></button>
+    <button id="item-comment-apply-btn"></button>
+  </div>
 </div>
 `;
 
@@ -814,5 +820,81 @@ describe('panel/view/panel_view', () => {
 
     renderWithModel(v, { selectionEnabled: true });
     expect(document.querySelector('#toggle-select-icon')!.className).toContain('bg-indigo-500');
+  });
+
+  it('comment button opens modal and pre-fills id and comment', () => {
+    const v = setupView();
+
+    const items = [makeItem(10, 1, 'anchor-10', 'A')];
+    // Pre-fill with existing comment to verify initial values
+    items[0]!.comment = 'existing note';
+    renderWithModel(v, { items });
+
+    // Each item's comment button is .btn-icon
+    const btn = document.querySelector('#select-list li button.btn-icon') as HTMLButtonElement;
+    expect(btn).toBeInTheDocument();
+
+    // Click → modal opens & values are pre-filled
+    btn.click();
+
+    const modal = document.querySelector('#item-comment-modal') as HTMLDivElement;
+    const textarea = document.querySelector('#item-comment-input') as HTMLTextAreaElement;
+    const idInput = document.querySelector('#item-comment-id-input') as HTMLInputElement;
+
+    expect(modal).not.toHaveClass('hidden');
+    expect(textarea.value).toBe('existing note');
+    expect(idInput.value).toBe('10');
+  });
+
+  it('comment modal: Cancel hides modal without emitting', () => {
+    const v = setupView();
+    const onApply = vi.fn();
+    v.on(UIEventType.ITEM_COMMENT_APPLY, onApply);
+
+    // Open modal by clicking the comment button
+    const items = [makeItem(1, 1, 'a', 'A')];
+    renderWithModel(v, { items });
+    const openBtn = document.querySelector('#select-list li button.btn-icon') as HTMLButtonElement;
+    openBtn.click();
+
+    const modal = document.querySelector('#item-comment-modal') as HTMLDivElement;
+    const cancelBtn = document.querySelector('#item-comment-cancel-btn') as HTMLButtonElement;
+
+    expect(modal).not.toHaveClass('hidden');
+
+    // Cancel → modal is hidden and no event is emitted
+    cancelBtn.click();
+    expect(modal).toHaveClass('hidden');
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it('comment modal: Apply emits ITEM_COMMENT_APPLY with {id, comment} and hides modal', () => {
+    const v = setupView();
+    const onApply = vi.fn();
+    v.on(UIEventType.ITEM_COMMENT_APPLY, onApply);
+
+    // Open the modal
+    const items = [makeItem(2, 2, 'b', 'B')];
+    renderWithModel(v, { items });
+    const openBtn = document.querySelector('#select-list li button.btn-icon') as HTMLButtonElement;
+    openBtn.click();
+
+    const modal = document.querySelector('#item-comment-modal') as HTMLDivElement;
+    const textarea = document.querySelector('#item-comment-input') as HTMLTextAreaElement;
+    const idInput = document.querySelector('#item-comment-id-input') as HTMLInputElement;
+    const applyBtn = document.querySelector('#item-comment-apply-btn') as HTMLButtonElement;
+
+    // Change input value and click Apply
+    textarea.value = 'new comment';
+    // Sanity check id (should be set when opening)
+    expect(idInput.value).toBe('2');
+
+    applyBtn.click();
+
+    // Event is emitted with expected payload and modal is hidden
+    expect(onApply).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ id: number; comment: string }>(onApply)!;
+    expect(payload).toEqual({ id: 2, comment: 'new comment' });
+    expect(modal).toHaveClass('hidden');
   });
 });

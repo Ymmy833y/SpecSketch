@@ -242,6 +242,17 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         effects: [{ kind: EffectType.HOVER, id: null }],
       };
 
+    case ActionType.UPDATE_ITEM_COMMENT: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(it.id === action.id ? { comment: action.comment } : {}),
+      }));
+      return {
+        model: { ...model, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
     case ActionType.PORT_DISCONNECTED:
       return {
         model: { ...model, status: STATUS.DISCONNECTED, selectionEnabled: false },

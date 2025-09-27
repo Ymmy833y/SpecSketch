@@ -116,6 +116,9 @@ export class PanelController {
     this.view.on(UIEventType.ITEM_HOVER_OUT, () =>
       this.dispatch({ type: ActionType.ITEM_HOVER_OUT }),
     );
+    this.view.on(UIEventType.ITEM_COMMENT_APPLY, ({ id, comment }) =>
+      this.dispatch({ type: ActionType.UPDATE_ITEM_COMMENT, id, comment }),
+    );
   }
 
   private dispatch(action: Action): void {

@@ -64,6 +64,9 @@ export enum UIEventType {
 
   /** End item hover */
   ITEM_HOVER_OUT = 'ITEM_HOVER_OUT',
+
+  /** Apply pending comment edits to the selected item */
+  ITEM_COMMENT_APPLY = 'ITEM_COMMENT_APPLY',
 }
 
 /**
@@ -98,4 +101,5 @@ export type UIEventPayloadMap = {
     | { allCheck: boolean };
   [UIEventType.ITEM_HOVER_IN]: { id: number };
   [UIEventType.ITEM_HOVER_OUT]: undefined;
+  [UIEventType.ITEM_COMMENT_APPLY]: { id: number; comment: string };
 };

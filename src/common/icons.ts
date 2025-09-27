@@ -24,6 +24,10 @@ export const ICONS = {
     d: 'M9.049 2.927a1.5 1.5 0 012.902 0l6.41 11.94A1.5 1.5 0 0117.01 17H2.99a1.5 1.5 0 01-1.351-2.133l6.41-11.94zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 001-1V7a1 1 0 10-2 0v3a1 1 0 001 1z',
     viewBox: '0 0 20 20',
   },
+  comment: {
+    d: 'M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+    viewBox: '0 0 16 16',
+  },
 } as const satisfies Record<string, IconDef>;
 
 export type IconName = keyof typeof ICONS;

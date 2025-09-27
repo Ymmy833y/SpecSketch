@@ -361,6 +361,20 @@
     </div>
   </div>
 
+  <div id="item-comment-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
+    <div class="modal-card">
+      <h2 class="modal-title" data-i18n="comment_edit_title"></h2>
+      <label class="modal-label">
+        <textarea id="item-comment-input" class="modal-textarea"></textarea>
+        <input id="item-comment-id-input" type="text" class="hidden"/>
+      </label>
+      <div class="modal-actions">
+        <button id="item-comment-cancel-btn" class="modal-btn" data-i18n="common_cancel"></button>
+        <button id="item-comment-apply-btn" class="modal-btn modal-btn--primary" data-i18n="common_apply" disabled></button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="index.js"></script>
 </body>
 

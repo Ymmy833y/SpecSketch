@@ -98,6 +98,7 @@ export type ScreenItem = {
   shape: ItemShape;
   position: ItemPosition;
   group?: string;
+  comment?: string;
 };
 
 export type ScreenState = {

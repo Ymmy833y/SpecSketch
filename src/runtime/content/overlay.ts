@@ -7,6 +7,7 @@ type Tracked = {
   anchor: Anchor;
   boxEl: HTMLDivElement;
   badgeEl: HTMLDivElement;
+  commentEl: HTMLDivElement;
   elRef: WeakRef<Element> | null;
   missing: boolean;
 };
@@ -92,32 +93,77 @@ export async function renderItems(items: ScreenItem[]) {
 
   // add/update
   for (const it of items) {
-    let t = tracked.get(it.id);
-    const color = it.color.toLowerCase();
-    if (t) {
-      t.boxEl.className = `spsk-box spsk-box-${color}`;
-      t.boxEl.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
-      t.badgeEl.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color} spsk-badge--${it.position}`;
-      t.badgeEl.style.fontSize = `${it.size}px`;
-    } else {
-      const box = document.createElement('div');
-      box.className = `spsk-box spsk-box-${color}`;
-      box.style.setProperty('--spsk-border-w', `${it.size / 4}px`);
-
-      const badge = document.createElement('div');
-      badge.className = `spsk-badge spsk-badge--${it.shape} spsk-badge-${color} spsk-badge--${it.position}`;
-      badge.style.fontSize = `${it.size}px`;
-      box.appendChild(badge);
-
-      rootEl!.appendChild(box);
-      t = { anchor: it.anchor, boxEl: box, badgeEl: badge, elRef: null, missing: true };
-      tracked.set(it.id, t);
-    }
-    t.badgeEl.textContent = String(it.label);
+    const entry = ensureTrackedEntry(it);
+    applyVisualState(entry, it);
   }
 
   await waitForPositionsApplied();
 }
+
+/**
+ * Ensures a `Tracked` entry exists for the given screen item.
+ * If present, returns the existing one; otherwise creates DOM nodes
+ * (box, badge, comment), registers them, and appends to the overlay root.
+ *
+ * @param item - Source screen item to ensure is tracked.
+ * @returns The existing or newly created `Tracked` entry for the item.
+ */
+function ensureTrackedEntry(item: ScreenItem): Tracked {
+  const existing = tracked.get(item.id);
+  if (existing) {
+    return existing;
+  }
+
+  const boxEl = document.createElement('div');
+  const badgeEl = document.createElement('div');
+  const commentEl = document.createElement('div');
+
+  commentEl.className = 'spsk-comment';
+  boxEl.append(badgeEl, commentEl);
+
+  const newEntry = {
+    anchor: item.anchor,
+    boxEl,
+    badgeEl,
+    commentEl,
+    elRef: null,
+    missing: true,
+  } as Tracked;
+
+  tracked.set(item.id, newEntry);
+  rootEl!.appendChild(boxEl);
+
+  return newEntry;
+}
+
+/**
+ * Applies visual state (classes, inline styles, text) to a tracked entry
+ * based on the provided screen item: size, color, shape, position, and comment.
+ *
+ * @param tracked - The target tracked entry whose DOM nodes will be updated.
+ * @param item - The source screen item whose visual properties are applied.
+ */
+const applyVisualState = (tracked: Tracked, item: ScreenItem) => {
+  const sizePx = `${item.size}px`;
+  const color = item.color.toLowerCase();
+
+  tracked.anchor = item.anchor;
+  tracked.boxEl.className = `spsk-box spsk-box--${color}`;
+  tracked.boxEl.style.setProperty('--spsk-border-w', `${item.size / 4}px`);
+
+  tracked.badgeEl.className = `spsk-badge spsk-badge--${item.shape} spsk-badge--${color} spsk-badge--${item.position}`;
+  tracked.badgeEl.style.fontSize = sizePx;
+  tracked.badgeEl.textContent = String(item.label);
+
+  if (item.comment) {
+    tracked.commentEl.textContent = item.comment;
+    tracked.commentEl.style.display = 'inline';
+    tracked.commentEl.style.fontSize = sizePx;
+  } else {
+    tracked.commentEl.textContent = '';
+    tracked.commentEl.style.display = 'none';
+  }
+};
 
 /**
  * Clears the overlay and its internal tracking state.

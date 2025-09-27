@@ -105,6 +105,9 @@ export enum ActionType {
 
   /** End item hover */
   ITEM_HOVER_OUT = 'ITEM_HOVER_OUT',
+
+  /** Persist the edited comment text for the targeted item */
+  UPDATE_ITEM_COMMENT = 'UPDATE_ITEM_COMMENT',
 }
 
 export type Action =
@@ -146,5 +149,6 @@ export type Action =
   | { type: ActionType.ITEM_SELECTION_CHANGED; allCheck: boolean }
   | { type: ActionType.ITEM_HOVER_IN; id: number }
   | { type: ActionType.ITEM_HOVER_OUT }
+  | { type: ActionType.UPDATE_ITEM_COMMENT; id: number; comment: string }
   | { type: ActionType.PORT_DISCONNECTED }
   | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };

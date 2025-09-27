@@ -439,6 +439,67 @@ describe('panel/app/update', () => {
     expect(outFx.effects).toEqual([{ kind: EffectType.HOVER, id: null }]);
   });
 
+  it('UPDATE_ITEM_COMMENT: updates only target item comment and persists+renders', () => {
+    const items = [makeItem(1, 'G', 1), makeItem(2, 'G', 2)];
+    const model = baseModel({ items });
+
+    const out = update(model, {
+      type: ActionType.UPDATE_ITEM_COMMENT,
+      id: 2,
+      comment: 'hello world',
+    } as unknown as Action);
+
+    // Only the comment of the changed item is updated.
+    expect(out.model.items.find((i) => i.id === 2)?.comment).toBe('hello world');
+    expect(out.model.items.find((i) => i.id === 1)?.comment).toBeUndefined();
+
+    // Other properties remain unchanged (e.g. label)
+    expect(out.model.items.map((i) => i.label)).toEqual([1, 2]);
+
+    // The effect is PERSIST_STATE and RENDER_CONTENT
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('UPDATE_ITEM_COMMENT: non-existing id leaves items structurally unchanged but still persists+renders', () => {
+    const items = [makeItem(1, 'G', 1), makeItem(2, 'G', 2)];
+    const model = baseModel({ items });
+
+    const out = update(model, {
+      type: ActionType.UPDATE_ITEM_COMMENT,
+      id: 999,
+      comment: 'ignored',
+    } as unknown as Action);
+
+    expect(out.model.items).toEqual(items);
+
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('UPDATE_ITEM_COMMENT: empty string clears existing comment', () => {
+    const items = [
+      { ...makeItem(1, 'G', 1), comment: 'keep me' } as unknown as ScreenItem,
+      { ...makeItem(2, 'G', 2), comment: 'to be cleared' } as unknown as ScreenItem,
+    ];
+    const model = baseModel({ items });
+
+    const out = update(model, {
+      type: ActionType.UPDATE_ITEM_COMMENT,
+      id: 2,
+      comment: '',
+    } as unknown as Action);
+
+    // The comment with id=2 is cleared to an empty string.
+    expect(out.model.items.find((i) => i.id === 2)?.comment).toBe('');
+
+    // id=1 remains unchanged
+    expect(out.model.items.find((i) => i.id === 1)?.comment).toBe('keep me');
+
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
   it('PORT_DISCONNECTED: sets status, disables selection, and toggles off on content', () => {
     const model = baseModel({
       selectionEnabled: true,

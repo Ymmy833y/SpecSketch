@@ -63,6 +63,12 @@ export class PanelView {
     groupNameCancelBtn: HTMLButtonElement;
     groupNameCreatelBtn: HTMLButtonElement;
 
+    itemCommentModal: HTMLDivElement;
+    itemCommentInput: HTMLTextAreaElement;
+    itemCommentIdInput: HTMLInputElement;
+    itemCommentCancelBtn: HTMLButtonElement;
+    itemCommentApplyBtn: HTMLButtonElement;
+
     selectItemAllCheckbox: HTMLInputElement;
   };
 
@@ -116,6 +122,12 @@ export class PanelView {
       groupNameInput: this.$('#group-name-input'),
       groupNameCancelBtn: this.$('#group-name-cancel-btn'),
       groupNameCreatelBtn: this.$('#group-name-create-btn'),
+
+      itemCommentModal: this.$('#item-comment-modal'),
+      itemCommentInput: this.$('#item-comment-input'),
+      itemCommentIdInput: this.$('#item-comment-id-input'),
+      itemCommentCancelBtn: this.$('#item-comment-cancel-btn'),
+      itemCommentApplyBtn: this.$('#item-comment-apply-btn'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
     };
@@ -204,6 +216,17 @@ export class PanelView {
       this.emit(UIEventType.SET_GROUP, { group });
       this.els.groupNameModal.classList.add('hidden');
       this.els.groupNameInput.value = '';
+    });
+
+    this.els.itemCommentCancelBtn.addEventListener('click', () => {
+      this.els.itemCommentModal.classList.add('hidden');
+    });
+
+    this.els.itemCommentApplyBtn.addEventListener('click', () => {
+      const comment = this.els.itemCommentInput.value;
+      const id = Number(this.els.itemCommentIdInput.value);
+      this.emit(UIEventType.ITEM_COMMENT_APPLY, { id, comment });
+      this.els.itemCommentModal.classList.add('hidden');
     });
 
     this.updateQualityVisibility();
@@ -462,8 +485,27 @@ export class PanelView {
     const anchor = this.el('div', 'anchor', it.anchor.value);
     main.append(anchor);
 
-    li.append(checkboxWrap, badge, main);
+    const commentBtn = this.generateCommentBtn(it);
+    li.append(checkboxWrap, badge, main, commentBtn);
     return li;
+  }
+
+  private generateCommentBtn(it: ScreenItem): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'btn-icon';
+    const { d, viewBox } = getIcon('comment');
+    const icon = this.createSvgIcon(d, {
+      className: 'h-3.5 w-3.5',
+      viewBox,
+    });
+    btn.appendChild(icon);
+
+    btn.addEventListener('click', () => {
+      this.els.itemCommentModal.classList.remove('hidden');
+      this.els.itemCommentInput.value = it.comment ?? '';
+      this.els.itemCommentIdInput.value = String(it.id);
+    });
+    return btn;
   }
 
   private scheduleHoverOut() {
