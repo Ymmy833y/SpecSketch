@@ -1,4 +1,4 @@
-<p style="display:inline-flex;align-items:center;gap:.6em;font-size:2em"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;">Spec Sketch</p>
+<h1 align="center"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;"> Spec Sketch</h1>
 
 <p align="center">
   <a href="LICENSE">
@@ -75,11 +75,11 @@
 
 <figure>
   <img src="./.github/assets/demo-select-and-capture.gif" alt="Select and capture" width="860" style="max-width:100%;border-radius:12px;">
-  <figcaption align="center">① Select → ② Auto numbering → ③ Add comments → ④ Reorder → ⑤ Capture</figcaption>
+  <p align="center">① Select → ② Auto numbering → ③ Add comments → ④ Reorder → ⑤ Capture</p>
 </figure>
 
 <figure>
-  <figcaption align="center">Example: full-page screenshot with burned-in annotations (PNG)</figcaption>
+  <p align="center">Example: full-page screenshot with burned-in annotations (PNG)</@>
   <details>
     <summary>Full-page capture</summary>
     <img src="./.github/assets/demo-fullpage-capture.png" alt="Full page capture" width="860" style="max-width:100%;border-radius:12px;">

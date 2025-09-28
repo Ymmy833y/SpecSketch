@@ -1,4 +1,4 @@
-<p style="display:inline-flex;align-items:center;gap:.6em;font-size:2em"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;">Spec Sketch</p>
+<h1 align="center"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;"> Spec Sketch</h1>
 
 <p align="center">
   <a href="LICENSE">
@@ -75,11 +75,11 @@
 
 <figure>
   <img src="./.github/assets/demo-select-and-capture.gif" alt="Select and capture" width="860" style="max-width:100%;border-radius:12px;">
-  <figcaption align="center">① 選択 → ② バッジ採番 → ③ コメント付与 → ④ 並び替え → ⑤ キャプチャ</figcaption>
+  <p align="center">① 選択 → ② バッジ採番 → ③ コメント付与 → ④ 並び替え → ⑤ キャプチャ</p>
 </figure>
 
 <figure>
-  <figcaption align="center">フルページキャプチャに注釈が焼き込まれた出力例（PNG）</figcaption>
+  <p align="center">フルページキャプチャに注釈が焼き込まれた出力例（PNG）</p>
   <details>
     <summary>フルページキャプチャ</summary>
     <img src="./.github/assets/demo-fullpage-capture.png" alt="Full page capture" width="860" style="max-width:100%;border-radius:12px;">
