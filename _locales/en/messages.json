@@ -13,6 +13,40 @@
   "toggle_on": { "message": "Selection: ON" },
   "toggle_off": { "message": "Selection: OFF" },
 
+  "section_capture_options": { "message": "Capture options" },
+  "hint_applies_on_capture": { "message": "Applied when capturing." },
+  "label_capture_format": { "message": "Format" },
+  "label_capture_area": { "message": "Capture area" },
+  "label_capture_area_full": { "message": "Full page" },
+  "label_capture_area_viewport": { "message": "Visible viewport" },
+  "label_jpeg_quality": { "message": "JPEG quality (0–100)" },
+  "label_capture_scale": { "message": "Scale (0.5–2.0)" },
+  "hint_capture_scale_note": { "message": "Large scale increases resolution and file size." },
+
+  "label_badge_size": { "message": "Badge size (10–30px)" },
+  "label_badge_color": { "message": "Badge color" },
+
+  "badge_shape": { "message": "Badge shape" },
+  "badge_shape_circle": { "message": "Circle" },
+  "badge_shape_square": { "message": "Square" },
+  "badge_position": { "message": "Badge Position" },
+  "badge_group": { "message": "Badge Group" },
+
   "section_selected_items": { "message": "Selected Elements" },
-  "empty_hint": { "message": "Turn on the selection mode and click on the element." }
+  "empty_hint": { "message": "Turn on the selection mode and click on the element." },
+
+  "missing_item": { "message": "Missing" },
+
+  "group_ungrouped": { "message": "Ungrouped" },
+  "group_new_placeholder": { "message": "New group name" },
+  
+  "create_group_title": { "message": "Create Group" },
+  "create_group_subtitle": { "message": "Please enter a new group name." },
+
+  "comment_edit_title": { "message": "Edit Comment" },
+
+  "common_create": { "message": "Create" },
+  "common_delete": { "message": "Delete" },
+  "common_apply": { "message": "Apply" },
+  "common_cancel": { "message": "Cancel" }
 }
