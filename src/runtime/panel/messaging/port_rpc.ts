@@ -7,6 +7,7 @@ import { isResponse, RpcRequest, RpcResponse } from '@common/messages';
 export class PortRpc {
   private port: chrome.runtime.Port;
   private pending = new Map<string, (res?: RpcResponse) => void>();
+  private alive = true;
 
   /**
    * Subscribes to port message and disconnect events.
@@ -21,10 +22,21 @@ export class PortRpc {
       }
     });
     this.port.onDisconnect.addListener(() => {
+      this.alive = false;
+      // Reasons such as BFCache may be included
+      const reason = chrome.runtime.lastError?.message ?? 'disconnected';
+
       // Treat pending status as failure when a disconnection occurs.
-      for (const [, resolve] of this.pending) resolve({ id: '', ok: false, error: 'disconnected' });
+      for (const [id, resolve] of this.pending) {
+        resolve({ id, ok: false, error: reason });
+      }
       this.pending.clear();
     });
+  }
+
+  // Get the current connection status
+  get isAlive(): boolean {
+    return this.alive;
   }
 
   /**
@@ -36,6 +48,11 @@ export class PortRpc {
    */
   send<T extends RpcRequest>(req: T, timeoutMs = 5000): Promise<RpcResponse | undefined> {
     return new Promise((resolve) => {
+      // If already disconnected, immediately terminate (avoid Unchecked runtime.lastError)
+      if (!this.alive) {
+        return resolve(req.expectReply ? undefined : undefined);
+      }
+
       if (req.expectReply) {
         const timer = setTimeout(() => {
           this.pending.delete(req.id);

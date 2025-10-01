@@ -1,0 +1,63 @@
+import { ContentSize, ScreenItem } from '@common/types';
+
+/**
+ * EffectType
+ * -----------------------------------------------------------------------------
+ * A declarative set of *side-effect requests* produced by the reducer.
+ * Executor:
+ *   - The Controller interprets and performs each effect (I/O, RPC, persistence).
+ * Purpose:
+ *   - Keep the reducer pure while still enabling necessary external effects.
+ */
+export enum EffectType {
+  /** Push the current items to the Content script to render the overlay */
+  RENDER_CONTENT = 'RENDER_CONTENT',
+
+  /** Enable/disable selection mode on the Content side */
+  TOGGLE_SELECT_ON_CONTENT = 'TOGGLE_SELECT_ON_CONTENT',
+
+  /** Clear overlay on the Content side */
+  CLEAR_CONTENT = 'CLEAR_CONTENT',
+
+  /** item hover */
+  HOVER = 'HOVER',
+
+  /** request measuring the content size */
+  MEASURE_CONTENT_SIZE = 'MEASURE_CONTENT_SIZE',
+
+  /** Run a capture with the given parameters (tabId/format/area/quality/scale) */
+  CAPTURE = 'CAPTURE',
+
+  /** Persist the state to storage with selected items reset (cleared). */
+  CLEAR_STATE = 'CLEAR_STATE',
+
+  /**
+   * Persist the current state to storage.
+   * NOTE: Must preserve existing counters (nextId/nextLabel); do not reset them.
+   */
+  PERSIST_STATE = 'PERSIST_STATE',
+
+  /** Report/log an error (and optionally surface it to the UI) */
+  NOTIFY_ERROR = 'NOTIFY_ERROR',
+}
+
+export type Effect =
+  | { kind: EffectType.RENDER_CONTENT; items: ScreenItem[] }
+  | { kind: EffectType.TOGGLE_SELECT_ON_CONTENT; enabled: boolean }
+  | { kind: EffectType.CLEAR_CONTENT }
+  | { kind: EffectType.HOVER; id: number | null }
+  | { kind: EffectType.MEASURE_CONTENT_SIZE }
+  | {
+      kind: EffectType.CAPTURE;
+      payload: {
+        tabId: number;
+        format: 'png' | 'jpeg';
+        area: 'full' | 'viewport';
+        quality: number;
+        scale: number;
+        contentSize: ContentSize;
+      };
+    }
+  | { kind: EffectType.CLEAR_STATE }
+  | { kind: EffectType.PERSIST_STATE }
+  | { kind: EffectType.NOTIFY_ERROR; error: unknown };

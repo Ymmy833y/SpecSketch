@@ -3,7 +3,14 @@ import { MSG_TYPE, type PanelToContent } from '@common/messages';
 import type { ScreenItem } from '@common/types';
 
 import { buildCssAnchor } from './anchor';
-import { bindCssSelectorMap,clearOverlay, mountOverlay, renderItems } from './overlay';
+import { measureContentSize } from './measure';
+import {
+  clearOverlay,
+  getMissingIds,
+  highlightOverlay,
+  mountOverlay,
+  renderItems,
+} from './overlay';
 import { Selector } from './selector';
 
 const selection = new Selector(onPick);
@@ -21,23 +28,28 @@ chrome.runtime.onConnect.addListener(async (p) => {
   p.onMessage.addListener(async (msg: PanelToContent) => {
     if (!msg?.type) return;
     switch (msg.type) {
-    case MSG_TYPE.PING:
-      p.postMessage({ id: msg.id, ok: true });
-      break;
-    case MSG_TYPE.TOGGLE_SELECT:
-      selection.setEnabled(!!msg.payload?.enabled);
-      break;
-    case MSG_TYPE.RENDER: {
-      const items = msg.payload.items as ScreenItem[];
-      await renderItems(items);
-      bindCssSelectorMap(items);
-      break;
-    }
-    case MSG_TYPE.CLEAR:
-      await clearOverlay();
-      break;
-    case MSG_TYPE.GET_STATE:
-      break;
+      case MSG_TYPE.PING:
+        p.postMessage({ id: msg.id, ok: true });
+        break;
+      case MSG_TYPE.TOGGLE_SELECT:
+        selection.setEnabled(!!msg.payload?.enabled);
+        break;
+      case MSG_TYPE.RENDER: {
+        const items = msg.payload.items as ScreenItem[];
+        await renderItems(items);
+        postMissingIdsIfAny();
+        break;
+      }
+      case MSG_TYPE.CLEAR:
+        await clearOverlay();
+        break;
+      case MSG_TYPE.HOVER:
+        await highlightOverlay(msg.payload.id);
+        break;
+      case MSG_TYPE.MEASURE_SIZE: {
+        const payload = measureContentSize();
+        p.postMessage({ type: MSG_TYPE.CONTENT_SIZE_RESULT, payload });
+      }
     }
   });
 
@@ -60,6 +72,18 @@ function onPick(el: Element) {
   port?.postMessage({
     type: MSG_TYPE.SELECTED,
     payload: { anchors: [anchor] },
+    id: crypto.randomUUID(),
+  });
+}
+
+/**
+ * Send to side panel only if MissingIds exist.
+ */
+function postMissingIdsIfAny() {
+  const missingIds = getMissingIds();
+  port?.postMessage({
+    type: MSG_TYPE.MISSING_IDS,
+    payload: { missingIds: missingIds },
     id: crypto.randomUUID(),
   });
 }

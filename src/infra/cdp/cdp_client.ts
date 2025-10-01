@@ -5,31 +5,21 @@ export type Debuggee = chrome.debugger.Debuggee;
 /**
  * Wraps `chrome.runtime.lastError` into a standard `Error` instance.
  *
- * @returns An `Error` when a lastError exists; otherwise `null`.
+ * @returns An `Error` if a last error exists; otherwise `null`.
  */
 function lastError(): Error | null {
   const err = chrome.runtime.lastError;
   return err ? new Error(err.message || String(err)) : null;
 }
 
-/**
- * Attaches the Chrome Debugger (CDP) to the given target.
- *
- * @param target - The debuggee (e.g., `{ tabId }`) to attach to.
- * @returns A promise that resolves when the debugger is attached, or rejects on error.
- */
-export async function attach(target: Debuggee): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    chrome.debugger.attach(target, CDP_VERSION, () => {
-      const err = lastError();
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
+/** Tracks tabIds that this extension currently owns (attached by itself). */
+const OWNED = new Set<number>();
+
+/** Clears ownership on detach (covers external causes like opening/closing DevTools). */
+chrome.debugger.onDetach.addListener((debuggee) => {
+  const id = debuggee.tabId;
+  if (typeof id === 'number') OWNED.delete(id);
+});
 
 /**
  * Detaches the Chrome Debugger (CDP) from the given target.
@@ -37,10 +27,60 @@ export async function attach(target: Debuggee): Promise<void> {
  * @param target - The debuggee to detach from.
  * @returns A promise that resolves once detachment completes.
  */
-export async function detach(target: Debuggee): Promise<void> {
+async function detach(target: Debuggee): Promise<void> {
   await new Promise<void>((resolve) => {
     chrome.debugger.detach(target, () => resolve());
   });
+}
+
+/**
+ * Safely attaches to the target. If a previous session owned by this extension
+ * is already attached, it reuses it instead of failing.
+ *
+ * @param target - The debuggee to attach to (e.g., `{ tabId }`).
+ * @returns A promise that resolves to `true` when this call performed a new attach,
+ *          or `false` when an existing owned session is reused.
+ * @throws If another client (DevTools/another extension) is attached, or on other attach errors.
+ */
+export async function attachOwned(target: Debuggee): Promise<boolean> {
+  const tabId = target.tabId ?? null;
+  return await new Promise<boolean>((resolve, reject) => {
+    chrome.debugger.attach(target, CDP_VERSION, () => {
+      const err = chrome.runtime.lastError;
+      if (!err) {
+        if (tabId != null) OWNED.add(tabId);
+        resolve(true); // newly attached by this call
+        return;
+      }
+      const msg = err.message || '';
+      if (msg.includes('Another debugger is already attached')) {
+        // Already attached: reuse only if owned by this extension.
+        if (tabId != null && OWNED.has(tabId)) {
+          resolve(false); // reuse existing owned session
+        } else {
+          reject(new Error('Debugger is already attached by another client (DevTools/extension).'));
+        }
+      } else {
+        reject(new Error(msg));
+      }
+    });
+  });
+}
+
+/**
+ * Safely detaches only when the current extension owns the session.
+ * No-ops if the target is not owned.
+ *
+ * @param target - The debuggee to detach from.
+ * @returns A promise that resolves after detaching (or immediately if not owned).
+ */
+export async function detachOwned(target: Debuggee): Promise<void> {
+  const tabId = target.tabId ?? null;
+  if (tabId == null) return;
+  if (!OWNED.has(tabId)) return; // not owned by this extension
+
+  await detach(target);
+  OWNED.delete(tabId);
 }
 
 /**
@@ -55,7 +95,7 @@ export async function detach(target: Debuggee): Promise<void> {
 export async function send<T = unknown>(
   target: Debuggee,
   method: string,
-  params?: Record<string, unknown>
+  params?: Record<string, unknown>,
 ): Promise<T> {
   return await new Promise<T>((resolve, reject) => {
     chrome.debugger.sendCommand(target, method, params ?? {}, (result) => {

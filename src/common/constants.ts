@@ -4,7 +4,7 @@ export const CHANNEL = {
   PANEL_CONTENT: `spsk:panel-content:v${PROTOCOL_VERSION}`,
 } as const;
 
-export type ChannelName = typeof CHANNEL[keyof typeof CHANNEL];
+export type ChannelName = (typeof CHANNEL)[keyof typeof CHANNEL];
 
 /**
  * Checks whether the given Port.name matches the specified channel.
