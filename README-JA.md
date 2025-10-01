@@ -1,13 +1,18 @@
 <h1 align="center"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;"> Spec Sketch</h1>
 
 <p align="center">
-  <a href="LICENSE">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-orange.svg">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-orange.svg"></a>
+  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.0.0"><img alt="Version 1.0.0" src="https://img.shields.io/badge/Version-1.0.0-green.svg"></a>
+  <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-blue?style=flat-square&logo=typescript&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/spec-sketch/njpkjlinikfhigfhiiiaffloinaofacd" target="_blank" rel="noopener">
+    <img
+      alt="Install on Chrome Web Store"
+      src="https://img.shields.io/badge/Install%20on-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white"
+    />
   </a>
-  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.0.0">
-    <img alt="Version 1.0.0" src="https://img.shields.io/badge/Version-1.0.0-green.svg">
-  </a>
-  <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-blue?style=flat-square&logo=typescript&logoColor=white" />
 </p>
 
 > [!note]
@@ -32,6 +37,7 @@
 - [主な機能](#主な機能)
 - [デモ](#デモ)
 - [クイックスタート](#クイックスタート)
+  - [インストール（Chrome Web Store 推奨）](#インストールchrome-web-store-推奨)
 - [操作ガイド](#操作ガイド)
   - [要素の選択・解除](#要素の選択解除)
   - [バッジの調整](#バッジの調整)
@@ -89,9 +95,29 @@
 ---
 
 ## クイックスタート
+> [!tip]
+> 初めて使う方は **Chrome Web Store 版** が手軽です。開発や検証を行う方は **ローカル読み込み** を利用してください。
 
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/spec-sketch/njpkjlinikfhigfhiiiaffloinaofacd" target="_blank" rel="noopener">
+    <img
+      alt="Install on Chrome Web Store"
+      src="https://img.shields.io/badge/Install%20on-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white"
+    />
+  </a>
+</p>
 
-1. **Download ZIP**
+### インストール（Chrome Web Store 推奨）
+
+1. 上の **Install on Chrome Web Store** をクリック  
+2. **Chrome に追加** → **拡張機能を追加**  
+3. ツールバーの拡張アイコンから **Side Panel** を開く  
+4. ページで要素を選択 → **Capture（Full / Viewport）**
+
+<details>
+  <summary><b>ローカル読み込み（開発者向け）</b></summary>
+
+1. **ZIP をダウンロード**
    [**spec-sketch** ブランチ](https://github.com/Ymmy833y/SpecSketch/tree/spec-sketch)（または <kbd>spec-sketch-x.x.x</kbd> ブランチ）を開き、<kbd>Code</kbd> → <kbd>Download ZIP</kbd> で ZIP を取得します。
 
 2. **ZIP を展開（解凍）**
@@ -102,11 +128,7 @@
 4. **Open Side Panel**
    ツールバーの拡張アイコンから **Side Panel** を開きます。
 
-5. **Select → Capture**
-   必要な要素を選び、<kbd>Capture</kbd>（<kbd>Full</kbd> / <kbd>Viewport</kbd>）を実行します。
-
-> [!tip]
-> 初回はタブ前面化や `debugger` の許可が必要になることがあります。
+</details>
 
 ---
 
@@ -150,7 +172,7 @@
 > バッジは次の **16方位 + 中央** から選択できます。\
 > 要素の上下左右にかからない位置を選ぶと被りを避けやすくなります。
 
-| Block        | Options          |
+| 配置         | オプション        |
 | ------------ | ---------------- |
 | Right Top    | Outside / Inside |
 | Right        | Outside / Inside |

@@ -1,13 +1,18 @@
 <h1 align="center"><img src="./.github/assets/icon128.png" alt="SpecSketch Logo" width="28" height="28" style="vertical-align:middle;border-radius:6px;"> Spec Sketch</h1>
 
 <p align="center">
-  <a href="LICENSE">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-orange.svg">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-orange.svg"></a>
+  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.0.0"><img alt="Version 1.0.0" src="https://img.shields.io/badge/Version-1.0.0-green.svg"></a>
+  <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-blue?style=flat-square&logo=typescript&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/spec-sketch/njpkjlinikfhigfhiiiaffloinaofacd" target="_blank" rel="noopener">
+    <img
+      alt="Install on Chrome Web Store"
+      src="https://img.shields.io/badge/Install%20on-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white"
+    />
   </a>
-  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.0.0">
-    <img alt="Version 1.0.0" src="https://img.shields.io/badge/Version-1.0.0-green.svg">
-  </a>
-  <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-blue?style=flat-square&logo=typescript&logoColor=white" />
 </p>
 
 > [!note]
@@ -32,6 +37,7 @@
 - [Features](#features)
 - [Demo](#demo)
 - [Quick Start](#quick-start)
+  - [Install (Recommended: Chrome Web Store)](#install-recommended-chrome-web-store)
 - [User Guide](#user-guide)
   - [Select / Unselect Elements](#select--unselect-elements)
   - [Badge Tuning](#badge-tuning)
@@ -89,6 +95,29 @@
 ---
 
 ## Quick Start
+> [!tip]
+> If you're new to Spec Sketch, the **Chrome Web Store version** is the easiest way to get started.  
+> If you're developing or validating changes, use the **Local (unpacked) install**.
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/spec-sketch/njpkjlinikfhigfhiiiaffloinaofacd" target="_blank" rel="noopener">
+    <img
+      alt="Install on Chrome Web Store"
+      src="https://img.shields.io/badge/Install%20on-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white"
+    />
+  </a>
+</p>
+
+### Install (Recommended: Chrome Web Store)
+
+1. Click **Install on Chrome Web Store** above  
+2. Click **Add to Chrome** → **Add extension**  
+3. Open the **Side Panel** from the extensions icon in the toolbar  
+4. Select elements on the page → run **Capture (Full / Viewport)**
+
+
+<details>
+  <summary><b>Local (Unpacked) Install — for developers</b></summary>
 
 1. **Download ZIP**
    Open the [**spec-sketch** branch](https://github.com/Ymmy833y/SpecSketch/tree/spec-sketch) (or a <kbd>spec-sketch-x.x.x</kbd> branch), then <kbd>Code</kbd> → <kbd>Download ZIP</kbd>.
@@ -101,11 +130,7 @@
 4. **Open Side Panel**
    Launch the **Side Panel** from the extension icon on the toolbar.
 
-5. **Select → Capture**
-   Pick elements and click <kbd>Capture</kbd> (<kbd>Full</kbd> / <kbd>Viewport</kbd>).
-
-> [!tip]
-> On first use, Chrome may ask to bring the tab to front and request `debugger` permission.
+</details>
 
 ---
 
@@ -150,7 +175,7 @@
 > Choose from **16 compass points + Center**.\
 > Prefer positions that don’t cover important text or UI.
 
-| Block        | Options          |
+| Positions    | Options          |
 | ------------ | ---------------- |
 | Right Top    | Outside / Inside |
 | Right        | Outside / Inside |
