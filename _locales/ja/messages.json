@@ -45,6 +45,13 @@
 
   "comment_edit_title": { "message": "コメントを編集" },
 
+  "setting":        { "message": "設定" },
+  "setting_theme":  { "message": "テーマ設定" },
+  "theme_light":    { "message": "ライト" },
+  "theme_dark":     { "message": "ダーク" },
+  "theme_device":     { "message": "デバイス" },
+  "hint_theme_note": { "message": "テーマを切り替えると、このパネルの見た目が即時に更新されます。" },
+
   "common_create": { "message": "作成" },
   "common_delete": { "message": "削除" },
   "common_apply": { "message": "適用" },
