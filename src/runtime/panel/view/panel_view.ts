@@ -327,7 +327,7 @@ export class PanelView {
     text.textContent = getStatusMessage(key);
     el.replaceChildren(dot, text);
 
-    this.disabledAllButtons(key !== STATUS.CONNECTED);
+    this.disableFormControls(key !== STATUS.CONNECTED);
   }
 
   private renderToggle(enabled: boolean): void {
@@ -650,8 +650,15 @@ export class PanelView {
     rangeEl.addEventListener('input', () => sync(rangeEl.value));
     numberEl.addEventListener('input', () => sync(numberEl.value));
   }
-  private disabledAllButtons(isDisabled: boolean): void {
-    this.doc.querySelectorAll('button').forEach((btn) => (btn.disabled = isDisabled));
+  private disableFormControls(isDisabled: boolean): void {
+    this.doc.querySelectorAll('button, select, input, textarea').forEach((el) => {
+      if ((el as HTMLElement).hasAttribute('data-ignore-disable')) return;
+      if ('disabled' in el) {
+        (
+          el as HTMLButtonElement | HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
+        ).disabled = isDisabled;
+      }
+    });
   }
   private applyCaptureOptionsToggleUI(expanded: boolean) {
     this.els.captureOptionsToggle.setAttribute('aria-expanded', String(expanded));

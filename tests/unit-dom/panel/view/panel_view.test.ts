@@ -84,7 +84,7 @@ const basePanelHtml = () => `
 <div id="panel-root">
   <div class="toolbar">
     <span id="status"></span>
-    <button id="setting-button" type="button"></button>
+    <button id="setting-button" type="button" data-ignore-disable="true"></button>
     <button id="toggle-select"><span id="toggle-select-icon"></span><span id="toggle-select-label"></span></button>
     <button id="clear">Clear</button>
     <button id="capture">Capture</button>
@@ -155,10 +155,10 @@ const basePanelHtml = () => `
   </div>
   
   <div id="setting-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
-    <button id="setting-close-btn" type="button"></button>
-    <button id="theme-light-btn" type="button"></button>
-    <button id="theme-dark-btn" type="button"></button>
-    <button id="theme-device-btn" type="button"></button>
+    <button id="setting-close-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-light-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-dark-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-device-btn" type="button" data-ignore-disable="true"></button>
   </div>
 </div>
 `;
@@ -234,21 +234,59 @@ describe('panel/view/panel_view', () => {
     window.matchMedia = makeMatchMedia(false);
   });
 
-  it('renders status and disables/enables all buttons by status', () => {
+  it('renders status and enforces disableFormControls: disables non-ignored form controls when DISCONNECTED, re-enables when CONNECTED', () => {
     const v = setupView();
-    // DISCONNECTED → All buttons disabled
+
+    // DISCONNECTED → renderStatus calls disableFormControls(true)
     renderWithModel(v, { status: 'disconnected' });
     expect(document.querySelector('#status')).toHaveTextContent('Disconnected');
-    document.querySelectorAll('button').forEach((b) => {
-      expect(b).toBeDisabled();
-    });
 
-    // CONNECTED → enabled
+    // Buttons without data-ignore-disable should be disabled
+    expect(document.querySelector('#toggle-select')).toBeDisabled();
+    expect(document.querySelector('#clear')).toBeDisabled();
+    expect(document.querySelector('#capture')).toBeDisabled();
+    expect(document.querySelector('#capture-options-toggle')).toBeDisabled();
+
+    // Buttons with data-ignore-disable must remain enabled (excluded from disabling)
+    expect(document.querySelector('#setting-button')).not.toBeDisabled();
+    expect(document.querySelector('#setting-close-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-light-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-dark-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-device-btn')).not.toBeDisabled();
+
+    // Other form controls are disabled (select, input, textarea)
+    expect(document.querySelector('#badge-shape-select')).toBeDisabled();
+    expect(document.querySelector('#capture-scale-number')).toBeDisabled();
+    expect(document.querySelector('#item-comment-input')).toBeDisabled();
+
+    // CONNECTED → renderStatus calls disableFormControls(false)
+    // Note: JPEG-only inputs can still be disabled by updateQualityVisibility when format='png'
     renderWithModel(v, { status: 'connected' });
     expect(document.querySelector('#status')).toHaveTextContent('Connected');
-    document.querySelectorAll('button').forEach((b) => {
-      expect(b).not.toBeDisabled();
-    });
+
+    // Previously disabled normal buttons are re-enabled
+    expect(document.querySelector('#toggle-select')).not.toBeDisabled();
+    expect(document.querySelector('#clear')).not.toBeDisabled();
+    expect(document.querySelector('#capture')).not.toBeDisabled();
+    expect(document.querySelector('#capture-options-toggle')).not.toBeDisabled();
+
+    // Ignored buttons were never disabled and remain enabled
+    expect(document.querySelector('#setting-button')).not.toBeDisabled();
+    expect(document.querySelector('#setting-close-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-light-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-dark-btn')).not.toBeDisabled();
+    expect(document.querySelector('#theme-device-btn')).not.toBeDisabled();
+
+    // Generic form controls are re-enabled
+    expect(document.querySelector('#badge-shape-select')).not.toBeDisabled();
+    expect(document.querySelector('#capture-scale-number')).not.toBeDisabled();
+    expect(document.querySelector('#item-comment-input')).not.toBeDisabled();
+
+    // PNG is the default format in renderWithModel → JPEG-only fields remain disabled by design
+    const jpegNum = document.querySelector('#jpeg-quality-number') as HTMLInputElement;
+    const jpegRange = document.querySelector('#jpeg-quality-range') as HTMLInputElement;
+    expect(jpegNum).toBeDisabled();
+    expect(jpegRange).toBeDisabled();
   });
 
   it('emits toggle/clear/capture button events', () => {
