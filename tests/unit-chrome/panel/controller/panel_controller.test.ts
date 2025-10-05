@@ -77,7 +77,7 @@ import { update } from '@panel/app/update';
 import { PanelController } from '@panel/controller/panel_controller';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
 import { UIEventType } from '@panel/types/ui_event_types';
@@ -198,8 +198,6 @@ describe('panel/controller/panel_controller', () => {
     vi.mocked(isRestricted).mockReturnValue(false);
 
     vi.mocked(connectToTab).mockReset();
-    vi.mocked(getState).mockReset();
-    vi.mocked(setState).mockReset();
     vi.mocked(capture).mockReset();
 
     // Mock update (using ReturnType<typeof vi.fn> to avoid type mismatch)
@@ -423,7 +421,7 @@ describe('panel/controller/panel_controller', () => {
 
       const conn = makeConnStub();
       vi.mocked(connectToTab).mockResolvedValue(conn as unknown as never);
-      vi.mocked(getState).mockResolvedValue({
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
         defaultSize: 10,
@@ -475,7 +473,7 @@ describe('panel/controller/panel_controller', () => {
       vi.mocked(getActiveTab).mockResolvedValue(
         makeTab({ url: 'https://example.com/content-size' }),
       );
-      vi.mocked(getState).mockResolvedValue({
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [],
         nextId: 1,
         defaultSize: 12,
@@ -587,11 +585,14 @@ describe('panel/controller/panel_controller', () => {
       };
       type Exposed = { ensureConnectionAlive: () => Promise<unknown> };
       const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.CLEAR_STATE }]);
 
       expect(ensure).not.toHaveBeenCalled();
-      expect(setState).toHaveBeenCalledWith('key://local', {
+      expect(setSpy).toHaveBeenCalledWith('key://local', {
         items: [makeItem(1), makeItem(2), makeItem(3)],
         nextId: 1,
         defaultSize: 20,
@@ -616,7 +617,7 @@ describe('panel/controller/panel_controller', () => {
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
       };
-      vi.mocked(getState).mockResolvedValue({
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
         defaultSize: 12,
@@ -625,11 +626,14 @@ describe('panel/controller/panel_controller', () => {
         defaultPosition: 'left-top-inside',
         defaultGroup: '',
       });
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.PERSIST_STATE }]);
 
-      expect(getState).toHaveBeenCalledWith('key://persist');
-      expect(setState).toHaveBeenCalledWith(
+      expect(getSpy).toHaveBeenCalledWith('key://persist');
+      expect(setSpy).toHaveBeenCalledWith(
         'key://persist',
         expect.objectContaining({
           items: [makeItem(100, { color: 'Purple', shape: 'square' })],
@@ -698,6 +702,52 @@ describe('panel/controller/panel_controller', () => {
       ]);
 
       expect(conn.api.measureSize).toHaveBeenCalledTimes(1);
+    });
+
+    it('SET_THEME: reads theme from themeTable and dispatches SET_THEME', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const getSpy = vi.spyOn(themeTable, 'get').mockResolvedValue('dark' as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.SET_THEME }]);
+
+      expect(ensure).not.toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({ type: ActionType.SET_THEME, theme: 'dark' });
+    });
+
+    it('UPDATE_THEME: writes theme to themeTable (no dispatch)', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const setSpy = vi.spyOn(themeTable, 'set').mockResolvedValue(undefined as unknown as void);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.UPDATE_THEME, theme: 'light' as never },
+      ]);
+
+      expect(ensure).not.toHaveBeenCalled();
+      expect(setSpy).toHaveBeenCalledWith('light');
+      expect(dispatch).not.toHaveBeenCalled();
     });
   });
 

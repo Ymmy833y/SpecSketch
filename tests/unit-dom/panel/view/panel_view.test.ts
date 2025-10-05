@@ -84,6 +84,7 @@ const basePanelHtml = () => `
 <div id="panel-root">
   <div class="toolbar">
     <span id="status"></span>
+    <button id="setting-button" type="button"></button>
     <button id="toggle-select"><span id="toggle-select-icon"></span><span id="toggle-select-label"></span></button>
     <button id="clear">Clear</button>
     <button id="capture">Capture</button>
@@ -152,6 +153,13 @@ const basePanelHtml = () => `
     <button id="item-comment-cancel-btn"></button>
     <button id="item-comment-apply-btn"></button>
   </div>
+  
+  <div id="setting-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
+    <button id="setting-close-btn" type="button"></button>
+    <button id="theme-light-btn" type="button"</button>
+    <button id="theme-dark-btn" type="button"</button>
+    <button id="theme-device-btn" type="button"</button>
+  </div>
 </div>
 `;
 
@@ -174,6 +182,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
   const m: Model = {
     tabId: 1,
     pageKey: 'test',
+    theme: 'dark',
     status: STATUS.CONNECTED,
     selectionEnabled: true,
     items: [] as ScreenItem[],

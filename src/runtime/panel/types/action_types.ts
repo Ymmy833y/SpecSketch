@@ -6,6 +6,7 @@ import type {
   ItemPosition,
   ItemShape,
   ScreenItem,
+  ThemeMode,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
@@ -112,6 +113,12 @@ export enum ActionType {
 
   /** Persist the edited comment text for the targeted item */
   UPDATE_ITEM_COMMENT = 'UPDATE_ITEM_COMMENT',
+
+  /** Sete UI theme */
+  SET_THEME = 'SET_THEME',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
 }
 
 export type Action =
@@ -156,4 +163,6 @@ export type Action =
   | { type: ActionType.ITEM_HOVER_OUT }
   | { type: ActionType.UPDATE_ITEM_COMMENT; id: number; comment: string }
   | { type: ActionType.PORT_DISCONNECTED }
-  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };
+  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number }
+  | { type: ActionType.SET_THEME; theme: ThemeMode }
+  | { type: ActionType.UPDATE_THEME; theme: ThemeMode };

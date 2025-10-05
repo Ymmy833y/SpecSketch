@@ -4,6 +4,7 @@ import {
   type ItemPosition,
   type ItemShape,
   type ScreenItem,
+  ThemeMode,
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
@@ -13,6 +14,8 @@ export type Model = {
   status: StatusKey;
   tabId: number | null;
   pageKey: string;
+
+  theme: ThemeMode;
 
   selectionEnabled: boolean;
   items: ScreenItem[];
@@ -39,6 +42,7 @@ export const initialModel: Model = {
   status: 'DISCONNECTED',
   tabId: null,
   pageKey: '',
+  theme: 'device',
   selectionEnabled: false,
   items: [],
   defaultSize: 14,

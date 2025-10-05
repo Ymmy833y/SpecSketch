@@ -6,7 +6,8 @@
   .app-body {
     @apply min-h-screen h-full bg-gradient-to-b antialiased
            from-slate-50 to-slate-100 text-slate-800
-           dark:from-slate-900 dark:to-slate-950 dark:text-slate-100;
+           dark:from-slate-900 dark:to-slate-950 dark:text-slate-100
+           [color-scheme:light] dark:[color-scheme:dark];
   }
   .panel-bar {
     @apply flex items-center w-full rounded-xl backdrop-blur border py-2
@@ -79,13 +80,27 @@
     @apply mt-1 inline-flex items-center justify-center h-9 px-2 rounded-lg
            border border-slate-200 bg-white hover:bg-slate-50
            dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800
-           text-slate-600 focus:outline-none;
+           text-slate-600 hover:text-slate-800
+           dark:text-white dark:hover:text-white/90
+           focus:outline-none transition-colors;
   }
   .btn-icon--danger {
     @apply hover:text-red-600
            focus-visible:ring-2 focus-visible:ring-red-400
            focus-visible:ring-offset-2 focus-visible:ring-offset-white
            dark:focus-visible:ring-offset-slate-900;
+  }
+  .btn-group--full {
+    @apply flex w-full;
+  }
+  .btn-segment {
+    @apply btn flex-1 justify-center;
+  }
+  .btn-segment + .btn-segment {
+    @apply -ml-px;
+  }
+  .btn-segment[data-active="true"] {
+    @apply bg-indigo-600 text-white;
   }
 
   .range {
@@ -258,5 +273,11 @@
            focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-white
            dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500
            dark:focus:border-indigo-400 dark:focus:ring-indigo-500 dark:focus:ring-offset-slate-900;
+  }
+  .modal-title-row {
+    @apply flex items-center justify-between;
+  }
+  .section-head {
+    @apply flex items-center justify-between;
   }
 }

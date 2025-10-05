@@ -6,7 +6,7 @@ import { update } from '@panel/app/update';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
 import { handleSelected } from '@panel/services/state';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { Action, ActionType } from '@panel/types/action_types';
 import { Effect, EffectType } from '@panel/types/effect_types';
 import { UIEventType } from '@panel/types/ui_event_types';
@@ -121,6 +121,9 @@ export class PanelController {
     this.view.on(UIEventType.ITEM_COMMENT_APPLY, ({ id, comment }) =>
       this.dispatch({ type: ActionType.UPDATE_ITEM_COMMENT, id, comment }),
     );
+    this.view.on(UIEventType.UPDATE_THEME, ({ theme }) =>
+      this.dispatch({ type: ActionType.UPDATE_THEME, theme }),
+    );
   }
 
   private dispatch(action: Action): void {
@@ -152,7 +155,7 @@ export class PanelController {
           await this.conn?.api.hover(fx.id);
           break;
         case EffectType.CLEAR_STATE:
-          await setState(this.model.pageKey, {
+          await screenStateTable.set(this.model.pageKey, {
             items: this.model.items,
             nextId: 1,
             defaultSize: this.model.defaultSize,
@@ -163,8 +166,8 @@ export class PanelController {
           });
           break;
         case EffectType.PERSIST_STATE: {
-          const prev = await getState(this.model.pageKey);
-          await setState(this.model.pageKey, {
+          const prev = await screenStateTable.get(this.model.pageKey);
+          await screenStateTable.set(this.model.pageKey, {
             ...prev,
             items: this.model.items,
             defaultSize: this.model.defaultSize,
@@ -175,6 +178,14 @@ export class PanelController {
           });
           break;
         }
+        case EffectType.SET_THEME: {
+          const theme = await themeTable.get();
+          this.dispatch({ type: ActionType.SET_THEME, theme });
+          break;
+        }
+        case EffectType.UPDATE_THEME:
+          await themeTable.set(fx.theme);
+          break;
         case EffectType.MEASURE_CONTENT_SIZE:
           await this.conn?.api.measureSize();
           break;
@@ -250,7 +261,7 @@ export class PanelController {
       }
     });
 
-    const st = await getState(newKey);
+    const st = await screenStateTable.get(newKey);
     this.dispatch({
       type: ActionType.RESTORE_STATE,
       state: {

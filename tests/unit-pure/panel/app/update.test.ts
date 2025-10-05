@@ -73,7 +73,7 @@ describe('panel/app/update', () => {
     const out = update(model, action);
 
     expect(out.model).toBe(model);
-    expect(out.effects).toEqual([]);
+    expect(out.effects).toEqual([{ kind: EffectType.SET_THEME }]);
   });
 
   it('CONNECTED: sets tabId and pageKey', () => {
@@ -631,5 +631,25 @@ describe('panel/app/update', () => {
 
     expect(out.model).toBe(model);
     expect(out.effects).toEqual([]);
+  });
+
+  it('SET_THEME: updates theme only (no effects)', () => {
+    const model = baseModel({ theme: 'light' as unknown as Model['theme'] });
+    const action = { type: ActionType.SET_THEME, theme: 'dark' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.theme).toBe('dark');
+    expect(out.effects).toEqual([]);
+  });
+
+  it('UPDATE_THEME: updates theme and emits UPDATE_THEME effect', () => {
+    const model = baseModel({ theme: 'light' as unknown as Model['theme'] });
+    const action = { type: ActionType.UPDATE_THEME, theme: 'dark' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.theme).toBe('dark');
+    expect(out.effects).toEqual([{ kind: EffectType.UPDATE_THEME, theme: 'dark' }]);
   });
 });
