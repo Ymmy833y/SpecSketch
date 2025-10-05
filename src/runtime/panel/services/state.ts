@@ -1,5 +1,5 @@
 import type { Anchor, ScreenItem, ScreenState } from '@common/types';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable } from '@panel/storage/tables';
 
 type Patch = {
   added?: Array<{ anchor: ScreenItem['anchor'] }>;
@@ -16,7 +16,7 @@ type Patch = {
  * @returns Promise resolving to the updated ScreenState.
  */
 export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenState> {
-  const state = await getState(pageKey);
+  const state = await screenStateTable.get(pageKey);
 
   if (patch.removedIds?.length) {
     const toRemove = new Set(patch.removedIds);
@@ -42,7 +42,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
   }
   state.items = normalizeGroupLabelsAndCountUngrouped(state.items);
 
-  await setState(pageKey, state);
+  await screenStateTable.set(pageKey, state);
   return state;
 }
 
@@ -56,7 +56,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
  * @returns Promise resolving to the updated ScreenState.
  */
 export async function handleSelected(pageKey: string, anchors: Anchor[]): Promise<ScreenState> {
-  const state = await getState(pageKey);
+  const state = await screenStateTable.get(pageKey);
   const uniq = Array.from(new Set(anchors.map((a) => a.value)))
     .map((v) => anchors.find((a) => a.value === v)!)
     .filter(Boolean);

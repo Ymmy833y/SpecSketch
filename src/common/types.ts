@@ -115,3 +115,6 @@ export type ContentSize = {
   width: number;
   height: number;
 };
+
+export type Theme = 'light' | 'dark';
+export type ThemeMode = Theme | 'device';

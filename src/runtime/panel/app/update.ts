@@ -10,7 +10,7 @@ import type { Model } from './model';
 export function update(model: Model, action: Action): { model: Model; effects: Effect[] } {
   switch (action.type) {
     case ActionType.INIT:
-      return { model, effects: [] };
+      return { model, effects: [{ kind: EffectType.SET_THEME }] };
 
     case ActionType.CONNECTED:
       return { model: { ...model, tabId: action.tabId, pageKey: action.pageKey }, effects: [] };
@@ -266,6 +266,17 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       return {
         model: { ...model, status: STATUS.DISCONNECTED, selectionEnabled: false },
         effects: [{ kind: EffectType.TOGGLE_SELECT_ON_CONTENT, enabled: false }],
+      };
+
+    case ActionType.SET_THEME:
+      return {
+        model: { ...model, theme: action.theme },
+        effects: [],
+      };
+    case ActionType.UPDATE_THEME:
+      return {
+        model: { ...model, theme: action.theme },
+        effects: [{ kind: EffectType.UPDATE_THEME, theme: action.theme }],
       };
 
     default:

@@ -1,21 +1,11 @@
 import { type Anchor, type ScreenItem, type ScreenState } from '@common/types';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('@panel/state/store', () => {
-  return {
-    getState: vi.fn(async (_key: string) => {
-      throw new Error('getState mock is not seeded for this test');
-    }),
-    setState: vi.fn(async (_key: string, _s: ScreenState) => undefined),
-  };
-});
-
 import {
   applyPatch,
   handleSelected,
   normalizeGroupLabelsAndCountUngrouped,
 } from '@panel/services/state';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable } from '@panel/storage/tables';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ---- Test helpers ------------------------------------------------------------
 const PAGE = 'pg-1';
@@ -59,7 +49,10 @@ describe('panel/services/state', () => {
       const i2 = makeItem(2, 2, css('#b'));
       const i3 = makeItem(3, 3, css('#c'));
       const initial = makeState([i1, i2, i3], 4);
-      vi.mocked(getState).mockResolvedValueOnce(initial);
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(initial);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, { removedIds: [2] });
@@ -68,9 +61,10 @@ describe('panel/services/state', () => {
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2]);
 
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
-      const persisted = vi.mocked(setState).mock.calls[0]?.[1] as ScreenState;
-      expect(persisted.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
+      expect(getSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      const persisted = setSpy.mock.calls[0]?.[1] as ScreenState;
+      expect(persisted.items.map((it) => it.id)).toEqual([1, 3]);
     });
 
     it('adds anchors using defaults, normalizes labels, advances nextId, and persists', async () => {
@@ -78,7 +72,10 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
 
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, {
@@ -97,21 +94,24 @@ describe('panel/services/state', () => {
       expect(addedX.position).toBe(next.defaultPosition);
       expect(addedX.group ?? '').toBe(next.defaultGroup);
 
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
 
     it('handles empty patch by normalizing and persisting (no material change)', async () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, {});
 
       // Assert
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 2]);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -124,9 +124,12 @@ describe('panel/services/state', () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1, i2], 3)) // for handleSelected
         .mockResolvedValueOnce(makeState([i1, i2], 3)); // for applyPatch
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await handleSelected(PAGE, [css('#a')]);
@@ -134,14 +137,14 @@ describe('panel/services/state', () => {
       // Assert
       expect(next.items.map((it: ScreenItem) => it.anchor.value)).toEqual(['#b']);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1]);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
 
     it('adds new item once when duplicate values are provided (dedup by value)', async () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
 
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1], 2))
         .mockResolvedValueOnce(makeState([i1], 2));
 
@@ -159,9 +162,12 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#c'));
 
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1, i2], 3))
         .mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await handleSelected(PAGE, [css('#a'), css('#b'), css('#b')]);
@@ -170,7 +176,7 @@ describe('panel/services/state', () => {
       expect(next.items.map((it: ScreenItem) => it.anchor.value).sort()).toEqual(['#b', '#c']);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2]);
       expect(next.nextId).toBe(4);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
   });
 

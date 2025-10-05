@@ -45,6 +45,13 @@
 
   "comment_edit_title": { "message": "Edit Comment" },
 
+  "setting": { "message": "Setting" },
+  "setting_theme": { "message": "Setting Theme" },
+  "theme_light": { "message": "Light" },
+  "theme_dark": { "message": "Dark" },
+  "theme_device": { "message": "Device" },
+  "hint_theme_note": { "message": "Switching theme updates this panel’s appearance." },
+
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },
   "common_apply": { "message": "Apply" },

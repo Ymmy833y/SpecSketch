@@ -7,7 +7,7 @@
  * - Payloads are strongly typed via UIEventPayloadMap; use `undefined` for no payload.
  */
 
-import type { ItemColor, ItemPosition, ItemShape } from '@common/types';
+import type { ItemColor, ItemPosition, ItemShape, ThemeMode } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 
 export enum UIEventType {
@@ -67,6 +67,9 @@ export enum UIEventType {
 
   /** Apply pending comment edits to the selected item */
   ITEM_COMMENT_APPLY = 'ITEM_COMMENT_APPLY',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
 }
 
 /**
@@ -102,4 +105,5 @@ export type UIEventPayloadMap = {
   [UIEventType.ITEM_HOVER_IN]: { id: number };
   [UIEventType.ITEM_HOVER_OUT]: undefined;
   [UIEventType.ITEM_COMMENT_APPLY]: { id: number; comment: string };
+  [UIEventType.UPDATE_THEME]: { theme: ThemeMode };
 };

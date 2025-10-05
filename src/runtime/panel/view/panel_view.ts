@@ -8,6 +8,7 @@ import {
   ItemPosition,
   type ItemShape,
   type ScreenItem,
+  ThemeMode,
   UNGROUPED,
   UNGROUPED_VALUE,
 } from '@common/types';
@@ -70,6 +71,14 @@ export class PanelView {
     itemCommentApplyBtn: HTMLButtonElement;
 
     selectItemAllCheckbox: HTMLInputElement;
+
+    settingModal: HTMLDivElement;
+    settingButton: HTMLButtonElement;
+    settingCloseButton: HTMLButtonElement;
+
+    themeLightBtn: HTMLButtonElement;
+    themeDarkBtn: HTMLButtonElement;
+    themeDeviceBtn: HTMLButtonElement;
   };
 
   private readonly NEW_GROUP = '__newgroup__';
@@ -130,6 +139,14 @@ export class PanelView {
       itemCommentApplyBtn: this.$('#item-comment-apply-btn'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
+
+      settingModal: this.$('#setting-modal'),
+      settingButton: this.$('#setting-button'),
+      settingCloseButton: this.$('#setting-close-btn'),
+
+      themeLightBtn: this.$('#theme-light-btn'),
+      themeDarkBtn: this.$('#theme-dark-btn'),
+      themeDeviceBtn: this.$('#theme-device-btn'),
     };
 
     this.els.toggleBtn.addEventListener('click', () =>
@@ -229,6 +246,26 @@ export class PanelView {
       this.els.itemCommentModal.classList.add('hidden');
     });
 
+    this.els.settingButton.addEventListener('click', () => {
+      this.els.settingModal.classList.remove('hidden');
+    });
+    this.els.settingCloseButton.addEventListener('click', () => {
+      this.els.settingModal.classList.add('hidden');
+    });
+
+    this.els.themeLightBtn.addEventListener('click', () => {
+      this.applyTheme('light');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'light' });
+    });
+    this.els.themeDarkBtn.addEventListener('click', () => {
+      this.applyTheme('dark');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'dark' });
+    });
+    this.els.themeDeviceBtn.addEventListener('click', () => {
+      this.applyTheme('device');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'device' });
+    });
+
     this.updateQualityVisibility();
 
     this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
@@ -274,6 +311,7 @@ export class PanelView {
     this.els.badgeShapeSelect.value = model.defaultShape;
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
+    this.applyTheme(model.theme);
   }
 
   private renderStatus(key: StatusKey): void {
@@ -656,6 +694,22 @@ export class PanelView {
     }
     const createOpt = this.makeOpt(this.NEW_GROUP, i18n.get('common_create'));
     this.els.badgeGroupSelect.append(createOpt);
+  }
+
+  private applyTheme(theme: ThemeMode): void {
+    const root = document.documentElement;
+    const isDark =
+      theme === 'device'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : theme === 'dark';
+    if (isDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    this.els.themeLightBtn.setAttribute('data-active', String(theme === 'light'));
+    this.els.themeDarkBtn.setAttribute('data-active', String(theme === 'dark'));
+    this.els.themeDeviceBtn.setAttribute('data-active', String(theme === 'device'));
   }
 
   private $<T extends Element>(selector: string): T {

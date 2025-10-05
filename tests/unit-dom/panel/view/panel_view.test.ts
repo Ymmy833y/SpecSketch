@@ -84,6 +84,7 @@ const basePanelHtml = () => `
 <div id="panel-root">
   <div class="toolbar">
     <span id="status"></span>
+    <button id="setting-button" type="button"></button>
     <button id="toggle-select"><span id="toggle-select-icon"></span><span id="toggle-select-label"></span></button>
     <button id="clear">Clear</button>
     <button id="capture">Capture</button>
@@ -152,6 +153,13 @@ const basePanelHtml = () => `
     <button id="item-comment-cancel-btn"></button>
     <button id="item-comment-apply-btn"></button>
   </div>
+  
+  <div id="setting-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
+    <button id="setting-close-btn" type="button"></button>
+    <button id="theme-light-btn" type="button"></button>
+    <button id="theme-dark-btn" type="button"></button>
+    <button id="theme-device-btn" type="button"></button>
+  </div>
 </div>
 `;
 
@@ -174,6 +182,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
   const m: Model = {
     tabId: 1,
     pageKey: 'test',
+    theme: 'device',
     status: STATUS.CONNECTED,
     selectionEnabled: true,
     items: [] as ScreenItem[],
@@ -206,9 +215,23 @@ export function lastCallArg<T>(
 
 // ---- Tests ----
 describe('panel/view/panel_view', () => {
+  // Prepare a matchMedia mockup
+  const makeMatchMedia = (matches: boolean) =>
+    vi.fn().mockReturnValue({
+      matches,
+      media: '(prefers-color-scheme: dark)',
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    } as unknown as MediaQueryList);
+
   beforeEach(() => {
     vi.restoreAllMocks();
     document.body.innerHTML = '';
+    window.matchMedia = makeMatchMedia(false);
   });
 
   it('renders status and disables/enables all buttons by status', () => {
@@ -896,5 +919,98 @@ describe('panel/view/panel_view', () => {
     const payload = lastCallArg<{ id: number; comment: string }>(onApply)!;
     expect(payload).toEqual({ id: 2, comment: 'new comment' });
     expect(modal).toHaveClass('hidden');
+  });
+
+  it('clicking theme-light applies light theme and emits UPDATE_THEME', () => {
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'dark' });
+
+    const lightBtn = document.querySelector('#theme-light-btn') as HTMLButtonElement;
+    lightBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'light' });
+    // applyTheme('light') → dark class is removed from html root
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(lightBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-device-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-dark applies dark theme and emits UPDATE_THEME', () => {
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'light' });
+
+    const darkBtn = document.querySelector('#theme-dark-btn') as HTMLButtonElement;
+    darkBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'dark' });
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(darkBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-device-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-device applies system preference (light system) and emits UPDATE_THEME', () => {
+    // System lights: matches=false
+    window.matchMedia = makeMatchMedia(false);
+
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'dark' });
+
+    const deviceBtn = document.querySelector('#theme-device-btn') as HTMLButtonElement;
+    deviceBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'device' });
+    // matches=false → dark class is not added
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(deviceBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-device applies system preference (dark system) and emits UPDATE_THEME', () => {
+    // System is dark: matches=true
+    window.matchMedia = makeMatchMedia(true);
+
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'light' });
+
+    const deviceBtn = document.querySelector('#theme-device-btn') as HTMLButtonElement;
+    deviceBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'device' });
+    // matches=true → dark class is added
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(deviceBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
   });
 });

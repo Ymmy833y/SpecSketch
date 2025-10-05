@@ -1,4 +1,4 @@
-import { ContentSize, ScreenItem } from '@common/types';
+import { ContentSize, ScreenItem, ThemeMode } from '@common/types';
 
 /**
  * EffectType
@@ -37,6 +37,12 @@ export enum EffectType {
    */
   PERSIST_STATE = 'PERSIST_STATE',
 
+  /** Sete UI theme */
+  SET_THEME = 'SET_THEME',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
+
   /** Report/log an error (and optionally surface it to the UI) */
   NOTIFY_ERROR = 'NOTIFY_ERROR',
 }
@@ -60,4 +66,6 @@ export type Effect =
     }
   | { kind: EffectType.CLEAR_STATE }
   | { kind: EffectType.PERSIST_STATE }
+  | { kind: EffectType.SET_THEME }
+  | { kind: EffectType.UPDATE_THEME; theme: ThemeMode }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };
