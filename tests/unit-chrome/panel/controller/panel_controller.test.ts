@@ -374,6 +374,59 @@ describe('panel/controller/panel_controller', () => {
         comment: '',
       });
     });
+
+    it('view handler SETTING_MODAL_SHOW dispatches STORE_RELOAD_REQUESTED', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      // Fire the UI event and assert the dispatched action
+      view.emit(UIEventType.SETTING_MODAL_SHOW);
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_REQUESTED,
+      });
+    });
+
+    it('view handler REMOVE_PAGE_CLICK dispatches REMOVE_SCREEN_STATE_BY_PAGE with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const targetKey = 'key://to-remove';
+      view.emit(UIEventType.REMOVE_PAGE_CLICK, { pageKey: targetKey });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE,
+        pageKey: targetKey,
+      });
+    });
   });
 
   describe('ensureConnectionAlive', () => {
@@ -748,6 +801,106 @@ describe('panel/controller/panel_controller', () => {
       expect(ensure).not.toHaveBeenCalled();
       expect(setSpy).toHaveBeenCalledWith('light');
       expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('READ_SCREEN_STATE_STORE: loads all keys and dispatches STORE_RELOAD_SUCCEEDED', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const readAllSpy = vi.spyOn(screenStateTable, 'readAll').mockResolvedValue({
+        'key://alpha': { items: [] },
+        'key://beta': { items: [] },
+        'key://gamma': { items: [] },
+      } as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.READ_SCREEN_STATE_STORE },
+      ]);
+
+      // No connection needed for store reading
+      expect(ensure).not.toHaveBeenCalled();
+      // Read all was called and keys were propagated via STORE_RELOAD_SUCCEEDED
+      expect(readAllSpy).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_SUCCEEDED,
+        pageKeys: expect.arrayContaining(['key://alpha', 'key://beta', 'key://gamma']),
+      });
+    });
+
+    it('REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY: removes entry, reloads keys, and restores current state', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      // Current model.pageKey to be restored after deletion
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const removeSpy = vi.spyOn(screenStateTable, 'remove').mockResolvedValue(undefined as never);
+
+      // After removal, the remaining keys returned by readAll
+      const readAllSpy = vi.spyOn(screenStateTable, 'readAll').mockResolvedValue({
+        'key://alpha': { items: [] },
+        'key://current': { items: [] },
+      } as never);
+
+      // The state to restore for the current page
+      const restored = {
+        items: [makeItem(1), makeItem(2)],
+        defaultSize: 16,
+        defaultColor: 'Blue' as const,
+        defaultShape: 'square' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue(restored as never);
+
+      // Execute the effect under test
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY, pageKey: 'key://to-remove' },
+      ]);
+
+      // No connection required
+      expect(ensure).not.toHaveBeenCalled();
+      // Remove → readAll → get(current) were called
+      expect(removeSpy).toHaveBeenCalledWith('key://to-remove');
+      expect(readAllSpy).toHaveBeenCalledTimes(1);
+      expect(getSpy).toHaveBeenCalledWith('key://current');
+
+      // First, the list refresh
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_SUCCEEDED,
+        pageKeys: expect.arrayContaining(['key://alpha', 'key://current']),
+      });
+
+      // Then, the current page state restore
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.RESTORE_STATE,
+        state: expect.objectContaining({
+          items: restored.items,
+          defaultSize: restored.defaultSize,
+          defaultColor: restored.defaultColor,
+          defaultShape: restored.defaultShape,
+          defaultPosition: restored.defaultPosition,
+          defaultGroup: restored.defaultGroup,
+        }),
+      });
     });
   });
 

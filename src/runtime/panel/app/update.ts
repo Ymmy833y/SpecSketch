@@ -278,6 +278,23 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         model: { ...model, theme: action.theme },
         effects: [{ kind: EffectType.UPDATE_THEME, theme: action.theme }],
       };
+    case ActionType.STORE_RELOAD_REQUESTED:
+      return {
+        model,
+        effects: [{ kind: EffectType.READ_SCREEN_STATE_STORE }],
+      };
+    case ActionType.STORE_RELOAD_SUCCEEDED:
+      return {
+        model: { ...model, pageKeys: action.pageKeys },
+        effects: [],
+      };
+    case ActionType.REMOVE_SCREEN_STATE_BY_PAGE:
+      return {
+        model,
+        effects: [
+          { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY, pageKey: action.pageKey },
+        ],
+      };
 
     default:
       return { model, effects: [] };

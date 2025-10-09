@@ -124,6 +124,12 @@ export class PanelController {
     this.view.on(UIEventType.UPDATE_THEME, ({ theme }) =>
       this.dispatch({ type: ActionType.UPDATE_THEME, theme }),
     );
+    this.view.on(UIEventType.SETTING_MODAL_SHOW, () =>
+      this.dispatch({ type: ActionType.STORE_RELOAD_REQUESTED }),
+    );
+    this.view.on(UIEventType.REMOVE_PAGE_CLICK, ({ pageKey }) =>
+      this.dispatch({ type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE, pageKey }),
+    );
   }
 
   private dispatch(action: Action): void {
@@ -186,6 +192,37 @@ export class PanelController {
         case EffectType.UPDATE_THEME:
           await themeTable.set(fx.theme);
           break;
+        case EffectType.READ_SCREEN_STATE_STORE: {
+          const screenStates = await screenStateTable.readAll();
+          const pageKeys: string[] = Object.keys(screenStates);
+          this.dispatch({
+            type: ActionType.STORE_RELOAD_SUCCEEDED,
+            pageKeys,
+          });
+          break;
+        }
+        case EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY: {
+          await screenStateTable.remove(fx.pageKey);
+          const screenStates = await screenStateTable.readAll();
+          const pageKeys: string[] = Object.keys(screenStates);
+          this.dispatch({
+            type: ActionType.STORE_RELOAD_SUCCEEDED,
+            pageKeys,
+          });
+          const st = await screenStateTable.get(this.model.pageKey);
+          this.dispatch({
+            type: ActionType.RESTORE_STATE,
+            state: {
+              items: st.items,
+              defaultSize: st.defaultSize,
+              defaultColor: st.defaultColor,
+              defaultShape: st.defaultShape,
+              defaultPosition: st.defaultPosition,
+              defaultGroup: st.defaultGroup,
+            },
+          });
+          break;
+        }
         case EffectType.MEASURE_CONTENT_SIZE:
           await this.conn?.api.measureSize();
           break;

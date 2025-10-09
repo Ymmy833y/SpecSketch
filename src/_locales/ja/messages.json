@@ -51,6 +51,7 @@
   "theme_dark":     { "message": "ダーク" },
   "theme_device":     { "message": "デバイス" },
   "hint_theme_note": { "message": "テーマを切り替えると、このパネルの見た目が即時に更新されます。" },
+  "setting_store_pages": { "message": "保存ページ" },
 
   "common_create": { "message": "作成" },
   "common_delete": { "message": "削除" },

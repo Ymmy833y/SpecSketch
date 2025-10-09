@@ -119,6 +119,15 @@ export enum ActionType {
 
   /** Update the UI theme */
   UPDATE_THEME = 'UPDATE_THEME',
+
+  /** Dispatched to request reloading the latest data */
+  STORE_RELOAD_REQUESTED = 'STORE_RELOAD_REQUESTED',
+
+  /** Dispatched after the store is successfully reloaded with the latest data */
+  STORE_RELOAD_SUCCEEDED = 'STORE_RELOAD_SUCCEEDED',
+
+  /** Remove screen state by page key */
+  REMOVE_SCREEN_STATE_BY_PAGE = 'REMOVE_SCREEN_STATE_BY_PAGE',
 }
 
 export type Action =
@@ -165,4 +174,7 @@ export type Action =
   | { type: ActionType.PORT_DISCONNECTED }
   | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number }
   | { type: ActionType.SET_THEME; theme: ThemeMode }
-  | { type: ActionType.UPDATE_THEME; theme: ThemeMode };
+  | { type: ActionType.UPDATE_THEME; theme: ThemeMode }
+  | { type: ActionType.STORE_RELOAD_REQUESTED }
+  | { type: ActionType.STORE_RELOAD_SUCCEEDED; pageKeys: string[] }
+  | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string };
