@@ -51,6 +51,7 @@
   "theme_dark": { "message": "Dark" },
   "theme_device": { "message": "Device" },
   "hint_theme_note": { "message": "Switching theme updates this panel’s appearance." },
+  "setting_store_pages": { "message": "Saved Pages" },
 
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },
