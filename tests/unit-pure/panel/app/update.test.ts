@@ -652,4 +652,50 @@ describe('panel/app/update', () => {
     expect(out.model.theme).toBe('dark');
     expect(out.effects).toEqual([{ kind: EffectType.UPDATE_THEME, theme: 'dark' }]);
   });
+  it('STORE_RELOAD_REQUESTED: emits READ_SCREEN_STATE_STORE effect (no model change)', () => {
+    const model = baseModel();
+    const action = { type: ActionType.STORE_RELOAD_REQUESTED } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model).toBe(model);
+    expect(out.effects).toEqual([{ kind: EffectType.READ_SCREEN_STATE_STORE }]);
+  });
+
+  it('STORE_RELOAD_SUCCEEDED: updates pageKeys only (no effects)', () => {
+    const model = baseModel();
+    const pageKeys = ['https://example.com/a', 'https://example.com/b'];
+    const action = {
+      type: ActionType.STORE_RELOAD_SUCCEEDED,
+      pageKeys,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // pageKeys is updated
+    expect(out.model).toMatchObject({ pageKeys });
+    // no side effects
+    expect(out.effects).toEqual([]);
+    // other fields remain as-is (spot-check)
+    expect(out.model.items).toBe(model.items);
+    expect(out.model.tabId).toBe(model.tabId);
+  });
+
+  it('REMOVE_SCREEN_STATE_BY_PAGE: emits REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY with given pageKey', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE,
+      pageKey: 'https://example.com/remove-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model).toBe(model);
+    expect(out.effects).toEqual([
+      {
+        kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY,
+        pageKey: 'https://example.com/remove-me',
+      },
+    ]);
+  });
 });

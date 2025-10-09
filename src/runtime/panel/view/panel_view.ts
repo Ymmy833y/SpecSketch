@@ -79,6 +79,10 @@ export class PanelView {
     themeLightBtn: HTMLButtonElement;
     themeDarkBtn: HTMLButtonElement;
     themeDeviceBtn: HTMLButtonElement;
+
+    storeCount: HTMLSpanElement;
+    storeList: HTMLUListElement;
+    storeEmpty: HTMLDivElement;
   };
 
   private readonly NEW_GROUP = '__newgroup__';
@@ -147,6 +151,10 @@ export class PanelView {
       themeLightBtn: this.$('#theme-light-btn'),
       themeDarkBtn: this.$('#theme-dark-btn'),
       themeDeviceBtn: this.$('#theme-device-btn'),
+
+      storeCount: this.$('#store-count'),
+      storeList: this.$('#store-list'),
+      storeEmpty: this.$('#store-empty'),
     };
 
     this.els.toggleBtn.addEventListener('click', () =>
@@ -248,6 +256,7 @@ export class PanelView {
 
     this.els.settingButton.addEventListener('click', () => {
       this.els.settingModal.classList.remove('hidden');
+      this.emit(UIEventType.SETTING_MODAL_SHOW, undefined);
     });
     this.els.settingCloseButton.addEventListener('click', () => {
       this.els.settingModal.classList.add('hidden');
@@ -312,6 +321,7 @@ export class PanelView {
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
     this.applyTheme(model.theme);
+    this.applyStore(model.pageKeys);
   }
 
   private renderStatus(key: StatusKey): void {
@@ -717,6 +727,40 @@ export class PanelView {
     this.els.themeLightBtn.setAttribute('data-active', String(theme === 'light'));
     this.els.themeDarkBtn.setAttribute('data-active', String(theme === 'dark'));
     this.els.themeDeviceBtn.setAttribute('data-active', String(theme === 'device'));
+  }
+
+  private applyStore(pageKeys: string[]): void {
+    this.els.storeCount.textContent = String(pageKeys.length);
+    this.els.storeList.innerHTML = '';
+
+    if (pageKeys.length <= 0) {
+      this.els.storeList.classList.add('hidden');
+      this.els.storeEmpty.classList.remove('hidden');
+      return;
+    }
+
+    for (const pageKey of pageKeys) {
+      const liElem = this.el('li', 'select-item');
+      const aWrapElem = this.el('div', 'min-w-0 flex-1');
+      const aElem = this.el('a', 'anchor whitespace-normal break-words', pageKey);
+      aElem.href = pageKey;
+      aElem.target = '_blank';
+      aWrapElem.appendChild(aElem);
+      const btnElem = this.el('button', 'btn-icon btn-icon--danger');
+      btnElem.setAttribute('data-ignore-disable', 'true');
+      const { d, viewBox } = getIcon('remove');
+      const removeIcon = this.createSvgIcon(d, { className: 'icon-sm', viewBox });
+      btnElem.appendChild(removeIcon);
+      liElem.appendChild(aWrapElem);
+      liElem.appendChild(btnElem);
+      this.els.storeList.appendChild(liElem);
+
+      btnElem.addEventListener('click', () => {
+        this.emit(UIEventType.REMOVE_PAGE_CLICK, { pageKey });
+      });
+    }
+    this.els.storeList.classList.remove('hidden');
+    this.els.storeEmpty.classList.add('hidden');
   }
 
   private $<T extends Element>(selector: string): T {

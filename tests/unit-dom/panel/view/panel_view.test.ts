@@ -159,6 +159,9 @@ const basePanelHtml = () => `
     <button id="theme-light-btn" type="button" data-ignore-disable="true"></button>
     <button id="theme-dark-btn" type="button" data-ignore-disable="true"></button>
     <button id="theme-device-btn" type="button" data-ignore-disable="true"></button>
+    <span id="store-count"></span>
+    <ul id="store-list"></ul>
+    <div id="store-empty" class="hidden"></div>
   </div>
 </div>
 `;
@@ -182,6 +185,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
   const m: Model = {
     tabId: 1,
     pageKey: 'test',
+    pageKeys: [],
     theme: 'device',
     status: STATUS.CONNECTED,
     selectionEnabled: true,
@@ -1050,5 +1054,74 @@ describe('panel/view/panel_view', () => {
     expect(
       (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
     ).toBe('false');
+  });
+
+  it('clicking setting-button shows modal and emits SETTING_MODAL_SHOW', () => {
+    const v = setupView();
+    const onShow = vi.fn();
+    v.on(UIEventType.SETTING_MODAL_SHOW, onShow);
+
+    renderWithModel(v);
+
+    const btn = document.querySelector('#setting-button') as HTMLButtonElement;
+    const modal = document.querySelector('#setting-modal') as HTMLDivElement;
+
+    expect(modal).toHaveClass('hidden');
+
+    btn.click();
+    expect(modal).not.toHaveClass('hidden');
+    expect(onShow).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<undefined>(onShow)).toBeUndefined();
+  });
+
+  it('render → applyStore: empty state when pageKeys=[], list hidden & count=0', () => {
+    const v = setupView();
+
+    renderWithModel(v, { pageKeys: [] });
+
+    const count = document.querySelector('#store-count') as HTMLSpanElement;
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const empty = document.querySelector('#store-empty') as HTMLDivElement;
+
+    expect(count.textContent).toBe('0');
+    expect(list).toHaveClass('hidden');
+    expect(empty).not.toHaveClass('hidden');
+  });
+
+  it('render → applyStore: renders links for pageKeys, shows list, hides empty, and emits REMOVE_PAGE_CLICK', () => {
+    const v = setupView();
+    const onRemove = vi.fn();
+    v.on(UIEventType.REMOVE_PAGE_CLICK, onRemove);
+
+    const keys = ['https://example.com/a', 'https://example.com/b'];
+    renderWithModel(v, { pageKeys: keys });
+
+    const count = document.querySelector('#store-count') as HTMLSpanElement;
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const empty = document.querySelector('#store-empty') as HTMLDivElement;
+
+    expect(count.textContent).toBe('2');
+    expect(list).not.toHaveClass('hidden');
+    expect(empty).toHaveClass('hidden');
+
+    const lis = Array.from(list.querySelectorAll('li'));
+    expect(lis.length).toBe(2);
+
+    const a0 = lis[0]!.querySelector('a') as HTMLAnchorElement;
+    const a1 = lis[1]!.querySelector('a') as HTMLAnchorElement;
+    expect(a0.href).toBe(keys[0]);
+    expect(a0.target).toBe('_blank');
+    expect(a0.textContent).toBe(keys[0]);
+    expect(a1.href).toBe(keys[1]);
+    expect(a1.target).toBe('_blank');
+    expect(a1.textContent).toBe(keys[1]);
+
+    const btn0 = lis[0]!.querySelector('button') as HTMLButtonElement;
+    expect(btn0.getAttribute('data-ignore-disable')).toBe('true');
+    btn0.click();
+
+    expect(onRemove).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ pageKey: string }>(onRemove)!;
+    expect(payload).toEqual({ pageKey: keys[0] });
   });
 });

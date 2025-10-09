@@ -15,6 +15,8 @@ export type Model = {
   tabId: number | null;
   pageKey: string;
 
+  pageKeys: string[];
+
   theme: ThemeMode;
 
   selectionEnabled: boolean;
@@ -42,6 +44,7 @@ export const initialModel: Model = {
   status: 'DISCONNECTED',
   tabId: null,
   pageKey: '',
+  pageKeys: [],
   theme: 'device',
   selectionEnabled: false,
   items: [],

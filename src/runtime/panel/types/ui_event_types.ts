@@ -70,6 +70,12 @@ export enum UIEventType {
 
   /** Update the UI theme */
   UPDATE_THEME = 'UPDATE_THEME',
+
+  /** Emitted after the Settings modal is show */
+  SETTING_MODAL_SHOW = 'SETTING_MODAL_SHOW',
+
+  /** Click to remove the saved page */
+  REMOVE_PAGE_CLICK = 'REMOVE_PAGE_CLICK',
 }
 
 /**
@@ -106,4 +112,6 @@ export type UIEventPayloadMap = {
   [UIEventType.ITEM_HOVER_OUT]: undefined;
   [UIEventType.ITEM_COMMENT_APPLY]: { id: number; comment: string };
   [UIEventType.UPDATE_THEME]: { theme: ThemeMode };
+  [UIEventType.SETTING_MODAL_SHOW]: undefined;
+  [UIEventType.REMOVE_PAGE_CLICK]: { pageKey: string };
 };
