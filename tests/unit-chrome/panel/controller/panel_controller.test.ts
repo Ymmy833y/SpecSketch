@@ -40,6 +40,10 @@ vi.mock('@panel/services/capture.ts', () => ({
   capture: vi.fn(),
 }));
 
+vi.mock('@panel/services/export.ts', () => ({
+  exportScreenState: vi.fn(),
+}));
+
 vi.mock('@panel/services/state.ts', () => ({
   handleSelected: vi.fn(async () => ({
     items: [], // ScreenItem[]
@@ -77,6 +81,7 @@ import { update } from '@panel/app/update';
 import { PanelController } from '@panel/controller/panel_controller';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
+import { exportScreenState } from '@panel/services/export';
 import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
@@ -424,6 +429,33 @@ describe('panel/controller/panel_controller', () => {
 
       expect(dispatch).toHaveBeenCalledWith({
         type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE,
+        pageKey: targetKey,
+      });
+    });
+
+    it('view handler EXPORT_PAGE_CLICK dispatches EXPORT_SCREEN_STATE_BY_PAGE with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const targetKey = 'key://to-export';
+      view.emit(UIEventType.EXPORT_PAGE_CLICK, { pageKey: targetKey });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE,
         pageKey: targetKey,
       });
     });
@@ -900,6 +932,78 @@ describe('panel/controller/panel_controller', () => {
           defaultPosition: restored.defaultPosition,
           defaultGroup: restored.defaultGroup,
         }),
+      });
+    });
+
+    it('EXPORT_SCREEN_STATE_BY_PAGE_KEY: reads state and calls exportScreenState', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const state = {
+        items: [],
+        nextId: 1,
+        defaultSize: 12,
+        defaultColor: 'Red' as const,
+        defaultShape: 'circle' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue(state as never);
+      vi.mocked(exportScreenState).mockResolvedValueOnce(123 as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: 'key://export-me' },
+      ]);
+
+      // No connection required
+      expect(ensure).not.toHaveBeenCalled();
+      // State is retrieved and passed to exporter
+      expect(getSpy).toHaveBeenCalledWith('key://export-me');
+      expect(exportScreenState).toHaveBeenCalledWith(state, 'key://export-me');
+      // Success path does not dispatch anything
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('EXPORT_SCREEN_STATE_BY_PAGE_KEY: dispatches EXPORT_FAILED on error', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // screenStateTable.get succeeds, but exporter throws
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
+        items: [],
+        nextId: 1,
+        defaultSize: 12,
+        defaultColor: 'Red' as const,
+        defaultShape: 'circle' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      } as never);
+
+      const err = new Error('export failed');
+      vi.mocked(exportScreenState).mockRejectedValueOnce(err);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: 'key://export-error' },
+      ]);
+
+      // Error path dispatches EXPORT_FAILED
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.EXPORT_FAILED,
+        error: err,
       });
     });
   });

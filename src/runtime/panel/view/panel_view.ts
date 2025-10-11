@@ -746,16 +746,31 @@ export class PanelView {
       aElem.href = pageKey;
       aElem.target = '_blank';
       aWrapElem.appendChild(aElem);
-      const btnElem = this.el('button', 'btn-icon btn-icon--danger');
-      btnElem.setAttribute('data-ignore-disable', 'true');
-      const { d, viewBox } = getIcon('remove');
-      const removeIcon = this.createSvgIcon(d, { className: 'icon-sm', viewBox });
-      btnElem.appendChild(removeIcon);
+      const exportBtnElem = this.el('button', 'btn-icon');
+      exportBtnElem.setAttribute('data-ignore-disable', 'true');
+      const exportIconDef = getIcon('export');
+      const exportIcon = this.createSvgIcon(exportIconDef.d, {
+        className: 'icon-sm',
+        viewBox: exportIconDef.viewBox,
+      });
+      exportBtnElem.appendChild(exportIcon);
+      const removeBtnElem = this.el('button', 'btn-icon btn-icon--danger');
+      removeBtnElem.setAttribute('data-ignore-disable', 'true');
+      const removeIconDef = getIcon('remove');
+      const removeIcon = this.createSvgIcon(removeIconDef.d, {
+        className: 'icon-sm',
+        viewBox: removeIconDef.viewBox,
+      });
+      removeBtnElem.appendChild(removeIcon);
       liElem.appendChild(aWrapElem);
-      liElem.appendChild(btnElem);
+      liElem.appendChild(exportBtnElem);
+      liElem.appendChild(removeBtnElem);
       this.els.storeList.appendChild(liElem);
 
-      btnElem.addEventListener('click', () => {
+      exportBtnElem.addEventListener('click', () => {
+        this.emit(UIEventType.EXPORT_PAGE_CLICK, { pageKey });
+      });
+      removeBtnElem.addEventListener('click', () => {
         this.emit(UIEventType.REMOVE_PAGE_CLICK, { pageKey });
       });
     }

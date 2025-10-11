@@ -49,6 +49,9 @@ export enum EffectType {
   /** Remove screen state by page key */
   REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY = 'REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY',
 
+  /** Export screen state by page key */
+  EXPORT_SCREEN_STATE_BY_PAGE_KEY = 'EXPORT_SCREEN_STATE_BY_PAGE_KEY',
+
   /** Report/log an error (and optionally surface it to the UI) */
   NOTIFY_ERROR = 'NOTIFY_ERROR',
 }
@@ -76,4 +79,5 @@ export type Effect =
   | { kind: EffectType.UPDATE_THEME; theme: ThemeMode }
   | { kind: EffectType.READ_SCREEN_STATE_STORE }
   | { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY; pageKey: string }
+  | { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY; pageKey: string }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };

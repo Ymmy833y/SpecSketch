@@ -32,6 +32,10 @@ export const ICONS = {
     d: 'M7 3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h3a1 1 0 1 1 0 2h-1l-1 10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6H4a1 1 0 1 1 0-2h3V3Zm1 3a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Zm4 0a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Z',
     viewBox: '0 0 20 20',
   },
+  export: {
+    d: 'M3 16.25a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Zm7.53-2.03a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.75a.75.75 0 0 1 1.5 0v8.13l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3Z',
+    viewBox: '0 0 20 20',
+  },
 } as const satisfies Record<string, IconDef>;
 
 export type IconName = keyof typeof ICONS;

@@ -698,4 +698,39 @@ describe('panel/app/update', () => {
       },
     ]);
   });
+
+  it('EXPORT_SCREEN_STATE_BY_PAGE: emits EXPORT_SCREEN_STATE_BY_PAGE_KEY with given pageKey', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE,
+      pageKey: 'https://example.com/export-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Model is unchanged
+    expect(out.model).toBe(model);
+    // Emit export effect with the same pageKey
+    expect(out.effects).toEqual([
+      {
+        kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY,
+        pageKey: 'https://example.com/export-me',
+      },
+    ]);
+  });
+
+  it('EXPORT_FAILED: emits NOTIFY_ERROR(error)', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.EXPORT_FAILED,
+      error: 'failed to export',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Notify error effect with the given message
+    expect(out.effects).toEqual([{ kind: EffectType.NOTIFY_ERROR, error: 'failed to export' }]);
+    // Model remains unchanged
+    expect(out.model).toBe(model);
+  });
 });

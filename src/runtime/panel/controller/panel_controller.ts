@@ -5,6 +5,7 @@ import { initialModel, Model } from '@panel/app/model';
 import { update } from '@panel/app/update';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
+import { exportScreenState } from '@panel/services/export';
 import { handleSelected } from '@panel/services/state';
 import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { Action, ActionType } from '@panel/types/action_types';
@@ -130,6 +131,9 @@ export class PanelController {
     this.view.on(UIEventType.REMOVE_PAGE_CLICK, ({ pageKey }) =>
       this.dispatch({ type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE, pageKey }),
     );
+    this.view.on(UIEventType.EXPORT_PAGE_CLICK, ({ pageKey }) =>
+      this.dispatch({ type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE, pageKey }),
+    );
   }
 
   private dispatch(action: Action): void {
@@ -221,6 +225,15 @@ export class PanelController {
               defaultGroup: st.defaultGroup,
             },
           });
+          break;
+        }
+        case EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY: {
+          try {
+            const state = await screenStateTable.get(fx.pageKey);
+            await exportScreenState(state, fx.pageKey);
+          } catch (error) {
+            this.dispatch({ type: ActionType.EXPORT_FAILED, error });
+          }
           break;
         }
         case EffectType.MEASURE_CONTENT_SIZE:
