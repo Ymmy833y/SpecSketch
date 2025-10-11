@@ -51,7 +51,11 @@
   "theme_dark": { "message": "Dark" },
   "theme_device": { "message": "Device" },
   "hint_theme_note": { "message": "Switching theme updates this panel’s appearance." },
+  "setting_import": { "message": "Import" },
   "setting_store_pages": { "message": "Saved Pages" },
+
+  "import_file_not_json": { "message": "Only JSON files are supported." },
+  "import_payload_invalid": { "message": "Invalid export payload." },
 
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },

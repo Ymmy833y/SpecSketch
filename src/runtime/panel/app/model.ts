@@ -5,6 +5,7 @@ import {
   type ItemShape,
   type ScreenItem,
   ThemeMode,
+  ToastMessage,
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
@@ -38,6 +39,8 @@ export type Model = {
 
   selectItems: ScreenItem['id'][];
   missingIds: ScreenItem['id'][];
+
+  toastMessages: ToastMessage[];
 };
 
 export const initialModel: Model = {
@@ -62,4 +65,5 @@ export const initialModel: Model = {
   },
   selectItems: [],
   missingIds: [],
+  toastMessages: [],
 };

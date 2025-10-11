@@ -288,6 +288,23 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         model: { ...model, pageKeys: action.pageKeys },
         effects: [],
       };
+    case ActionType.IMPORT_SCREAN_STATE_FILE:
+      return {
+        model,
+        effects: [{ kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: action.file }],
+      };
+    case ActionType.IMPORT_FAILED:
+      return {
+        model: { ...model, toastMessages: action.toastMessages },
+        effects: [],
+      };
+    case ActionType.TOAST_DISMISS_REQUESTED: {
+      const toastMessages = model.toastMessages.filter((t) => t.uuid !== action.uuid);
+      return {
+        model: { ...model, toastMessages },
+        effects: [],
+      };
+    }
     case ActionType.REMOVE_SCREEN_STATE_BY_PAGE:
       return {
         model,

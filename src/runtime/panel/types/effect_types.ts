@@ -46,6 +46,9 @@ export enum EffectType {
   /** Read the screen-state map from `chrome.storage.local` */
   READ_SCREEN_STATE_STORE = 'READ_SCREEN_STATE_STORE',
 
+  /** Import a ScreenState from a selected JSON file. */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
   /** Remove screen state by page key */
   REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY = 'REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY',
 
@@ -78,6 +81,7 @@ export type Effect =
   | { kind: EffectType.SET_THEME }
   | { kind: EffectType.UPDATE_THEME; theme: ThemeMode }
   | { kind: EffectType.READ_SCREEN_STATE_STORE }
+  | { kind: EffectType.IMPORT_SCREAN_STATE_FILE; file: File }
   | { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY; pageKey: string }
   | { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY; pageKey: string }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };

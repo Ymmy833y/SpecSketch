@@ -46,6 +46,63 @@ describe('getIcon (happy paths)', () => {
   });
 });
 
+describe('getIcon (happy paths) - status and close icons', () => {
+  it('returns 20x20 icon for "success" with a non-empty path', () => {
+    // Arrange
+    const name: IconName = 'success';
+
+    // Act
+    const icon = getIcon(name);
+
+    // Assert
+    expect(icon.viewBox).toBe('0 0 20 20');
+    expect(icon.d.length).toBeGreaterThan(0);
+    // Optional guard: ensure the path looks like the expected glyph
+    expect(icon.d.startsWith('M10 18')).toBe(true);
+  });
+
+  it('returns 20x20 icon for "error" with a non-empty path', () => {
+    // Arrange
+    const name: IconName = 'error';
+
+    // Act
+    const icon = getIcon(name);
+
+    // Assert
+    expect(icon.viewBox).toBe('0 0 20 20');
+    expect(icon.d.length).toBeGreaterThan(0);
+    // Optional guard: first move instruction matches expected shape
+    expect(icon.d.startsWith('M10 18')).toBe(true);
+  });
+
+  it('returns 20x20 icon for "close" with a non-empty path', () => {
+    // Arrange
+    const name: IconName = 'close';
+
+    // Act
+    const icon = getIcon(name);
+
+    // Assert
+    expect(icon.viewBox).toBe('0 0 20 20');
+    expect(icon.d.length).toBeGreaterThan(0);
+    // Optional guard: first move instruction matches expected shape
+    expect(icon.d.startsWith('M5.23 5.23')).toBe(true);
+  });
+
+  it('does not leak internal object references for "close" (defensive copy)', () => {
+    // Arrange
+    const before = ICONS.close.viewBox;
+
+    // Act
+    const got = getIcon('close');
+    // Mutate the returned object and ensure the source remains intact
+    (got as { viewBox: string }).viewBox = '0 0 1 1';
+
+    // Assert
+    expect(ICONS.close.viewBox).toBe(before);
+  });
+});
+
 describe('getIcon (fallback behavior)', () => {
   it('fills default viewBox when missing on the source icon', () => {
     // Arrange
@@ -99,6 +156,31 @@ describe('ICONS (data integrity)', () => {
       // Icons are defined as 16x16 or 20x20 in this set.
       // We accept either "0 0 16 16" or "0 0 20 20".
       expect(['0 0 16 16', '0 0 20 20']).toContain(def.viewBox ?? '0 0 20 20');
+    }
+  });
+});
+
+describe('ICONS (data integrity) - presence of status and close keys', () => {
+  it('includes "success", "error", and "close" icon definitions', () => {
+    // Arrange
+    const keys = Object.keys(ICONS);
+
+    // Act & Assert
+    expect(keys).toContain('success');
+    expect(keys).toContain('error');
+    expect(keys).toContain('close');
+  });
+
+  it('ensures "success", "error", and "close" shapes are 20x20 or default to 20x20', () => {
+    // Arrange
+    const targets: Array<keyof typeof ICONS> = ['success', 'error', 'close'];
+
+    // Act & Assert
+    for (const name of targets) {
+      const def = ICONS[name];
+      // If viewBox is omitted it is treated as 20x20 by getIcon; here we just validate defined metadata.
+      expect([undefined, '0 0 20 20']).toContain(def.viewBox);
+      expect(def.d.length).toBeGreaterThan(0);
     }
   });
 });

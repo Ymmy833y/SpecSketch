@@ -7,6 +7,7 @@ import type {
   ItemShape,
   ScreenItem,
   ThemeMode,
+  ToastMessage,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 import type { StatusKey } from '@panel/view/status';
@@ -126,6 +127,15 @@ export enum ActionType {
   /** Dispatched after the store is successfully reloaded with the latest data */
   STORE_RELOAD_SUCCEEDED = 'STORE_RELOAD_SUCCEEDED',
 
+  /** Import a ScreenState from a selected JSON file. */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
+  /** Emitted when the import operation fails. */
+  IMPORT_FAILED = 'IMPORT_FAILED',
+
+  /** Dismiss a toast by UUID */
+  TOAST_DISMISS_REQUESTED = 'TOAST_DISMISS_REQUESTED',
+
   /** Remove screen state by page key */
   REMOVE_SCREEN_STATE_BY_PAGE = 'REMOVE_SCREEN_STATE_BY_PAGE',
 
@@ -183,6 +193,9 @@ export type Action =
   | { type: ActionType.UPDATE_THEME; theme: ThemeMode }
   | { type: ActionType.STORE_RELOAD_REQUESTED }
   | { type: ActionType.STORE_RELOAD_SUCCEEDED; pageKeys: string[] }
+  | { type: ActionType.IMPORT_SCREAN_STATE_FILE; file: File }
+  | { type: ActionType.IMPORT_FAILED; toastMessages: ToastMessage[] }
+  | { type: ActionType.TOAST_DISMISS_REQUESTED; uuid: string }
   | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string }
   | { type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE; pageKey: string }
   | { type: ActionType.EXPORT_FAILED; error: unknown };

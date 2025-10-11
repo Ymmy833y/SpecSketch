@@ -289,4 +289,54 @@
   .empty-state {
     @apply p-6 text-center text-sm text-slate-500 dark:text-slate-400;
   }
+  .import-section { 
+    @apply mt-4;
+  }
+  .import-row {
+    @apply mt-3 flex w-full flex-wrap items-center gap-2;
+  }
+  .import-file {
+    @apply select-item-input flex-1 min-w-0;
+  }
+
+  .toast-stack {
+    @apply fixed inset-x-0 top-[75px] z-[1000] px-4 pb-6 sm:hidden pointer-events-none;
+  }
+  .toast {
+    @apply pointer-events-auto rounded-md p-4 shadow-2xl ring-1 ring-black/10 border
+           flex items-start gap-3 mb-3;
+  }
+  .toast--error {
+    @apply border-red-300 bg-red-50 text-red-900
+           dark:border-red-800 dark:bg-red-900 dark:text-red-100;
+  }
+  .toast--success {
+    @apply border-green-300 bg-green-50 text-green-900
+           dark:border-green-800 dark:bg-green-900 dark:text-green-100;
+  }
+  .toast-icon {
+    @apply mt-0.5 size-5 flex-none;
+  }
+  .toast-body {
+    @apply min-w-0 flex-1;
+  }
+  .toast-desc {
+    @apply text-sm leading-5;
+  }
+  .toast-close {
+    @apply ml-1 inline-flex size-7 flex-none items-center justify-center rounded-md
+           focus:outline-none;
+  }
+  .toast-close--error {
+    @apply text-red-700 hover:bg-red-100 hover:text-red-900
+           focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2
+           dark:text-red-200 dark:hover:bg-red-800 dark:hover:text-red-100
+           dark:focus-visible:ring-offset-slate-900;
+  }
+  .toast-close--success {
+    @apply text-green-700 hover:bg-green-100 hover:text-green-900
+           focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2
+           dark:text-green-200 dark:hover:bg-green-800 dark:hover:text-green-100
+           dark:focus-visible:ring-offset-slate-900;
+  }
 }

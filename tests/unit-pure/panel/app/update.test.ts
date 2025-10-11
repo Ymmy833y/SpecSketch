@@ -1,4 +1,4 @@
-import { type ScreenItem } from '@common/types';
+import { type ScreenItem, ToastMessage } from '@common/types';
 import type { Model } from '@panel/app/model';
 import { update } from '@panel/app/update';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -732,5 +732,64 @@ describe('panel/app/update', () => {
     expect(out.effects).toEqual([{ kind: EffectType.NOTIFY_ERROR, error: 'failed to export' }]);
     // Model remains unchanged
     expect(out.model).toBe(model);
+  });
+
+  it('IMPORT_SCREAN_STATE_FILE: emits IMPORT_SCREAN_STATE_FILE effect with given file (no model change)', () => {
+    const model = baseModel();
+    // Use a simple stub object as a File-like placeholder for identity check
+    const fileStub = {} as unknown as File;
+
+    const action = {
+      type: ActionType.IMPORT_SCREAN_STATE_FILE,
+      file: fileStub,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Model is unchanged
+    expect(out.model).toBe(model);
+    // Effect includes the same file object
+    expect(out.effects).toEqual([{ kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: fileStub }]);
+  });
+
+  it('IMPORT_FAILED: stores toastMessages on model (no effects)', () => {
+    const model = baseModel({ toastMessages: [] as ToastMessage[] });
+    const toastMessages = [
+      { uuid: 'u-1', message: 'Invalid file format', kind: 'error' },
+      { uuid: 'u-2', message: 'Nothing to import', kind: 'info' },
+    ] as unknown as Model['toastMessages'];
+
+    const action = {
+      type: ActionType.IMPORT_FAILED,
+      toastMessages,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // toastMessages is replaced with the provided array
+    expect(out.model.toastMessages).toEqual(toastMessages);
+    // No side effects
+    expect(out.effects).toEqual([]);
+  });
+
+  it('TOAST_DISMISS_REQUESTED: removes a toast by uuid (no effects)', () => {
+    const model = baseModel({
+      toastMessages: [
+        { uuid: 'keep-me', message: 'ok', kind: 'success' },
+        { uuid: 'remove-me', message: 'error', kind: 'error' },
+      ] as unknown as Model['toastMessages'],
+    });
+
+    const action = {
+      type: ActionType.TOAST_DISMISS_REQUESTED,
+      uuid: 'remove-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // The toast with matching uuid is removed
+    expect(out.model.toastMessages?.map((t: ToastMessage) => t.uuid)).toEqual(['keep-me']);
+    // No side effects
+    expect(out.effects).toEqual([]);
   });
 });

@@ -159,10 +159,14 @@ const basePanelHtml = () => `
     <button id="theme-light-btn" type="button" data-ignore-disable="true"></button>
     <button id="theme-dark-btn" type="button" data-ignore-disable="true"></button>
     <button id="theme-device-btn" type="button" data-ignore-disable="true"></button>
+    <input id="import-file-input" type="file" accept=".json,application/json" />
+    <button id="import-btn" type="button"></button>
     <span id="store-count"></span>
     <ul id="store-list"></ul>
     <div id="store-empty" class="hidden"></div>
   </div>
+
+  <div id="toast-parent"></div>
 </div>
 `;
 
@@ -204,6 +208,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultShape: 'circle' as ItemShape,
     defaultPosition: 'left-top-outside' as ItemPosition,
     defaultGroup: '' as ItemGroup,
+    toastMessages: [],
     ...model,
   };
   view.render(m);
@@ -1149,5 +1154,80 @@ describe('panel/view/panel_view', () => {
     expect(onExport).toHaveBeenCalledTimes(1);
     const payload = lastCallArg<{ pageKey: string }>(onExport)!;
     expect(payload).toEqual({ pageKey: keys[0] });
+  });
+
+  it('import button: opens file dialog when no file is selected and does not emit', () => {
+    const v = setupView();
+    const onImport = vi.fn();
+    v.on(UIEventType.IMPORT_SCREAN_STATE_FILE, onImport);
+
+    renderWithModel(v);
+
+    const input = document.querySelector('#import-file-input') as HTMLInputElement;
+    const openSpy = vi.spyOn(input, 'click');
+
+    // Simulate "no files selected"
+    Object.defineProperty(input, 'files', { value: undefined, configurable: true });
+
+    (document.querySelector('#import-btn') as HTMLButtonElement).click();
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('import button: emits IMPORT_SCREAN_STATE_FILE with the selected file when a file exists', () => {
+    const v = setupView();
+    const onImport = vi.fn();
+    v.on(UIEventType.IMPORT_SCREAN_STATE_FILE, onImport);
+
+    renderWithModel(v);
+
+    const input = document.querySelector('#import-file-input') as HTMLInputElement;
+    const file = new File([JSON.stringify({})], 'state.json', { type: 'application/json' });
+
+    // Minimal FileList-like shape is enough for the implementation (uses files[0])
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+
+    (document.querySelector('#import-btn') as HTMLButtonElement).click();
+
+    expect(onImport).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ file: File }>(onImport)!;
+    expect(payload.file).toBe(file);
+  });
+
+  it('applyToastMessages: appends toasts, emits TOAST_DISMISS_REQUESTED per toast, supports close and auto-dismiss', async () => {
+    // Enable fake timers BEFORE rendering so the internal setTimeout is captured
+    vi.useFakeTimers();
+
+    const v = setupView();
+    const onDismiss = vi.fn();
+    v.on(UIEventType.TOAST_DISMISS_REQUESTED, onDismiss);
+
+    // Render with two toast messages → appends two nodes and emits twice
+    renderWithModel(v, {
+      toastMessages: [
+        { uuid: 'u1', message: 'Hello', kind: 'error' },
+        { uuid: 'u2', message: 'World', kind: 'success' },
+      ],
+    });
+
+    const container = document.querySelector('#toast-parent') as HTMLDivElement;
+    expect(container.children.length).toBe(2);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    expect(onDismiss.mock.calls.map((c) => c[0].uuid).sort()).toEqual(['u1', 'u2']);
+
+    // Closing the first toast removes it immediately and clears its timer
+    const firstToast = container.querySelector('.toast') as HTMLDivElement;
+    const closeBtn = firstToast.querySelector('button.toast-close') as HTMLButtonElement;
+    closeBtn.click();
+    expect(firstToast.isConnected).toBe(false);
+    expect(container.children.length).toBe(1);
+
+    // Auto-dismiss removes the remaining toast after 10s
+    vi.advanceTimersByTime(10000);
+    await vi.runAllTimersAsync();
+    expect(container.children.length).toBe(0);
+
+    vi.useRealTimers();
   });
 });

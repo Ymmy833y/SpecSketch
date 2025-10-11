@@ -1,4 +1,5 @@
 import { BackgroundToPanel, type ContentToPanel, MSG_TYPE } from '@common/messages';
+import { ToastMessage } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { initialModel, Model } from '@panel/app/model';
@@ -6,6 +7,7 @@ import { update } from '@panel/app/update';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
 import { exportScreenState } from '@panel/services/export';
+import { importScreanState } from '@panel/services/import';
 import { handleSelected } from '@panel/services/state';
 import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { Action, ActionType } from '@panel/types/action_types';
@@ -128,6 +130,12 @@ export class PanelController {
     this.view.on(UIEventType.SETTING_MODAL_SHOW, () =>
       this.dispatch({ type: ActionType.STORE_RELOAD_REQUESTED }),
     );
+    this.view.on(UIEventType.IMPORT_SCREAN_STATE_FILE, ({ file }) =>
+      this.dispatch({ type: ActionType.IMPORT_SCREAN_STATE_FILE, file }),
+    );
+    this.view.on(UIEventType.TOAST_DISMISS_REQUESTED, ({ uuid }) =>
+      this.dispatch({ type: ActionType.TOAST_DISMISS_REQUESTED, uuid }),
+    );
     this.view.on(UIEventType.REMOVE_PAGE_CLICK, ({ pageKey }) =>
       this.dispatch({ type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE, pageKey }),
     );
@@ -203,6 +211,34 @@ export class PanelController {
             type: ActionType.STORE_RELOAD_SUCCEEDED,
             pageKeys,
           });
+          break;
+        }
+        case EffectType.IMPORT_SCREAN_STATE_FILE: {
+          try {
+            const state = await importScreanState(fx.file, this.model.pageKey);
+            this.dispatch({
+              type: ActionType.RESTORE_STATE,
+              state: {
+                items: state.items,
+                defaultSize: state.defaultSize,
+                defaultColor: state.defaultColor,
+                defaultShape: state.defaultShape,
+                defaultPosition: state.defaultPosition,
+                defaultGroup: state.defaultGroup,
+              },
+            });
+          } catch (e) {
+            const error = e as Error;
+            const message: ToastMessage = {
+              uuid: crypto.randomUUID(),
+              message: error.message,
+              kind: 'error',
+            };
+            this.dispatch({
+              type: ActionType.IMPORT_FAILED,
+              toastMessages: [message],
+            });
+          }
           break;
         }
         case EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY: {

@@ -118,3 +118,51 @@ export type ContentSize = {
 
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'device';
+
+export type payload = {
+  format: 'specsketch-export';
+  kind: 'screen-state';
+  version: number;
+  exportedAt: string;
+  pageKey: string;
+  items: ScreenItem[];
+};
+
+/**
+ * Narrowing guard for a minimal `ScreenItem`-like shape.
+ * Checks only the fields required by this import path (anchor structure).
+ */
+export function isScreenItemLike(v: unknown): v is ScreenItem {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  const anchor = o['anchor'] as unknown;
+  if (!anchor || typeof anchor !== 'object') return false;
+  const a = anchor as Record<string, unknown>;
+  return (
+    a['kind'] === 'css' &&
+    typeof a['value'] === 'string' &&
+    (typeof a['version'] === 'number' || a['version'] === 1)
+  );
+}
+
+/**
+ * Validates a parsed JSON value against the expected export payload contract.
+ * Requires: `format === 'specsketch-export'`, `kind === 'screen-state'`,
+ * `version: number`, `pageKey: string`, and `items: ScreenItem[]`-like.
+ */
+export function isValidPayload(v: unknown): v is payload {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  if (o['format'] !== 'specsketch-export') return false;
+  if (o['kind'] !== 'screen-state') return false;
+  if (typeof o['version'] !== 'number') return false;
+  if (typeof o['pageKey'] !== 'string') return false;
+  if (!Array.isArray(o['items'])) return false;
+  return (o['items'] as unknown[]).every(isScreenItemLike);
+}
+
+export type ToastMessage = {
+  uuid: string;
+  message: string;
+  kind: 'success' | 'error';
+};
