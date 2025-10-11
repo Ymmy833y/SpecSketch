@@ -76,6 +76,9 @@ export enum UIEventType {
 
   /** Click to remove the saved page */
   REMOVE_PAGE_CLICK = 'REMOVE_PAGE_CLICK',
+
+  /** Click the export button */
+  EXPORT_PAGE_CLICK = 'EXPORT_PAGE_CLICK',
 }
 
 /**
@@ -114,4 +117,5 @@ export type UIEventPayloadMap = {
   [UIEventType.UPDATE_THEME]: { theme: ThemeMode };
   [UIEventType.SETTING_MODAL_SHOW]: undefined;
   [UIEventType.REMOVE_PAGE_CLICK]: { pageKey: string };
+  [UIEventType.EXPORT_PAGE_CLICK]: { pageKey: string };
 };

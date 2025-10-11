@@ -1116,12 +1116,38 @@ describe('panel/view/panel_view', () => {
     expect(a1.target).toBe('_blank');
     expect(a1.textContent).toBe(keys[1]);
 
-    const btn0 = lis[0]!.querySelector('button') as HTMLButtonElement;
-    expect(btn0.getAttribute('data-ignore-disable')).toBe('true');
-    btn0.click();
+    const btn1 = lis[0]!.querySelectorAll('button')[1] as HTMLButtonElement;
+    expect(btn1.getAttribute('data-ignore-disable')).toBe('true');
+    btn1.click();
 
     expect(onRemove).toHaveBeenCalledTimes(1);
     const payload = lastCallArg<{ pageKey: string }>(onRemove)!;
+    expect(payload).toEqual({ pageKey: keys[0] });
+  });
+
+  it('render → applyStore: emits EXPORT_PAGE_CLICK when export button is clicked', () => {
+    const v = setupView();
+    const onExport = vi.fn();
+    v.on(UIEventType.EXPORT_PAGE_CLICK, onExport);
+
+    const keys = ['https://example.com/a', 'https://example.com/b'];
+    renderWithModel(v, { pageKeys: keys });
+
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const lis = Array.from(list.querySelectorAll('li'));
+    expect(lis.length).toBe(2);
+
+    // The first button in each row is the Export button
+    const exportBtn = lis[0]!.querySelectorAll('button')[0] as HTMLButtonElement;
+
+    // Export button should be excluded from disableFormControls by data-ignore-disable
+    expect(exportBtn.getAttribute('data-ignore-disable')).toBe('true');
+
+    // Click → emits EXPORT_PAGE_CLICK with pageKey
+    exportBtn.click();
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ pageKey: string }>(onExport)!;
     expect(payload).toEqual({ pageKey: keys[0] });
   });
 });

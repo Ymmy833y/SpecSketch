@@ -296,6 +296,14 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         ],
       };
 
+    case ActionType.EXPORT_SCREEN_STATE_BY_PAGE:
+      return {
+        model,
+        effects: [{ kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: action.pageKey }],
+      };
+    case ActionType.EXPORT_FAILED:
+      return { model, effects: [{ kind: EffectType.NOTIFY_ERROR, error: action.error }] };
+
     default:
       return { model, effects: [] };
   }

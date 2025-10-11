@@ -128,6 +128,12 @@ export enum ActionType {
 
   /** Remove screen state by page key */
   REMOVE_SCREEN_STATE_BY_PAGE = 'REMOVE_SCREEN_STATE_BY_PAGE',
+
+  /** Export screen state by page key */
+  EXPORT_SCREEN_STATE_BY_PAGE = 'EXPORT_SCREEN_STATE_BY_PAGE',
+
+  /** Export failed with an error */
+  EXPORT_FAILED = 'EXPORT_FAILED',
 }
 
 export type Action =
@@ -177,4 +183,6 @@ export type Action =
   | { type: ActionType.UPDATE_THEME; theme: ThemeMode }
   | { type: ActionType.STORE_RELOAD_REQUESTED }
   | { type: ActionType.STORE_RELOAD_SUCCEEDED; pageKeys: string[] }
-  | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string };
+  | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string }
+  | { type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE; pageKey: string }
+  | { type: ActionType.EXPORT_FAILED; error: unknown };
