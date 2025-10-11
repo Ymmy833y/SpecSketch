@@ -113,6 +113,112 @@ describe('panel/services/state', () => {
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 2]);
       expect(setSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('adds anchors with per-item overrides; falls back to defaults when omitted; persists', async () => {
+      // Arrange
+      const iA1 = makeItem(1, 1, css('#a'), 'A'); // group A
+      const iU1 = makeItem(2, 1, css('#b')); // ungrouped
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([iA1, iU1], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          {
+            anchor: css('#a2'),
+            size: 24 as ScreenItem['size'],
+            color: 'lime' as ScreenItem['color'],
+            shape: 'circle' as ScreenItem['shape'],
+            position: 'right-bottom-inside' as ScreenItem['position'],
+            group: 'A',
+            comment: 'note',
+          },
+          {
+            // no overrides -> should use defaults
+            anchor: css('#u2'),
+          },
+        ],
+      });
+
+      // Assert: length / nextId
+      expect(next.items).toHaveLength(4);
+      expect(next.nextId).toBe(5);
+
+      // overrides item (#a2)
+      const a2 = next.items.find((it) => it.anchor.value === '#a2')!;
+      expect(a2.size).toBe(24);
+      expect(a2.color).toBe('lime');
+      expect(a2.shape).toBe('circle');
+      expect(a2.position).toBe('right-bottom-inside');
+      expect(a2.group).toBe('A');
+      expect(a2.comment).toBe('note');
+
+      // defaulted item (#u2)
+      const u2 = next.items.find((it) => it.anchor.value === '#u2')!;
+      expect(u2.size).toBe(next.defaultSize);
+      expect(u2.color).toBe(next.defaultColor);
+      expect(u2.shape).toBe(next.defaultShape);
+      expect(u2.position).toBe(next.defaultPosition);
+      expect(u2.group ?? '').toBe(next.defaultGroup);
+      expect(u2.comment).toBe('');
+
+      // labels normalized by group
+      const groupA = next.items
+        .filter((it) => (it.group ?? '') === 'A')
+        .sort((a, b) => a.label - b.label);
+      expect(groupA.map((it) => it.anchor.value)).toEqual(['#a', '#a2']);
+      expect(groupA.map((it) => it.label)).toEqual([1, 2]);
+
+      const ungrouped = next.items
+        .filter((it) => (it.group ?? '') === '')
+        .sort((a, b) => a.label - b.label);
+      expect(ungrouped.map((it) => it.anchor.value)).toEqual(['#b', '#u2']);
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2]);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds into mixed groups and normalizes labels per group independently', async () => {
+      // Arrange
+      const a1 = makeItem(1, 2, css('#a1'), 'A'); // label will be normalized
+      const a2 = makeItem(2, 1, css('#a0'), 'A');
+      const u1 = makeItem(3, 3, css('#u1')); // ungrouped
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([a1, a2, u1], 4));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          { anchor: css('#a3'), group: 'A' }, // goes to group A
+          { anchor: css('#u2') }, // goes to ungrouped
+        ],
+      });
+
+      // Assert: nextId advanced by 2
+      expect(next.nextId).toBe(6);
+
+      // Group A should be relabeled 1..3
+      const groupA = next.items
+        .filter((it) => (it.group ?? '') === 'A')
+        .sort((a, b) => a.label - b.label);
+      expect(groupA).toHaveLength(3);
+      expect(groupA.map((it) => it.label)).toEqual([1, 2, 3]);
+      expect(groupA.map((it) => it.anchor.value).sort()).toEqual(['#a0', '#a1', '#a3'].sort());
+
+      // Ungrouped should be relabeled 1..2
+      const ungrouped = next.items
+        .filter((it) => (it.group ?? '') === '')
+        .sort((a, b) => a.label - b.label);
+      expect(ungrouped).toHaveLength(2);
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2]);
+      expect(ungrouped.map((it) => it.anchor.value).sort()).toEqual(['#u1', '#u2'].sort());
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('handleSelected', () => {

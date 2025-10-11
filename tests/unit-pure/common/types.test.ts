@@ -1,4 +1,12 @@
-import { isItemColor, isItemPosition, isItemShape, ITEM_POSITION_VALUES } from '@common/types';
+import {
+  isItemColor,
+  isItemPosition,
+  isItemShape,
+  isScreenItemLike,
+  isValidPayload,
+  ITEM_POSITION_VALUES,
+  ScreenItem,
+} from '@common/types';
 import { describe, expect, it } from 'vitest';
 
 describe('common/types', () => {
@@ -157,6 +165,241 @@ describe('common/types', () => {
 
       // Assert
       expect(positions).toEqual(['left-top-outside', 'center', 'top-outside']);
+    });
+  });
+
+  describe('isScreenItemLike', () => {
+    it('returns true for minimal ScreenItem-like object (anchor: kind=css, value, version)', () => {
+      // Arrange
+      const obj: unknown = {
+        anchor: { kind: 'css', value: '#app', version: 1 },
+      };
+
+      // Act
+      const ok = isScreenItemLike(obj);
+
+      // Assert
+      expect(ok).toBe(true);
+    });
+
+    it('returns true when anchor.version is a number other than 1 (loose check by design)', () => {
+      // Arrange
+      const obj: unknown = {
+        anchor: { kind: 'css', value: '.foo', version: 2 },
+      };
+
+      // Act
+      const ok = isScreenItemLike(obj);
+
+      // Assert
+      expect(ok).toBe(true);
+    });
+
+    it('returns false for null or non-object values', () => {
+      // Arrange
+      const values: unknown[] = [null, undefined, 'str', 0, true];
+
+      // Act & Assert
+      for (const v of values) {
+        expect(isScreenItemLike(v)).toBe(false);
+      }
+    });
+
+    it('returns false when anchor is missing or not an object', () => {
+      // Arrange
+      const cases: unknown[] = [{}, { anchor: null }, { anchor: 'x' }, { anchor: 1 }];
+
+      // Act & Assert
+      for (const c of cases) {
+        expect(isScreenItemLike(c)).toBe(false);
+      }
+    });
+
+    it('returns false when anchor.kind is not "css"', () => {
+      // Arrange
+      const obj: unknown = {
+        anchor: { kind: 'xpath', value: '#app', version: 1 },
+      };
+
+      // Act
+      const ok = isScreenItemLike(obj);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false when anchor.value is not a string', () => {
+      // Arrange
+      const cases: unknown[] = [
+        { anchor: { kind: 'css', value: 1, version: 1 } },
+        { anchor: { kind: 'css', value: null, version: 1 } },
+      ];
+
+      // Act & Assert
+      for (const c of cases) {
+        expect(isScreenItemLike(c)).toBe(false);
+      }
+    });
+
+    it('acts as a type guard in Array.filter', () => {
+      // Arrange
+      const mixed: unknown[] = [
+        { anchor: { kind: 'css', value: '#a', version: 1 } },
+        { anchor: { kind: 'xpath', value: '#a', version: 1 } },
+        null,
+        { anchor: { kind: 'css', value: '.b', version: 3 } },
+        { anchor: { kind: 'css', value: 123, version: 1 } },
+      ];
+
+      // Act
+      const filtered = mixed.filter(isScreenItemLike);
+
+      // Assert
+      expect(filtered).toEqual([
+        { anchor: { kind: 'css', value: '#a', version: 1 } },
+        { anchor: { kind: 'css', value: '.b', version: 3 } },
+      ]);
+    });
+  });
+
+  describe('isValidPayload', () => {
+    it('returns true for a valid payload with minimal valid items', () => {
+      // Arrange
+      const items: ScreenItem[] = [
+        // Only anchor is checked by isScreenItemLike; other props are not required for the guard
+        {
+          id: 1,
+          label: 1,
+          anchor: { kind: 'css', value: '#app', version: 1 },
+        } as unknown as ScreenItem,
+      ];
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items,
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(true);
+    });
+
+    it('returns true even when items is an empty array (contract allows empty list)', () => {
+      // Arrange
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items: [],
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(true);
+    });
+
+    it('returns false when format/kind are incorrect', () => {
+      // Arrange
+      const base = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items: [{ anchor: { kind: 'css', value: '#app', version: 1 } }],
+      };
+
+      const cases: unknown[] = [
+        { ...base, format: 'other', kind: 'screen-state' },
+        { ...base, format: 'specsketch-export', kind: 'other' },
+      ];
+
+      // Act & Assert
+      for (const c of cases) {
+        expect(isValidPayload(c)).toBe(false);
+      }
+    });
+
+    it('returns false when version is not a number', () => {
+      // Arrange
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: '1',
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items: [{ anchor: { kind: 'css', value: '#app', version: 1 } }],
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false when pageKey is not a string', () => {
+      // Arrange
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 123,
+        items: [{ anchor: { kind: 'css', value: '#app', version: 1 } }],
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false when items is not an array', () => {
+      // Arrange
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items: { anchor: { kind: 'css', value: '#app', version: 1 } },
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false when any item is not ScreenItem-like (delegates to isScreenItemLike)', () => {
+      // Arrange
+      const payload: unknown = {
+        format: 'specsketch-export',
+        kind: 'screen-state',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        pageKey: 'https://example.com',
+        items: [
+          { anchor: { kind: 'css', value: '#ok', version: 1 } },
+          { anchor: { kind: 'xpath', value: '#ng', version: 1 } }, // invalid
+        ],
+      };
+
+      // Act
+      const ok = isValidPayload(payload);
+
+      // Assert
+      expect(ok).toBe(false);
     });
   });
 });

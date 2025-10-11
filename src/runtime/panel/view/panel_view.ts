@@ -9,6 +9,7 @@ import {
   type ItemShape,
   type ScreenItem,
   ThemeMode,
+  ToastMessage,
   UNGROUPED,
   UNGROUPED_VALUE,
 } from '@common/types';
@@ -80,9 +81,14 @@ export class PanelView {
     themeDarkBtn: HTMLButtonElement;
     themeDeviceBtn: HTMLButtonElement;
 
+    importFileInput: HTMLInputElement;
+    importBtn: HTMLButtonElement;
+
     storeCount: HTMLSpanElement;
     storeList: HTMLUListElement;
     storeEmpty: HTMLDivElement;
+
+    toastParent: HTMLDivElement;
   };
 
   private readonly NEW_GROUP = '__newgroup__';
@@ -95,6 +101,8 @@ export class PanelView {
   private hoverOutTimer: ReturnType<typeof setTimeout> | null = null;
 
   private collapsedGroups = new Set<string>();
+
+  private TOAST_AUTO_DISMISS = 10000;
 
   constructor(private doc: Document) {
     i18n.localize(doc);
@@ -152,9 +160,14 @@ export class PanelView {
       themeDarkBtn: this.$('#theme-dark-btn'),
       themeDeviceBtn: this.$('#theme-device-btn'),
 
+      importFileInput: this.$('#import-file-input'),
+      importBtn: this.$('#import-btn'),
+
       storeCount: this.$('#store-count'),
       storeList: this.$('#store-list'),
       storeEmpty: this.$('#store-empty'),
+
+      toastParent: this.$('#toast-parent'),
     };
 
     this.els.toggleBtn.addEventListener('click', () =>
@@ -275,6 +288,16 @@ export class PanelView {
       this.emit(UIEventType.UPDATE_THEME, { theme: 'device' });
     });
 
+    this.els.importBtn.addEventListener('click', () => {
+      // If no file is selected, open the dialog
+      if (!this.els.importFileInput.files || this.els.importFileInput.files.length === 0) {
+        this.els.importFileInput.click();
+        return;
+      }
+      const file = this.els.importFileInput.files[0]!;
+      this.emit(UIEventType.IMPORT_SCREAN_STATE_FILE, { file });
+    });
+
     this.updateQualityVisibility();
 
     this.els.selectItemAllCheckbox.addEventListener('change', (e) => {
@@ -322,6 +345,8 @@ export class PanelView {
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
     this.applyTheme(model.theme);
     this.applyStore(model.pageKeys);
+
+    this.applyToastMessages(model.toastMessages);
   }
 
   private renderStatus(key: StatusKey): void {
@@ -776,6 +801,46 @@ export class PanelView {
     }
     this.els.storeList.classList.remove('hidden');
     this.els.storeEmpty.classList.add('hidden');
+  }
+
+  private applyToastMessages(toastMessages: ToastMessage[]): void {
+    for (const toastMessage of toastMessages) {
+      const toastElem = this.generateToastMessage(toastMessage);
+      this.els.toastParent.appendChild(toastElem);
+      this.emit(UIEventType.TOAST_DISMISS_REQUESTED, { uuid: toastMessage.uuid });
+    }
+  }
+
+  private generateToastMessage(toastMessage: ToastMessage): HTMLDivElement {
+    const toastElem = this.el('div', `toast toast--${toastMessage.kind}`);
+    const toastIconDef = getIcon(toastMessage.kind);
+    const toastIcon = this.createSvgIcon(toastIconDef.d, {
+      className: 'toast-icon',
+      viewBox: toastIconDef.viewBox,
+    });
+    const toastBody = this.el('div', 'toast-body');
+    const desc = this.el('p', 'toast-desc', toastMessage.message);
+    toastBody.appendChild(desc);
+    const closeBtn = this.el('button', `toast-close toast-close--${toastMessage.kind}`);
+    const closeIconDef = getIcon('close');
+    const closeIcon = this.createSvgIcon(closeIconDef.d, {
+      className: 'h-3.5 w-3.5',
+      viewBox: closeIconDef.viewBox,
+    });
+    closeBtn.appendChild(closeIcon);
+    toastElem.appendChild(toastIcon);
+    toastElem.appendChild(toastBody);
+    toastElem.appendChild(closeBtn);
+
+    const timerId = window.setTimeout(() => {
+      if (toastElem.isConnected) toastElem.remove();
+    }, this.TOAST_AUTO_DISMISS);
+
+    closeBtn.addEventListener('click', () => {
+      clearTimeout(timerId);
+      if (toastElem.isConnected) toastElem.remove();
+    });
+    return toastElem;
   }
 
   private $<T extends Element>(selector: string): T {

@@ -74,6 +74,12 @@ export enum UIEventType {
   /** Emitted after the Settings modal is show */
   SETTING_MODAL_SHOW = 'SETTING_MODAL_SHOW',
 
+  /** Import a ScreenState from a selected JSON file */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
+  /** Dismiss a toast by UUID */
+  TOAST_DISMISS_REQUESTED = 'TOAST_DISMISS_REQUESTED',
+
   /** Click to remove the saved page */
   REMOVE_PAGE_CLICK = 'REMOVE_PAGE_CLICK',
 
@@ -116,6 +122,8 @@ export type UIEventPayloadMap = {
   [UIEventType.ITEM_COMMENT_APPLY]: { id: number; comment: string };
   [UIEventType.UPDATE_THEME]: { theme: ThemeMode };
   [UIEventType.SETTING_MODAL_SHOW]: undefined;
+  [UIEventType.IMPORT_SCREAN_STATE_FILE]: { file: File };
+  [UIEventType.TOAST_DISMISS_REQUESTED]: { uuid: string };
   [UIEventType.REMOVE_PAGE_CLICK]: { pageKey: string };
   [UIEventType.EXPORT_PAGE_CLICK]: { pageKey: string };
 };

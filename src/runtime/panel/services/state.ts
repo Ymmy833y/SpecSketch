@@ -2,7 +2,15 @@ import type { Anchor, ScreenItem, ScreenState } from '@common/types';
 import { screenStateTable } from '@panel/storage/tables';
 
 type Patch = {
-  added?: Array<{ anchor: ScreenItem['anchor'] }>;
+  added?: Array<{
+    anchor: ScreenItem['anchor'];
+    size?: ScreenItem['size'];
+    color?: ScreenItem['color'];
+    shape?: ScreenItem['shape'];
+    position?: ScreenItem['position'];
+    group?: ScreenItem['group'];
+    comment?: ScreenItem['comment'];
+  }>;
   removedIds?: number[];
 };
 
@@ -31,11 +39,12 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
         id,
         label,
         anchor: a.anchor,
-        size: state.defaultSize,
-        color: state.defaultColor,
-        shape: state.defaultShape,
-        position: state.defaultPosition,
-        group: state.defaultGroup,
+        size: a.size ?? state.defaultSize,
+        color: a.color ?? state.defaultColor,
+        shape: a.shape ?? state.defaultShape,
+        position: a.position ?? state.defaultPosition,
+        group: a.group ?? state.defaultGroup,
+        comment: a.comment ?? '',
       };
       state.items.push(it);
     }

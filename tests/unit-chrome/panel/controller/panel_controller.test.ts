@@ -44,6 +44,10 @@ vi.mock('@panel/services/export.ts', () => ({
   exportScreenState: vi.fn(),
 }));
 
+vi.mock('@panel/services/import.ts', () => ({
+  importScreanState: vi.fn(),
+}));
+
 vi.mock('@panel/services/state.ts', () => ({
   handleSelected: vi.fn(async () => ({
     items: [], // ScreenItem[]
@@ -82,6 +86,7 @@ import { PanelController } from '@panel/controller/panel_controller';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
 import { exportScreenState } from '@panel/services/export';
+import { importScreanState } from '@panel/services/import';
 import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
@@ -457,6 +462,61 @@ describe('panel/controller/panel_controller', () => {
       expect(dispatch).toHaveBeenCalledWith({
         type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE,
         pageKey: targetKey,
+      });
+    });
+
+    it('view handler IMPORT_SCREAN_STATE_FILE dispatches IMPORT_SCREAN_STATE_FILE with file payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      // Dummy file object (we do not rely on its content in this test)
+      const dummyFile = {} as unknown as File;
+      view.emit(UIEventType.IMPORT_SCREAN_STATE_FILE, { file: dummyFile });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_SCREAN_STATE_FILE,
+        file: dummyFile,
+      });
+    });
+
+    it('view handler TOAST_DISMISS_REQUESTED dispatches TOAST_DISMISS_REQUESTED with uuid', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const uuid = 'abc-123';
+      view.emit(UIEventType.TOAST_DISMISS_REQUESTED, { uuid });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.TOAST_DISMISS_REQUESTED,
+        uuid,
       });
     });
   });
@@ -1004,6 +1064,90 @@ describe('panel/controller/panel_controller', () => {
       expect(dispatch).toHaveBeenCalledWith({
         type: ActionType.EXPORT_FAILED,
         error: err,
+      });
+    });
+
+    it('IMPORT_SCREAN_STATE_FILE: success → dispatches RESTORE_STATE with imported values', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      // Current pageKey used by importScreanState(file, model.pageKey)
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // Mock imported state
+      const imported = {
+        items: [makeItem(1), makeItem(2)],
+        defaultSize: 14,
+        defaultColor: 'Blue' as const,
+        defaultShape: 'square' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      vi.mocked(importScreanState).mockResolvedValueOnce(imported as never);
+
+      // Execute effect
+      const dummyFile = {} as unknown as File;
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: dummyFile },
+      ]);
+
+      // Should dispatch RESTORE_STATE with imported fields
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.RESTORE_STATE,
+        state: expect.objectContaining({
+          items: imported.items,
+          defaultSize: imported.defaultSize,
+          defaultColor: imported.defaultColor,
+          defaultShape: imported.defaultShape,
+          defaultPosition: imported.defaultPosition,
+          defaultGroup: imported.defaultGroup,
+        }),
+      });
+    });
+
+    it('IMPORT_SCREAN_STATE_FILE: failure → dispatches IMPORT_FAILED with toast message', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // Ensure crypto.randomUUID is stable
+      const cryptoObj =
+        (globalThis as unknown as { crypto?: { randomUUID: () => string } }).crypto ??
+        ((globalThis as unknown as { crypto: { randomUUID: () => string } }).crypto = {
+          randomUUID: () => 'stub-uuid',
+        });
+      const uuidSpy = vi.spyOn(cryptoObj, 'randomUUID').mockReturnValue('test-uuid');
+
+      const err = new Error('invalid file');
+      vi.mocked(importScreanState).mockRejectedValueOnce(err);
+
+      const dummyFile = {} as unknown as File;
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: dummyFile },
+      ]);
+
+      // Should dispatch IMPORT_FAILED with a single toast message
+      expect(uuidSpy).toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_FAILED,
+        toastMessages: [
+          {
+            uuid: 'test-uuid',
+            message: 'invalid file',
+            kind: 'error',
+          },
+        ],
       });
     });
   });
