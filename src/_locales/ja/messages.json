@@ -65,6 +65,9 @@
   "setting_import": { "message": "インポート" },
   "setting_store_pages": { "message": "保存ページ" },
 
+  "import_succeeded_with_count": {
+    "message": "インポートが正常に完了しました。$1 件の要素を追加しました。"
+  },
   "import_file_not_json": { "message": "JSON ファイルのみ対応しています。" },
   "import_payload_invalid": { "message": "エクスポート形式が不正です。" },
 

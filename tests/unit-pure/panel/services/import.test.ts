@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // i18n: return the key as-is for error messages
 vi.mock('@common/i18n', () => ({
-  default: { get: vi.fn((key: string) => key) },
+  default: { get: vi.fn((key: string, _subs?: string[]) => key) },
 }));
 
 // screenStateTable.get: expose a mock to verify calls
@@ -24,6 +24,7 @@ vi.mock('@common/types', () => ({
 }));
 
 // Import target after mocks are defined
+import i18n from '@common/i18n';
 import { importScreanState } from '@panel/services/import';
 
 // ---- Helpers ----------------------------------------------------------------
@@ -149,7 +150,13 @@ describe('importScreanState (unit-pure)', () => {
       .map((x) => pickAddedFields(x as Record<string, unknown>));
 
     expect((patchArg as { added: unknown[] }).added).toEqual(expectedAdded);
-    expect(result).toBe(patchedResult);
+
+    expect(result).toEqual({
+      state: patchedResult,
+      successMessage: 'import_succeeded_with_count',
+    });
+
+    expect(i18n.get).toHaveBeenCalledWith('import_succeeded_with_count', ['2']);
   });
 
   it('passes only allowed fields to applyPatch (id/extra are excluded)', async () => {
@@ -245,6 +252,33 @@ describe('importScreanState (unit-pure)', () => {
     const added = (patchArg as { added: Array<Record<string, unknown>> }).added;
     const ordered = added.map((a) => (a.anchor as { value: string }).value);
     expect(ordered).toEqual(['#b', '#a']);
-    expect(result).toBe(patched);
+
+    expect(result).toEqual({
+      state: patched,
+      successMessage: 'import_succeeded_with_count',
+    });
+    expect(i18n.get).toHaveBeenCalledWith('import_succeeded_with_count', ['2']);
+  });
+
+  it('returns successMessage with the number of newly added items', async () => {
+    // Arrange
+    getMock.mockResolvedValue({ items: [] });
+    isValidPayloadMock.mockReturnValue(true);
+
+    const a = mkItem(1, { kind: 'css', version: 1, value: '#a' });
+    const b = mkItem(2, { kind: 'css', version: 1, value: '#b' });
+    const f = makeFile(JSON.stringify(mkPayload([a, b])), 'p.json', 'application/json');
+
+    const patchedState = { items: [a, b] };
+    applyPatchMock.mockResolvedValue(patchedState);
+
+    // Act
+    const { state, successMessage } = await importScreanState(f, 'page-1');
+
+    // Assert
+    expect(state).toBe(patchedState);
+    expect(successMessage).toBe('import_succeeded_with_count');
+    expect(i18n.get).toHaveBeenCalledTimes(1);
+    expect(i18n.get).toHaveBeenCalledWith('import_succeeded_with_count', ['2']);
   });
 });

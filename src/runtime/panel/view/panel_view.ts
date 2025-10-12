@@ -843,6 +843,7 @@ export class PanelView {
     const toastIcon = this.createSvgIcon(toastIconDef.d, {
       className: 'toast-icon',
       viewBox: toastIconDef.viewBox,
+      variant: 'solid',
     });
     const toastBody = this.el('div', 'toast-body');
     const desc = this.el('p', 'toast-desc', toastMessage.message);
@@ -898,28 +899,28 @@ export class PanelView {
 
   private createSvgIcon(
     d: string,
-    opts: {
-      className?: string;
-      viewBox?: string;
-      attrs?: Record<string, string>;
-    } = {},
+    opts: { className?: string; viewBox?: string; variant?: 'solid' | 'outline' } = {},
   ): SVGSVGElement {
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-
-    const svg = document.createElementNS(SVG_NS, 'svg');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
     svg.setAttribute('viewBox', opts.viewBox ?? '0 0 20 20');
-    svg.setAttribute('class', opts.className ?? 'h-3.5 w-3.5');
-    svg.setAttribute('fill', 'currentColor');
     svg.setAttribute('aria-hidden', 'true');
+    if (opts.className) svg.setAttribute('class', opts.className);
 
-    if (opts.attrs) {
-      for (const [k, v] of Object.entries(opts.attrs)) svg.setAttribute(k, v);
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', d);
+
+    if (opts.variant === 'outline') {
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+    } else {
+      path.setAttribute('fill', 'currentColor');
     }
 
-    const pathEl = document.createElementNS(SVG_NS, 'path');
-    pathEl.setAttribute('d', d);
-    svg.appendChild(pathEl);
-
+    svg.appendChild(path);
     return svg;
   }
 }

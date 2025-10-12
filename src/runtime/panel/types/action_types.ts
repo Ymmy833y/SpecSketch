@@ -137,6 +137,9 @@ export enum ActionType {
   /** Import a ScreenState from a selected JSON file. */
   IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
 
+  /** Emitted when the import operation succeeds. */
+  IMPORT_SUCCEEDED = 'IMPORT_SUCCEEDED',
+
   /** Emitted when the import operation fails. */
   IMPORT_FAILED = 'IMPORT_FAILED',
 
@@ -205,6 +208,7 @@ export type Action =
   | { type: ActionType.STORE_RELOAD_REQUESTED }
   | { type: ActionType.STORE_RELOAD_SUCCEEDED; pageKeys: string[] }
   | { type: ActionType.IMPORT_SCREAN_STATE_FILE; file: File }
+  | { type: ActionType.IMPORT_SUCCEEDED; toastMessages: ToastMessage[] }
   | { type: ActionType.IMPORT_FAILED; toastMessages: ToastMessage[] }
   | { type: ActionType.TOAST_DISMISS_REQUESTED; uuid: string }
   | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string }

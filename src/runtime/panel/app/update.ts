@@ -317,6 +317,11 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         model,
         effects: [{ kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: action.file }],
       };
+    case ActionType.IMPORT_SUCCEEDED:
+      return {
+        model: { ...model, toastMessages: action.toastMessages },
+        effects: [],
+      };
     case ActionType.IMPORT_FAILED:
       return {
         model: { ...model, toastMessages: action.toastMessages },

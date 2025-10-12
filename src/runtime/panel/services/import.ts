@@ -14,14 +14,17 @@ import { applyPatch } from './state';
  *
  * @param file     A user-selected JSON file that contains export payload.
  * @param pageKey  The target page key to merge into.
- * @returns        The updated {@link ScreenState} after applying the patch.
+ * @returns A promise that resolves to an object containing the updated {@link ScreenState} and a human-readable success message.
  *
  * @throws Error with i18n message `import_file_not_json`
  *         when the file is not recognized as JSON.
  * @throws Error with i18n message `import_payload_invalid`
  *         when the parsed JSON does not satisfy the expected payload contract.
  */
-export async function importScreanState(file: File, pageKey: string): Promise<ScreenState> {
+export async function importScreanState(
+  file: File,
+  pageKey: string,
+): Promise<{ state: ScreenState; successMessage: string }> {
   // Validate file type as JSON by extension or MIME (empty MIME is allowed on some browsers).
   const isJsonByExt = /\.json$/i.test(file.name);
   const isJsonByMime =
@@ -69,5 +72,8 @@ export async function importScreanState(file: File, pageKey: string): Promise<Sc
       comment: it.comment,
     }));
 
-  return await applyPatch(pageKey, { added });
+  const newState = await applyPatch(pageKey, { added });
+  const successMessage = i18n.get('import_succeeded_with_count', [String(added.length)]);
+
+  return { state: newState, successMessage };
 }

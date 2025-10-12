@@ -225,7 +225,7 @@ export class PanelController {
         }
         case EffectType.IMPORT_SCREAN_STATE_FILE: {
           try {
-            const state = await importScreanState(fx.file, this.model.pageKey);
+            const { state, successMessage } = await importScreanState(fx.file, this.model.pageKey);
             this.dispatch({
               type: ActionType.RESTORE_STATE,
               state: {
@@ -238,6 +238,15 @@ export class PanelController {
                 defaultPosition: state.defaultPosition,
                 defaultGroup: state.defaultGroup,
               },
+            });
+            const message: ToastMessage = {
+              uuid: crypto.randomUUID(),
+              message: successMessage,
+              kind: 'success',
+            };
+            this.dispatch({
+              type: ActionType.IMPORT_SUCCEEDED,
+              toastMessages: [message],
             });
           } catch (e) {
             const error = e as Error;

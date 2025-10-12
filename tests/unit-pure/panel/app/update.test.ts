@@ -873,4 +873,24 @@ describe('panel/app/update', () => {
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
   });
+
+  it('IMPORT_SUCCEEDED: stores toastMessages on model (no effects)', () => {
+    const model = baseModel({ toastMessages: [] as ToastMessage[] });
+    const toastMessages = [
+      { uuid: 'u-1', message: 'Import completed successfully', kind: 'success' },
+      { uuid: 'u-2', message: 'Added 3 items', kind: 'info' },
+    ] as unknown as Model['toastMessages'];
+
+    const action = {
+      type: ActionType.IMPORT_SUCCEEDED,
+      toastMessages,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // toastMessages is replaced with the provided array
+    expect(out.model.toastMessages).toEqual(toastMessages);
+    // No side effects
+    expect(out.effects).toEqual([]);
+  });
 });

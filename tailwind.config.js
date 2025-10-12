@@ -5,6 +5,12 @@ module.exports = {
     './src/**/*.ts',
     './src/**/*.html',
   ],
+  safelist: [
+    'toast-close--success',
+    'toast-close--error',
+    'toast--success',
+    'toast--error',
+  ],
   theme: {
     extend: {},
     screens: {
