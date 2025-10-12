@@ -2,9 +2,11 @@ import {
   isItemColor,
   isItemPosition,
   isItemShape,
+  isLabelFormat,
   isScreenItemLike,
   isValidPayload,
   ITEM_POSITION_VALUES,
+  LabelFormat,
   ScreenItem,
 } from '@common/types';
 import { describe, expect, it } from 'vitest';
@@ -107,6 +109,72 @@ describe('common/types', () => {
 
       // Assert
       expect(shapes).toEqual(['circle', 'square']);
+    });
+  });
+
+  describe('isLabelFormat', () => {
+    it('returns true for all allowed LabelFormat literals', () => {
+      // Arrange
+      const allowed = ['Numbers', 'UpperAlpha', 'LowerAlpha', 'None'] as const;
+
+      // Act & Assert
+      for (const v of allowed) {
+        expect(isLabelFormat(v)).toBe(true);
+      }
+    });
+
+    it('returns false for null', () => {
+      // Arrange
+      const v = null;
+
+      // Act
+      const ok = isLabelFormat(v);
+
+      // Assert
+      expect(ok).toBe(false);
+    });
+
+    it('returns false for disallowed values (case/spacing/unknown/non-string)', () => {
+      // Arrange
+      const invalids = [
+        'numbers', // case mismatch
+        'UPPERALPHA', // wrong casing
+        'loweralpha', // wrong casing
+        ' UpperAlpha ', // extra spaces
+        'Hex', // unknown
+        '', // empty
+        123, // non-string
+        {}, // non-string
+        [], // non-string
+      ];
+
+      // Act & Assert
+      for (const v of invalids) {
+        expect(isLabelFormat(v as unknown)).toBe(false);
+      }
+    });
+
+    it('acts as a type guard in Array.filter', () => {
+      // Arrange
+      const mixed: (string | null)[] = [
+        'Numbers',
+        'numbers',
+        null,
+        'UpperAlpha',
+        'foo',
+        'LowerAlpha',
+        'none',
+        'None',
+      ];
+
+      // Act
+      const formats = mixed.filter(isLabelFormat);
+
+      // Assert
+      expect(formats).toEqual(['Numbers', 'UpperAlpha', 'LowerAlpha', 'None']);
+      // Type-level guard check (no runtime effect): formats should be LabelFormat[]
+      const _assertTypes: LabelFormat[] = formats;
+      expect(_assertTypes.length).toBe(4);
     });
   });
 

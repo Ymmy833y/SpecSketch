@@ -519,6 +519,33 @@ describe('panel/controller/panel_controller', () => {
         uuid,
       });
     });
+
+    it('view handler BADGE_LABEL_FORMAT_CHANGE dispatches SET_BADGE_LABEL_FORMAT with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const labelFormat = 'UpperAlpha' as const;
+      view.emit(UIEventType.BADGE_LABEL_FORMAT_CHANGE, { labelFormat });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.SET_BADGE_LABEL_FORMAT,
+        labelFormat: 'UpperAlpha',
+      });
+    });
   });
 
   describe('ensureConnectionAlive', () => {
@@ -572,6 +599,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 10,
         defaultColor: 'Blue',
         defaultShape: 'square',
+        defaultLabelFormat: 'Numbers',
         defaultPosition: 'left-top-outside',
         defaultGroup: UNGROUPED_VALUE,
       });
@@ -601,6 +629,7 @@ describe('panel/controller/panel_controller', () => {
         state: expect.objectContaining({
           items: [makeItem(1), makeItem(2)],
           defaultShape: 'square',
+          defaultLabelFormat: 'Numbers',
         }),
       });
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.SET_STATUS, status: 'CONNECTED' });
@@ -624,6 +653,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
+        defaultLabelFormat: 'Numbers',
         defaultPosition: 'left-top-outside',
         defaultGroup: UNGROUPED_VALUE,
       });
@@ -727,6 +757,7 @@ describe('panel/controller/panel_controller', () => {
         defaultShape: 'square',
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
+        defaultLabelFormat: 'UpperAlpha',
       };
       type Exposed = { ensureConnectionAlive: () => Promise<unknown> };
       const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
@@ -743,6 +774,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 20,
         defaultColor: 'Green',
         defaultShape: 'square',
+        defaultLabelFormat: 'UpperAlpha',
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
       });
@@ -761,6 +793,7 @@ describe('panel/controller/panel_controller', () => {
         defaultShape: 'square',
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
+        defaultLabelFormat: 'LowerAlpha',
       };
       const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
@@ -768,6 +801,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
+        defaultLabelFormat: 'Numbers',
         defaultPosition: 'left-top-inside',
         defaultGroup: '',
       });
@@ -788,6 +822,7 @@ describe('panel/controller/panel_controller', () => {
           defaultShape: 'square',
           defaultGroup: 'right-top-outside',
           defaultPosition: '',
+          defaultLabelFormat: 'LowerAlpha',
         }),
       );
     });
@@ -958,6 +993,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 16,
         defaultColor: 'Blue' as const,
         defaultShape: 'square' as const,
+        defaultLabelFormat: 'UpperAlpha' as const,
         defaultPosition: 'left-top-outside' as const,
         defaultGroup: UNGROUPED_VALUE,
       };
@@ -989,6 +1025,7 @@ describe('panel/controller/panel_controller', () => {
           defaultSize: restored.defaultSize,
           defaultColor: restored.defaultColor,
           defaultShape: restored.defaultShape,
+          defaultLabelFormat: restored.defaultLabelFormat,
           defaultPosition: restored.defaultPosition,
           defaultGroup: restored.defaultGroup,
         }),
@@ -1085,6 +1122,7 @@ describe('panel/controller/panel_controller', () => {
         defaultSize: 14,
         defaultColor: 'Blue' as const,
         defaultShape: 'square' as const,
+        defaultLabelFormat: 'LowerAlpha' as const,
         defaultPosition: 'left-top-outside' as const,
         defaultGroup: UNGROUPED_VALUE,
       };
@@ -1104,6 +1142,7 @@ describe('panel/controller/panel_controller', () => {
           defaultSize: imported.defaultSize,
           defaultColor: imported.defaultColor,
           defaultShape: imported.defaultShape,
+          defaultLabelFormat: imported.defaultLabelFormat,
           defaultPosition: imported.defaultPosition,
           defaultGroup: imported.defaultGroup,
         }),

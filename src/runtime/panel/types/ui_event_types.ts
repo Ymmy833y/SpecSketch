@@ -7,7 +7,7 @@
  * - Payloads are strongly typed via UIEventPayloadMap; use `undefined` for no payload.
  */
 
-import type { ItemColor, ItemPosition, ItemShape, ThemeMode } from '@common/types';
+import type { ItemColor, ItemPosition, ItemShape, LabelFormat, ThemeMode } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 
 export enum UIEventType {
@@ -28,6 +28,9 @@ export enum UIEventType {
 
   /** Badge shape changed (select) */
   BADGE_SHAPE_CHANGE = 'BADGE_SHAPE_CHANGE',
+
+  /** Badge label format changed (select) */
+  BADGE_LABEL_FORMAT_CHANGE = 'BADGE_LABEL_FORMAT_CHANGE',
 
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
@@ -101,6 +104,7 @@ export type UIEventPayloadMap = {
   [UIEventType.BADGE_SIZE_CHANGE]: { size: number };
   [UIEventType.BADGE_COLOR_SELECT]: { color: ItemColor };
   [UIEventType.BADGE_SHAPE_CHANGE]: { shape: ItemShape };
+  [UIEventType.BADGE_LABEL_FORMAT_CHANGE]: { labelFormat: LabelFormat };
   [UIEventType.BADGE_DELETE]: undefined;
   [UIEventType.BADGE_POSITION_SELECT]: { position: ItemPosition };
   [UIEventType.SET_GROUP]: { group: string };

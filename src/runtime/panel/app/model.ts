@@ -3,6 +3,7 @@ import {
   ItemGroup,
   type ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
   ThemeMode,
   ToastMessage,
@@ -26,6 +27,7 @@ export type Model = {
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
+  defaultLabelFormat: LabelFormat;
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 
@@ -54,6 +56,7 @@ export const initialModel: Model = {
   defaultSize: 14,
   defaultColor: 'Blue',
   defaultShape: 'circle',
+  defaultLabelFormat: 'Numbers',
   defaultPosition: 'left-top-outside',
   defaultGroup: UNGROUPED_VALUE,
   capture: {

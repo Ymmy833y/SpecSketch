@@ -54,10 +54,12 @@ vi.mock('@common/types', () => {
   const validColors = new Set(['Blue', 'Red', 'Gray']);
   const validShapes = new Set(['circle', 'square']);
   const validPositions = new Set(['left-top-outside', 'right-top-outside', 'top-outside']);
+  const validLabelFormats = new Set(['Numbers', 'UpperAlpha', 'LowerAlpha', 'None']); // ← 追加
   return {
     isItemColor: (v: unknown) => typeof v === 'string' && validColors.has(v),
     isItemShape: (v: unknown) => typeof v === 'string' && validShapes.has(v),
     isItemPosition: (v: unknown) => typeof v === 'string' && validPositions.has(v),
+    isLabelFormat: (v: unknown) => typeof v === 'string' && validLabelFormats.has(v), // ← 追加
     UNGROUPED: '__ungrouped__',
   };
 });
@@ -89,6 +91,7 @@ import {
   ItemGroup,
   type ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
 } from '@common/types';
 import { Model } from '@panel/app/model';
@@ -142,6 +145,12 @@ const basePanelHtml = () => `
     <select id="badge-shape-select">
       <option value="circle" selected>circle</option>
       <option value="square">square</option>
+    </select>
+    <select id="badge-label-format-select" name="labelFormat">
+      <option value="Numbers">Numbers</option>
+      <option value="UpperAlpha">UpperAlpha</option>
+      <option value="LowerAlpha">LowerAlpha</option>
+      <option value="None">None</option>
     </select>
     <button id="badge-delete-button" type="button">Delete</button>
     <span id="badge-position-label"></span>
@@ -223,6 +232,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultSize: 16,
     defaultColor: 'Gray' as ItemColor,
     defaultShape: 'circle' as ItemShape,
+    defaultLabelFormat: 'Numbers' as LabelFormat,
     defaultPosition: 'left-top-outside' as ItemPosition,
     defaultGroup: '' as ItemGroup,
     toastMessages: [],
@@ -514,6 +524,44 @@ describe('panel/view/panel_view', () => {
     // Delete
     (document.querySelector('#badge-delete-button') as HTMLButtonElement).click();
     expect(onDel).toHaveBeenCalledTimes(1);
+  });
+
+  it('emits BADGE_LABEL_FORMAT_CHANGE when label-format select changes; falls back to Numbers for invalid', () => {
+    const v = setupView();
+    const onFmt = vi.fn();
+    v.on(UIEventType.BADGE_LABEL_FORMAT_CHANGE, onFmt);
+
+    renderWithModel(v, { defaultLabelFormat: 'Numbers' });
+
+    const sel = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+
+    // Valid value → emits with selected format
+    sel.value = 'UpperAlpha';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onFmt).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ labelFormat: string }>(onFmt)).toEqual({ labelFormat: 'UpperAlpha' });
+
+    // Invalid value → falls back to 'Numbers'
+    onFmt.mockClear();
+    // force an invalid option value
+    sel.value = 'InvalidFormat';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onFmt).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ labelFormat: string }>(onFmt)).toEqual({ labelFormat: 'Numbers' });
+  });
+
+  it('render sets badgeLabelFormatSelect.value from model.defaultLabelFormat; falls back to Numbers when undefined', () => {
+    const v = setupView();
+
+    // Uses provided defaultLabelFormat
+    renderWithModel(v, { defaultLabelFormat: 'LowerAlpha' });
+    const sel = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+    expect(sel.value).toBe('LowerAlpha');
+
+    // Fallback when defaultLabelFormat is undefined (nullish coalescing to 'Numbers')
+    renderWithModel(v, { defaultLabelFormat: undefined as unknown as LabelFormat });
+    const sel2 = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+    expect(sel2.value).toBe('Numbers');
   });
 
   it('renders grouped list (ungrouped first) and handles group/overall selection', () => {

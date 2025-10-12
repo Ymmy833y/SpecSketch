@@ -33,6 +33,7 @@ const makeState = (items: ScreenItem[], nextId: number): ScreenState => ({
   defaultSize: 16 as ScreenItem['size'],
   defaultColor: 'indigo' as ScreenItem['color'],
   defaultShape: 'square' as ScreenItem['shape'],
+  defaultLabelFormat: 'Numbers' as ScreenState['defaultLabelFormat'],
   defaultPosition: 'left-top-outside' as ScreenItem['position'],
   defaultGroup: '',
 });
@@ -93,6 +94,12 @@ describe('panel/services/state', () => {
       expect(addedX.shape).toBe(next.defaultShape);
       expect(addedX.position).toBe(next.defaultPosition);
       expect(addedX.group ?? '').toBe(next.defaultGroup);
+      // Assert labelFormat default to 'Numbers' when omitted
+      expect(addedX.labelFormat).toBe('Numbers');
+
+      const addedY = next.items.find((it: ScreenItem) => it.anchor.value === '#y')!;
+      // Assert labelFormat default for the other added item as well
+      expect(addedY.labelFormat).toBe('Numbers');
 
       expect(setSpy).toHaveBeenCalledTimes(1);
     });
@@ -134,6 +141,7 @@ describe('panel/services/state', () => {
             position: 'right-bottom-inside' as ScreenItem['position'],
             group: 'A',
             comment: 'note',
+            labelFormat: 'UpperAlpha' as ScreenItem['labelFormat'],
           },
           {
             // no overrides -> should use defaults
@@ -154,6 +162,7 @@ describe('panel/services/state', () => {
       expect(a2.position).toBe('right-bottom-inside');
       expect(a2.group).toBe('A');
       expect(a2.comment).toBe('note');
+      expect(a2.labelFormat).toBe('UpperAlpha');
 
       // defaulted item (#u2)
       const u2 = next.items.find((it) => it.anchor.value === '#u2')!;
@@ -163,6 +172,7 @@ describe('panel/services/state', () => {
       expect(u2.position).toBe(next.defaultPosition);
       expect(u2.group ?? '').toBe(next.defaultGroup);
       expect(u2.comment).toBe('');
+      expect(u2.labelFormat).toBe('Numbers');
 
       // labels normalized by group
       const groupA = next.items

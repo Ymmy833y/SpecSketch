@@ -137,6 +137,7 @@ function defaultScreenState(): ScreenState {
     defaultSize: 14,
     defaultColor: 'Blue',
     defaultShape: 'circle',
+    defaultLabelFormat: 'Numbers',
     defaultPosition: 'left-top-outside',
     defaultGroup: UNGROUPED_VALUE,
   };

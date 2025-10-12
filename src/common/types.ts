@@ -89,6 +89,14 @@ export const UNGROUPED: Ungrouped = '__ungrouped__' as const;
 export const UNGROUPED_VALUE = '' as const;
 export type ItemGroup = Ungrouped | string;
 
+export type LabelFormat = 'Numbers' | 'UpperAlpha' | 'LowerAlpha' | 'None';
+
+export const LABEL_FORMAT: LabelFormat[] = ['Numbers', 'UpperAlpha', 'LowerAlpha', 'None'];
+
+export function isLabelFormat(v: unknown): v is LabelFormat {
+  return typeof v === 'string' && (LABEL_FORMAT as readonly string[]).includes(v);
+}
+
 export type ScreenItem = {
   id: number;
   label: number;
@@ -99,6 +107,7 @@ export type ScreenItem = {
   position: ItemPosition;
   group?: string;
   comment?: string;
+  labelFormat?: LabelFormat;
 };
 
 export type ScreenState = {
@@ -107,6 +116,7 @@ export type ScreenState = {
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
+  defaultLabelFormat: LabelFormat;
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 };
