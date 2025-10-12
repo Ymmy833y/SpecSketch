@@ -1,6 +1,6 @@
 import { type ScreenItem, UNGROUPED_VALUE } from '@common/types';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
-import { STATUS } from '@panel/view/status';
+import { STATUS } from '@panel/types/status';
 
 import { Action, ActionType } from '../types/action_types';
 import { Effect, EffectType } from '../types/effect_types';

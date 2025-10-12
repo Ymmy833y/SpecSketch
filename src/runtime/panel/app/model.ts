@@ -9,7 +9,7 @@ import {
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import type { StatusKey } from '@panel/view/status';
+import type { StatusKey } from '@panel/types/status';
 
 export type Model = {
   status: StatusKey;

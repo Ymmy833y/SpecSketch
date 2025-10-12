@@ -21,15 +21,32 @@ vi.mock('@common/i18n', () => ({
   },
 }));
 
-vi.mock('@panel/view/status', () => {
-  const STATUS = { CONNECTED: 'connected', DISCONNECTED: 'disconnected' } as const;
+vi.mock('@panel/types/status', () => {
+  const STATUS = {
+    RESTRICTED: 'RESTRICTED',
+    CONNECTING: 'CONNECTING',
+    CONNECTED: 'CONNECTED',
+    DISCONNECTED: 'DISCONNECTED',
+  } as const;
+
+  const STATUS_CLASS_BY_KEY = {
+    RESTRICTED: 'connect-status--restricted',
+    CONNECTING: 'connect-status--connecting',
+    CONNECTED: 'connect-status--connected',
+    DISCONNECTED: 'connect-status--disconnected',
+  } as const;
+
+  const STATUS_MSG_KEY = {
+    RESTRICTED: 'status_restricted',
+    CONNECTING: 'status_connecting',
+    CONNECTED: 'status_connected',
+    DISCONNECTED: 'status_disconnected',
+  } as const;
+
   return {
     STATUS,
-    STATUS_LABEL_STYLE: {
-      connected: { body: ['bg-green-100'], dot: ['bg-green-500'] },
-      disconnected: { body: ['bg-slate-100'], dot: ['bg-slate-400'] },
-    } as Record<string, { body: string[]; dot: string[] }>,
-    getStatusMessage: (k: string) => (k === STATUS.CONNECTED ? 'Connected' : 'Disconnected'),
+    STATUS_CLASS_BY_KEY,
+    getStatusMessage: (k: keyof typeof STATUS) => STATUS_MSG_KEY[k],
   };
 });
 
@@ -75,9 +92,9 @@ import {
   type ScreenItem,
 } from '@common/types';
 import { Model } from '@panel/app/model';
+import { STATUS } from '@panel/types/status';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
-import { STATUS } from '@panel/view/status';
 
 // ---- Helpers ----
 const basePanelHtml = () => `
@@ -243,59 +260,131 @@ describe('panel/view/panel_view', () => {
     window.matchMedia = makeMatchMedia(false);
   });
 
-  it('renders status and enforces disableFormControls: disables non-ignored form controls when DISCONNECTED, re-enables when CONNECTED', () => {
+  it('renderStatus applies class and text per StatusKey', () => {
     const v = setupView();
 
-    // DISCONNECTED → renderStatus calls disableFormControls(true)
-    renderWithModel(v, { status: 'disconnected' });
-    expect(document.querySelector('#status')).toHaveTextContent('Disconnected');
+    // DISCONNECTED
+    renderWithModel(v, { status: 'DISCONNECTED' });
+    const s1 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s1).toHaveTextContent('status_disconnected');
+    expect(s1.className).toBe('connect-status connect-status--disconnected');
+    expect(s1.querySelector('.connect-status-dot')).toBeInTheDocument();
 
-    // Buttons without data-ignore-disable should be disabled
-    expect(document.querySelector('#toggle-select')).toBeDisabled();
-    expect(document.querySelector('#clear')).toBeDisabled();
-    expect(document.querySelector('#capture')).toBeDisabled();
-    expect(document.querySelector('#capture-options-toggle')).toBeDisabled();
+    // CONNECTING
+    renderWithModel(v, { status: 'CONNECTING' });
+    const s2 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s2).toHaveTextContent('status_connecting');
+    expect(s2.className).toBe('connect-status connect-status--connecting');
 
-    // Buttons with data-ignore-disable must remain enabled (excluded from disabling)
-    expect(document.querySelector('#setting-button')).not.toBeDisabled();
-    expect(document.querySelector('#setting-close-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-light-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-dark-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-device-btn')).not.toBeDisabled();
+    // RESTRICTED
+    renderWithModel(v, { status: 'RESTRICTED' });
+    const s3 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s3).toHaveTextContent('status_restricted');
+    expect(s3.className).toBe('connect-status connect-status--restricted');
 
-    // Other form controls are disabled (select, input, textarea)
-    expect(document.querySelector('#badge-shape-select')).toBeDisabled();
-    expect(document.querySelector('#capture-scale-number')).toBeDisabled();
-    expect(document.querySelector('#item-comment-input')).toBeDisabled();
+    // CONNECTED
+    renderWithModel(v, { status: 'CONNECTED' });
+    const s4 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s4).toHaveTextContent('status_connected');
+    expect(s4.className).toBe('connect-status connect-status--connected');
+  });
 
-    // CONNECTED → renderStatus calls disableFormControls(false)
-    // Note: JPEG-only inputs can still be disabled by updateQualityVisibility when format='png'
-    renderWithModel(v, { status: 'connected' });
-    expect(document.querySelector('#status')).toHaveTextContent('Connected');
+  it('disableFormControls policy: CONNECTED enables all, CONNECTING/DISCONNECTED enable only ignored, RESTRICTED disables all', () => {
+    const v = setupView();
 
-    // Previously disabled normal buttons are re-enabled
-    expect(document.querySelector('#toggle-select')).not.toBeDisabled();
-    expect(document.querySelector('#clear')).not.toBeDisabled();
-    expect(document.querySelector('#capture')).not.toBeDisabled();
-    expect(document.querySelector('#capture-options-toggle')).not.toBeDisabled();
+    // Helper to snapshot key controls
+    const pick = () => ({
+      toggle: document.querySelector('#toggle-select') as HTMLButtonElement,
+      clear: document.querySelector('#clear') as HTMLButtonElement,
+      capture: document.querySelector('#capture') as HTMLButtonElement,
+      toggleCapture: document.querySelector('#capture-options-toggle') as HTMLButtonElement,
+      ignoredSetting: document.querySelector('#setting-button') as HTMLButtonElement,
+      ignoredClose: document.querySelector('#setting-close-btn') as HTMLButtonElement,
+      themeLight: document.querySelector('#theme-light-btn') as HTMLButtonElement,
+      shapeSelect: document.querySelector('#badge-shape-select') as HTMLSelectElement,
+      scaleNum: document.querySelector('#capture-scale-number') as HTMLInputElement,
+      commentText: document.querySelector('#item-comment-input') as HTMLTextAreaElement,
+      jpegNum: document.querySelector('#jpeg-quality-number') as HTMLInputElement,
+      jpegRange: document.querySelector('#jpeg-quality-range') as HTMLInputElement,
+    });
 
-    // Ignored buttons were never disabled and remain enabled
-    expect(document.querySelector('#setting-button')).not.toBeDisabled();
-    expect(document.querySelector('#setting-close-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-light-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-dark-btn')).not.toBeDisabled();
-    expect(document.querySelector('#theme-device-btn')).not.toBeDisabled();
+    // DISCONNECTED → only data-ignore-disable remains enabled
+    renderWithModel(v, {
+      status: 'DISCONNECTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    let c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    // JPEG-only is disabled in the UI because format=png
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
 
-    // Generic form controls are re-enabled
-    expect(document.querySelector('#badge-shape-select')).not.toBeDisabled();
-    expect(document.querySelector('#capture-scale-number')).not.toBeDisabled();
-    expect(document.querySelector('#item-comment-input')).not.toBeDisabled();
+    // CONNECTING → The rules are the same as for DISCONNECTED (only ignore is valid)
+    renderWithModel(v, {
+      status: 'CONNECTING',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
 
-    // PNG is the default format in renderWithModel → JPEG-only fields remain disabled by design
-    const jpegNum = document.querySelector('#jpeg-quality-number') as HTMLInputElement;
-    const jpegRange = document.querySelector('#jpeg-quality-range') as HTMLInputElement;
-    expect(jpegNum).toBeDisabled();
-    expect(jpegRange).toBeDisabled();
+    // RESTRICTED → All disabled (including ignore)
+    renderWithModel(v, {
+      status: 'RESTRICTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).toBeDisabled();
+    expect(c.ignoredClose).toBeDisabled();
+    expect(c.themeLight).toBeDisabled();
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
+
+    // CONNECTED → All are valid (however, JPEG-only is disabled by UI specification because format=png)
+    renderWithModel(v, {
+      status: 'CONNECTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).not.toBeDisabled();
+    expect(c.clear).not.toBeDisabled();
+    expect(c.capture).not.toBeDisabled();
+    expect(c.toggleCapture).not.toBeDisabled();
+    expect(c.shapeSelect).not.toBeDisabled();
+    expect(c.scaleNum).not.toBeDisabled();
+    expect(c.commentText).not.toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    // PNG → JPEG-only is still disabled in the UI.
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
   });
 
   it('emits toggle/clear/capture button events', () => {

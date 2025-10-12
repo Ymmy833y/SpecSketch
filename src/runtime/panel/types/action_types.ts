@@ -10,7 +10,7 @@ import type {
   ToastMessage,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import type { StatusKey } from '@panel/view/status';
+import type { StatusKey } from '@panel/types/status';
 
 /**
  * ActionType

@@ -12,9 +12,9 @@ import { handleSelected } from '@panel/services/state';
 import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { Action, ActionType } from '@panel/types/action_types';
 import { Effect, EffectType } from '@panel/types/effect_types';
+import { STATUS } from '@panel/types/status';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
-import { STATUS } from '@panel/view/status';
 
 type Connection = Awaited<ReturnType<typeof connectToTab>>;
 type EnsureResult = { ok: true; contextChanged: boolean } | { ok: false };
