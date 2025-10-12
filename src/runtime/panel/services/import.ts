@@ -1,5 +1,6 @@
 import i18n from '@common/i18n';
 import { isValidPayload, payload, ScreenItem, ScreenState } from '@common/types';
+import { sortScreenItemsByGroupAndLabel } from '@common/utils';
 import { screenStateTable } from '@panel/storage/tables';
 
 import { applyPatch } from './state';
@@ -48,7 +49,7 @@ export async function importScreanState(
     throw new Error(i18n.get('import_payload_invalid'));
   }
   const payload = parsed as payload;
-  const items = payload.items;
+  const items = sortScreenItemsByGroupAndLabel(payload.items);
 
   // Fetch current state (if missing, treat as empty items for comparison).
   const state = await screenStateTable.get(pageKey);
@@ -61,7 +62,6 @@ export async function importScreanState(
   // Create the minimal patch payload for `applyPatch` — only fields supported by "added".
   const added = items
     .filter((it) => !existingSet.has(keyOf(it)))
-    .sort((a, b) => b.id - a.id)
     .map((it) => ({
       anchor: it.anchor,
       size: it.size,
