@@ -1,4 +1,5 @@
 import { type ScreenItem, UNGROUPED_VALUE } from '@common/types';
+import { sortScreenItemsByGroupAndLabel } from '@common/utils';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 import { STATUS } from '@panel/types/status';
 
@@ -409,15 +410,14 @@ function updateGroupAndDeferRelabel(
   const normalize = (g?: string) => (g ?? '').trim();
   const nextGroup = normalize(nextGroupRaw);
   let updateItemCnt = 0;
-  return items
-    .sort((a, b) => b.id - a.id)
-    .map((item) => {
-      if (selectItems.includes(item.id) && item.group !== nextGroup) {
-        const label = Number.MAX_SAFE_INTEGER - updateItemCnt++;
-        return { ...item, group: nextGroup, label };
-      }
-      return item;
-    });
+  const sortedItems = sortScreenItemsByGroupAndLabel(items);
+  return sortedItems.map((item) => {
+    if (selectItems.includes(item.id) && item.group !== nextGroup) {
+      const label = Number.MAX_SAFE_INTEGER - updateItemCnt++;
+      return { ...item, group: nextGroup, label };
+    }
+    return item;
+  });
 }
 
 function applyItemSelectionChangedById(id: number, isCheck: boolean, selectItems: number[]) {
