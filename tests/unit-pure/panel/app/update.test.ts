@@ -11,7 +11,7 @@ vi.mock('@panel/services/state', () => {
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 import { Action, ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
-import { STATUS } from '@panel/view/status';
+import { STATUS } from '@panel/types/status';
 
 // ---- Helpers ----
 const norm = vi.mocked(normalizeGroupLabelsAndCountUngrouped);

@@ -14,7 +14,7 @@ import {
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
+import { getStatusMessage, STATUS, STATUS_CLASS_BY_KEY, type StatusKey } from '@panel/types/status';
 
 import type { Model } from '../app/model';
 import { type UIEventPayloadMap, UIEventType } from '../types/ui_event_types';
@@ -324,6 +324,9 @@ export class PanelView {
   }
 
   render(model: Model): void {
+    this.applyToastMessages(model.toastMessages);
+    this.applyTheme(model.theme);
+    this.applyStore(model.pageKeys);
     this.renderStatus(model.status);
     this.renderToggle(model.selectionEnabled);
     this.renderList(model.items, model.selectItems, model.missingIds);
@@ -343,26 +346,22 @@ export class PanelView {
     this.els.badgeShapeSelect.value = model.defaultShape;
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
-    this.applyTheme(model.theme);
-    this.applyStore(model.pageKeys);
-
-    this.applyToastMessages(model.toastMessages);
   }
 
   private renderStatus(key: StatusKey): void {
-    const style = STATUS_LABEL_STYLE[key];
+    const style = STATUS_CLASS_BY_KEY[key];
     const el = this.els.status;
     el.className = '';
-    el.classList.add('connect-status', ...style.body);
+    el.className = `connect-status ${style}`;
 
     const dot = this.doc.createElement('span');
-    dot.classList.add('connect-status-dot', ...style.dot);
+    dot.classList.add('connect-status-dot');
 
     const text = this.doc.createElement('span');
     text.textContent = getStatusMessage(key);
     el.replaceChildren(dot, text);
 
-    this.disableFormControls(key !== STATUS.CONNECTED);
+    this.disableFormControls(key);
   }
 
   private renderToggle(enabled: boolean): void {
@@ -685,14 +684,22 @@ export class PanelView {
     rangeEl.addEventListener('input', () => sync(rangeEl.value));
     numberEl.addEventListener('input', () => sync(numberEl.value));
   }
-  private disableFormControls(isDisabled: boolean): void {
-    this.doc.querySelectorAll('button, select, input, textarea').forEach((el) => {
-      if ((el as HTMLElement).hasAttribute('data-ignore-disable')) return;
-      if ('disabled' in el) {
-        (
-          el as HTMLButtonElement | HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
-        ).disabled = isDisabled;
-      }
+  private disableFormControls(status: StatusKey): void {
+    const controls = this.doc.querySelectorAll<
+      HTMLButtonElement | HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
+    >('button, select, input, textarea');
+
+    // Determine enablement policy per status
+    const enableAll = status === STATUS.CONNECTED;
+    const enableIgnoreOnly = status === STATUS.CONNECTING || status === STATUS.DISCONNECTED;
+    const enableNone = status === STATUS.RESTRICTED;
+
+    controls.forEach((el) => {
+      const shouldEnable =
+        (enableAll && true) ||
+        (enableIgnoreOnly && el.hasAttribute('data-ignore-disable')) ||
+        (enableNone && false);
+      el.disabled = !shouldEnable;
     });
   }
   private applyCaptureOptionsToggleUI(expanded: boolean) {
