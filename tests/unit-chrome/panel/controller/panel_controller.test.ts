@@ -1146,7 +1146,7 @@ describe('panel/controller/panel_controller', () => {
       });
     });
 
-    it('IMPORT_SCREAN_STATE_FILE: success → dispatches RESTORE_STATE with imported values', async () => {
+    it('IMPORT_SCREAN_STATE_FILE: success → dispatches RESTORE_STATE then IMPORT_SUCCEEDED toast', async () => {
       const view = new ViewStub();
       const pc = new PanelController(view as unknown as never);
 
@@ -1158,7 +1158,15 @@ describe('panel/controller/panel_controller', () => {
         .spyOn(pc as unknown as Exposed, 'dispatch')
         .mockImplementation(() => undefined);
 
-      // Mock imported state
+      // Stabilize crypto.randomUUID
+      const cryptoObj =
+        (globalThis as unknown as { crypto?: { randomUUID: () => string } }).crypto ??
+        ((globalThis as unknown as { crypto: { randomUUID: () => string } }).crypto = {
+          randomUUID: () => 'stub-uuid',
+        });
+      const uuidSpy = vi.spyOn(cryptoObj, 'randomUUID').mockReturnValue('test-uuid');
+
+      // Mock imported state and success message (NEW shape)
       const imported = {
         items: [makeItem(1), makeItem(2)],
         defaultSize: 14,
@@ -1169,15 +1177,18 @@ describe('panel/controller/panel_controller', () => {
         defaultPosition: 'left-top-outside' as const,
         defaultGroup: UNGROUPED_VALUE,
       };
-      vi.mocked(importScreanState).mockResolvedValueOnce(imported as never);
+      const successMessage = 'Import completed successfully: added 2 items';
+      vi.mocked(importScreanState).mockResolvedValueOnce({
+        state: imported,
+        successMessage,
+      } as never);
 
-      // Execute effect
       const dummyFile = {} as unknown as File;
       await callPrivate<Promise<void>>(pc, 'execEffects', [
         { kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: dummyFile },
       ]);
 
-      // Should dispatch RESTORE_STATE with imported fields
+      // Verify RESTORE_STATE dispatched with imported fields
       expect(dispatch).toHaveBeenCalledWith({
         type: ActionType.RESTORE_STATE,
         state: expect.objectContaining({
@@ -1191,6 +1202,26 @@ describe('panel/controller/panel_controller', () => {
           defaultGroup: imported.defaultGroup,
         }),
       });
+
+      // Verify success toast via IMPORT_SUCCEEDED
+      expect(uuidSpy).toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_SUCCEEDED,
+        toastMessages: [
+          {
+            uuid: 'test-uuid',
+            message: successMessage,
+            kind: 'success',
+          },
+        ],
+      });
+
+      // (optional) order check: RESTORE_STATE should come before IMPORT_SUCCEEDED
+      const calls = (dispatch.mock.calls as Array<[unknown]>).map(([a]) => a as { type: string });
+      const iRestore = calls.findIndex((c) => c.type === ActionType.RESTORE_STATE);
+      const iSucceeded = calls.findIndex((c) => c.type === ActionType.IMPORT_SUCCEEDED);
+      expect(iRestore).toBeGreaterThanOrEqual(0);
+      expect(iSucceeded).toBeGreaterThan(iRestore);
     });
 
     it('IMPORT_SCREAN_STATE_FILE: failure → dispatches IMPORT_FAILED with toast message', async () => {

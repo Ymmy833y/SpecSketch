@@ -47,7 +47,7 @@ describe('getIcon (happy paths)', () => {
 });
 
 describe('getIcon (happy paths) - status and close icons', () => {
-  it('returns 20x20 icon for "success" with a non-empty path', () => {
+  it('returns 16x16 icon for "success" with a non-empty path', () => {
     // Arrange
     const name: IconName = 'success';
 
@@ -55,13 +55,13 @@ describe('getIcon (happy paths) - status and close icons', () => {
     const icon = getIcon(name);
 
     // Assert
-    expect(icon.viewBox).toBe('0 0 20 20');
+    expect(icon.viewBox).toBe('0 0 16 16');
     expect(icon.d.length).toBeGreaterThan(0);
     // Optional guard: ensure the path looks like the expected glyph
-    expect(icon.d.startsWith('M10 18')).toBe(true);
+    expect(icon.d.startsWith('M16 8A8')).toBe(true);
   });
 
-  it('returns 20x20 icon for "error" with a non-empty path', () => {
+  it('returns 16x16 icon for "error" with a non-empty path', () => {
     // Arrange
     const name: IconName = 'error';
 
@@ -69,10 +69,10 @@ describe('getIcon (happy paths) - status and close icons', () => {
     const icon = getIcon(name);
 
     // Assert
-    expect(icon.viewBox).toBe('0 0 20 20');
+    expect(icon.viewBox).toBe('0 0 16 16');
     expect(icon.d.length).toBeGreaterThan(0);
     // Optional guard: first move instruction matches expected shape
-    expect(icon.d.startsWith('M10 18')).toBe(true);
+    expect(icon.d.startsWith('M16 8A8')).toBe(true);
   });
 
   it('returns 20x20 icon for "close" with a non-empty path', () => {
@@ -171,16 +171,11 @@ describe('ICONS (data integrity) - presence of status and close keys', () => {
     expect(keys).toContain('close');
   });
 
-  it('ensures "success", "error", and "close" shapes are 20x20 or default to 20x20', () => {
-    // Arrange
-    const targets: Array<keyof typeof ICONS> = ['success', 'error', 'close'];
-
-    // Act & Assert
-    for (const name of targets) {
-      const def = ICONS[name];
-      // If viewBox is omitted it is treated as 20x20 by getIcon; here we just validate defined metadata.
-      expect([undefined, '0 0 20 20']).toContain(def.viewBox);
-      expect(def.d.length).toBeGreaterThan(0);
-    }
+  it('ensures "close" shapes are 20x20 or default to 20x20', () => {
+    // Arrange & Act & Assert
+    const def = ICONS['close'];
+    // If viewBox is omitted it is treated as 20x20 by getIcon; here we just validate defined metadata.
+    expect([undefined, '0 0 20 20']).toContain(def.viewBox);
+    expect(def.d.length).toBeGreaterThan(0);
   });
 });
