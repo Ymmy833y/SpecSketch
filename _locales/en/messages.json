@@ -65,6 +65,9 @@
   "setting_import": { "message": "Import" },
   "setting_store_pages": { "message": "Saved Pages" },
 
+  "import_succeeded_with_count": {
+    "message": "Import completed successfully. Added $1 items."
+  },
   "import_file_not_json": { "message": "Only JSON files are supported." },
   "import_payload_invalid": { "message": "Invalid export payload." },
 
