@@ -29,11 +29,15 @@
   "badge_shape": { "message": "形状" },
   "badge_shape_circle": { "message": "丸" },
   "badge_shape_square": { "message": "四角" },
+
+  "badge_visible": { "message": "表示・非表示" },
+  "badge_visible_show": { "message": "表示" },
+  "badge_visible_hide": { "message": "非表示" },
   
   "badge_label_format": { "message": "表示形式" },
-  "badge_label_format_numbers": { "message": "数字" },
-  "badge_label_format_upper_alpha": { "message": "英大文字" },
-  "badge_label_format_lower_alpha": { "message": "英小文字" },
+  "badge_label_format_numbers": { "message": "123..." },
+  "badge_label_format_upper_alpha": { "message": "ABC..." },
+  "badge_label_format_lower_alpha": { "message": "abc..." },
   "badge_label_format_none": { "message": "なし" },
 
   "badge_position": { "message": "位置" },
