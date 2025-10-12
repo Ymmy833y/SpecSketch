@@ -32,6 +32,9 @@ export enum UIEventType {
   /** Badge label format changed (select) */
   BADGE_LABEL_FORMAT_CHANGE = 'BADGE_LABEL_FORMAT_CHANGE',
 
+  /** Badge visible format changed (select) */
+  BADGE_VISIBLE_CHANGE = 'BADGE_VISIBLE_CHANGE',
+
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
 
@@ -105,6 +108,7 @@ export type UIEventPayloadMap = {
   [UIEventType.BADGE_COLOR_SELECT]: { color: ItemColor };
   [UIEventType.BADGE_SHAPE_CHANGE]: { shape: ItemShape };
   [UIEventType.BADGE_LABEL_FORMAT_CHANGE]: { labelFormat: LabelFormat };
+  [UIEventType.BADGE_VISIBLE_CHANGE]: { visible: boolean };
   [UIEventType.BADGE_DELETE]: undefined;
   [UIEventType.BADGE_POSITION_SELECT]: { position: ItemPosition };
   [UIEventType.SET_GROUP]: { group: string };

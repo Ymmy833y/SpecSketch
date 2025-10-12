@@ -31,6 +31,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
           defaultColor: action.state.defaultColor,
           defaultShape: action.state.defaultShape,
           defaultLabelFormat: action.state.defaultLabelFormat,
+          defaultVisible: action.state.defaultVisible,
           defaultPosition: action.state.defaultPosition,
           defaultGroup: action.state.defaultGroup,
         },
@@ -110,6 +111,17 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       }));
       return {
         model: { ...model, defaultLabelFormat: action.labelFormat, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_BADGE_VISIBLE: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { visible: action.visible } : {}),
+      }));
+      return {
+        model: { ...model, defaultVisible: action.visible, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }

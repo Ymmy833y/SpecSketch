@@ -108,6 +108,7 @@ export type ScreenItem = {
   group?: string;
   comment?: string;
   labelFormat?: LabelFormat;
+  visible?: boolean;
 };
 
 export type ScreenState = {
@@ -117,6 +118,7 @@ export type ScreenState = {
   defaultColor: ItemColor;
   defaultShape: ItemShape;
   defaultLabelFormat: LabelFormat;
+  defaultVisible: boolean;
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 };

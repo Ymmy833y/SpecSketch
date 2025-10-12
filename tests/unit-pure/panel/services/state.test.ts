@@ -34,6 +34,7 @@ const makeState = (items: ScreenItem[], nextId: number): ScreenState => ({
   defaultColor: 'indigo' as ScreenItem['color'],
   defaultShape: 'square' as ScreenItem['shape'],
   defaultLabelFormat: 'Numbers' as ScreenState['defaultLabelFormat'],
+  defaultVisible: true,
   defaultPosition: 'left-top-outside' as ScreenItem['position'],
   defaultGroup: '',
 });
@@ -227,6 +228,74 @@ describe('panel/services/state', () => {
       expect(ungrouped.map((it) => it.label)).toEqual([1, 2]);
       expect(ungrouped.map((it) => it.anchor.value).sort()).toEqual(['#u1', '#u2'].sort());
 
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds anchors using defaults including visible (inherits state.defaultVisible); persists', async () => {
+      // Arrange
+      const i1 = makeItem(1, 1, css('#a'));
+      const state = makeState([i1], 2);
+      // flip defaultVisible to false to verify default inheritance
+      state.defaultVisible = false;
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(state);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, { added: [{ anchor: css('#x') }] });
+
+      // Assert
+      const added = next.items.find((it: ScreenItem) => it.anchor.value === '#x')!;
+      // visible should inherit from state.defaultVisible (false)
+      expect(added.visible).toBe(false);
+      // labelFormat should inherit default 'Numbers' (from defaultLabelFormat)
+      expect(added.labelFormat).toBe('Numbers');
+      expect(next.nextId).toBe(3);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds anchors with per-item overrides for visible and labelFormat; falls back to defaults when omitted', async () => {
+      // Arrange
+      const i1 = makeItem(1, 1, css('#a'));
+      const base = makeState([i1], 2);
+      // keep defaultVisible = true to check override -> false
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(base);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          {
+            anchor: css('#ovr'),
+            // override both
+            visible: false as ScreenItem['visible'],
+            labelFormat: 'LowerAlpha' as ScreenItem['labelFormat'],
+          },
+          {
+            // omit both -> should use defaults
+            anchor: css('#def'),
+          },
+        ],
+      });
+
+      // Assert
+      const ovr = next.items.find((it) => it.anchor.value === '#ovr')!;
+      expect(ovr.visible).toBe(false); // per-item override applied
+      expect(ovr.labelFormat).toBe('LowerAlpha'); // per-item override applied
+
+      const def = next.items.find((it) => it.anchor.value === '#def')!;
+      expect(def.visible).toBe(true); // falls back to state.defaultVisible
+      expect(def.labelFormat).toBe('Numbers'); // falls back to defaultLabelFormat
+
+      // labels normalized 1..n within (ungrouped) bucket
+      const ungrouped = next.items.filter((it) => (it.group ?? '') === '');
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2, 3]);
+
+      expect(next.nextId).toBe(4);
       expect(setSpy).toHaveBeenCalledTimes(1);
     });
   });

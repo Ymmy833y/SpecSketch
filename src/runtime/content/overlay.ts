@@ -151,6 +151,7 @@ const applyVisualState = (tracked: Tracked, item: ScreenItem) => {
   tracked.boxEl.className = `spsk-box spsk-box--${color}`;
   tracked.boxEl.style.setProperty('--spsk-border-w', `${item.size / 4}px`);
   tracked.boxEl.classList.toggle('badge-hidden', item.labelFormat === 'None');
+  tracked.boxEl.classList.toggle('box-hidden', item.visible === false);
 
   tracked.badgeEl.className = `spsk-badge spsk-badge--${item.shape} spsk-badge--${color} spsk-badge--${item.position}`;
   tracked.badgeEl.style.fontSize = sizePx;

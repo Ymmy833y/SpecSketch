@@ -136,8 +136,8 @@
             </div>
           </div>
 
-          <!-- color -->
           <div class="grid grid-cols-2 gap-4 items-end sm:contents">
+            <!-- color -->
             <div class="sm:col-start-2 sm:row-start-1">
               <span class="label-xs" data-i18n="label_badge_color">Badge color</span>
               <button id="badge-color-button" type="button" class="btn-field" popovertarget="badge-color-pop"
@@ -165,10 +165,11 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-[1fr_auto] gap-4 items-end sm:contents">
+          <div class="grid grid-cols-3 gap-4 items-end sm:contents">
             <!-- label format -->
             <div class="sm:col-start-1 sm:row-start-2">
-              <label for="badge-label-format-select" data-i18n="badge_label_format">Label format</label>
+              <label for="badge-label-format-select" class="label-xs" data-i18n="badge_label_format">Label
+                format</label>
               <select id="badge-label-format-select" name="labelFormat" class="select">
                 <option value="Numbers" selected data-i18n="badge_label_format_numbers">Numbers</option>
                 <option value="UpperAlpha" data-i18n="badge_label_format_upper_alpha">UpperAlpha</option>
@@ -177,10 +178,19 @@
               </select>
             </div>
 
+            <!-- visible -->
+            <div class="sm:col-start-2 sm:row-start-2">
+              <label for="badge-visible-select" class="label-xs" data-i18n="badge_visible">Visible</label>
+              <select id="badge-visible-select" name="badgeVisible" class="select">
+                <option value="true" selected data-i18n="badge_visible_show">Show</option>
+                <option value="false" data-i18n="badge_visible_hide">Hide</option>
+              </select>
+            </div>
+
             <!-- delete -->
-            <div class="sm:col-start-2 sm:col-end-4 sm:row-start-2">
-              <label for="badge-delete-select" class="label-xs" data-i18n="common_delete">Badge Delete</label>
-              <button id="badge-delete-button" type="button" class="btn-icon btn-icon--danger sm:w-full"
+            <div class="sm:col-start-3 sm:row-start-2">
+              <label for="badge-delete-button" class="label-xs" data-i18n="common_delete">Badge Delete</label>
+              <button id="badge-delete-button" type="button" class="btn-icon btn-icon--danger w-full"
                 aria-label="Delete">
                 <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fill-rule="evenodd" clip-rule="evenodd"

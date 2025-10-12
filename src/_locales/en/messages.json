@@ -30,10 +30,14 @@
   "badge_shape_circle": { "message": "Circle" },
   "badge_shape_square": { "message": "Square" },
 
+  "badge_visible": { "message": "Visible" },
+  "badge_visible_show": { "message": "Show" },
+  "badge_visible_hide": { "message": "Hide" },
+
   "badge_label_format": { "message": "Label format" },
-  "badge_label_format_numbers": { "message": "Numbers" },
-  "badge_label_format_upper_alpha": { "message": "Upper Alpha" },
-  "badge_label_format_lower_alpha": { "message": "Lower Alpha" },
+  "badge_label_format_numbers": { "message": "123..." },
+  "badge_label_format_upper_alpha": { "message": "ABC..." },
+  "badge_label_format_lower_alpha": { "message": "abc..." },
   "badge_label_format_none": { "message": "None" },
 
   "badge_position": { "message": "Badge Position" },

@@ -57,6 +57,9 @@
   --w: 0;
   --gap: 0;
 }
+.spsk-box.box-hidden {
+  display: none !important;
+}
 
 .spsk-badge {
   position: absolute;

@@ -62,6 +62,9 @@ export enum ActionType {
   /** Update default badge label format (also apply to existing items) */
   SET_BADGE_LABEL_FORMAT = 'SET_BADGE_LABEL_FORMAT',
 
+  /** Update default badge visable (also apply to existing items) */
+  SET_BADGE_VISIBLE = 'SET_BADGE_VISIBLE',
+
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
 
@@ -162,6 +165,7 @@ export type Action =
         defaultColor: ItemColor;
         defaultShape: ItemShape;
         defaultLabelFormat: LabelFormat;
+        defaultVisible: boolean;
         defaultPosition: ItemPosition;
         defaultGroup: ItemGroup;
       };
@@ -174,6 +178,7 @@ export type Action =
   | { type: ActionType.SET_BADGE_COLOR; color: ItemColor }
   | { type: ActionType.SET_BADGE_SHAPE; shape: ItemShape }
   | { type: ActionType.SET_BADGE_LABEL_FORMAT; labelFormat: LabelFormat }
+  | { type: ActionType.SET_BADGE_VISIBLE; visible: boolean }
   | { type: ActionType.SET_BADGE_POSITION; position: ItemPosition }
   | { type: ActionType.SET_CAPTURE_FORMAT; format: CaptureFormat }
   | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }

@@ -63,6 +63,7 @@ function makeState(partial?: Partial<ScreenState>): ScreenState {
     defaultColor: 'Blue',
     defaultShape: 'circle',
     defaultLabelFormat: 'Numbers',
+    defaultVisible: true,
     defaultPosition: 'left-top-outside',
     defaultGroup: UNGROUPED_VALUE,
     ...(partial ?? {}),
@@ -90,6 +91,8 @@ describe('panel/storage/tables', () => {
 
         // Assert
         expect(state).toEqual(makeState());
+        // Explicitly assert defaultVisible default
+        expect(state.defaultVisible).toBe(true);
         expect(storageSet).not.toHaveBeenCalled();
       }, 1000);
 
@@ -101,6 +104,8 @@ describe('panel/storage/tables', () => {
           defaultColor: 'Blue',
           defaultShape: 'square',
           defaultGroup: UNGROUPED_VALUE,
+          // Ensure stored false is preserved
+          defaultVisible: false,
         });
         useMemoryBackedStorage({ stateMap: { 'page-1': stored } });
 
@@ -109,6 +114,7 @@ describe('panel/storage/tables', () => {
 
         // Assert
         expect(state).toEqual(stored);
+        expect(state.defaultVisible).toBe(false);
       }, 1000);
 
       it('does not write when key is missing (read-only path)', async () => {
@@ -121,6 +127,7 @@ describe('panel/storage/tables', () => {
         // Assert
         expect(storageSet).not.toHaveBeenCalled();
         expect(state).toEqual(makeState());
+        expect(state.defaultVisible).toBe(true);
       }, 1000);
     });
 
@@ -144,12 +151,13 @@ describe('panel/storage/tables', () => {
 
         const readB = await screenStateTable.get('b');
         expect(readB).toEqual(stateB);
+        expect(readB.defaultVisible).toBe(true);
       }, 1000);
 
       it('overwrites existing key value', async () => {
         // Arrange
-        const oldState: ScreenState = makeState({ defaultShape: 'circle' });
-        const nextState: ScreenState = makeState({ defaultShape: 'square' });
+        const oldState: ScreenState = makeState({ defaultShape: 'circle', defaultVisible: true });
+        const nextState: ScreenState = makeState({ defaultShape: 'square', defaultVisible: false });
         useMemoryBackedStorage({ stateMap: { a: oldState } });
 
         // Act
@@ -161,6 +169,21 @@ describe('panel/storage/tables', () => {
 
         const readA = await screenStateTable.get('a');
         expect(readA).toEqual(nextState);
+        expect(readA.defaultVisible).toBe(false);
+      }, 1000);
+
+      it('persists defaultVisible flag (false) and reads it back', async () => {
+        // Arrange
+        const state: ScreenState = makeState({ defaultVisible: false });
+        useMemoryBackedStorage();
+
+        // Act
+        await screenStateTable.set('page-v', state);
+        const read = await screenStateTable.get('page-v');
+
+        // Assert
+        expect(storageSet).toHaveBeenCalledWith({ [SCREEN_STATE_KEY]: { 'page-v': state } });
+        expect(read.defaultVisible).toBe(false);
       }, 1000);
     });
   });

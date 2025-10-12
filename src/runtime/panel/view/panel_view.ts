@@ -58,6 +58,7 @@ export class PanelView {
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
     badgeLabelFormatSelect: HTMLSelectElement;
+    badgeVisibleSelect: HTMLSelectElement;
     badgeDeleteButton: HTMLButtonElement;
     badgePositionButtons: NodeListOf<HTMLButtonElement>;
     badgePositionLabel: HTMLSpanElement;
@@ -139,6 +140,7 @@ export class PanelView {
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
       badgeLabelFormatSelect: this.$('#badge-label-format-select'),
+      badgeVisibleSelect: this.$('#badge-visible-select'),
       badgeDeleteButton: this.$('#badge-delete-button'),
       badgePositionButtons: this.$all<HTMLButtonElement>('#badge-position-pop button'),
       badgePositionLabel: this.$('#badge-position-label'),
@@ -231,6 +233,11 @@ export class PanelView {
       const v = this.els.badgeLabelFormatSelect.value ?? null;
       const labelFormat = isLabelFormat(v) ? (v as LabelFormat) : 'Numbers';
       this.emit(UIEventType.BADGE_LABEL_FORMAT_CHANGE, { labelFormat });
+    });
+
+    this.els.badgeVisibleSelect.addEventListener('change', () => {
+      const visible = this.els.badgeVisibleSelect.value === 'true';
+      this.emit(UIEventType.BADGE_VISIBLE_CHANGE, { visible });
     });
 
     this.els.badgeDeleteButton.addEventListener('click', () => {
@@ -355,6 +362,7 @@ export class PanelView {
     this.applyBadgeColorUI(model.defaultColor);
     this.els.badgeShapeSelect.value = model.defaultShape;
     this.els.badgeLabelFormatSelect.value = model.defaultLabelFormat ?? 'Numbers';
+    this.els.badgeVisibleSelect.value = String(model.defaultVisible ?? 'true');
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
   }

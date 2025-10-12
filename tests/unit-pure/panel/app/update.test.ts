@@ -123,6 +123,36 @@ describe('panel/app/update', () => {
     expect(out.effects).toEqual([{ kind: EffectType.RENDER_CONTENT, items }]);
   });
 
+  it('RESTORE_STATE: restores defaultLabelFormat/defaultVisible and renders', () => {
+    const items = [makeItem(1, '', 1)];
+    const model = baseModel();
+    const action = {
+      type: ActionType.RESTORE_STATE,
+      state: {
+        items,
+        defaultSize: 16,
+        defaultColor: 'Green',
+        defaultShape: 'square',
+        defaultLabelFormat: 'LowerAlpha',
+        defaultVisible: false,
+        defaultPosition: 'right-bottom-outside',
+        defaultGroup: 'grp',
+      },
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.items).toEqual(items);
+    expect(out.model.defaultSize).toBe(16);
+    expect(out.model.defaultColor).toBe('Green');
+    expect(out.model.defaultShape).toBe('square');
+    expect(out.model.defaultLabelFormat).toBe('LowerAlpha');
+    expect(out.model.defaultVisible).toBe(false);
+    expect(out.model.defaultPosition).toBe('right-bottom-outside');
+    expect(out.model.defaultGroup).toBe('grp');
+    expect(out.effects).toEqual([{ kind: EffectType.RENDER_CONTENT, items }]);
+  });
+
   it('SET_MISSING_IDS: updates missingIds only', () => {
     const model = baseModel();
     const action = { type: ActionType.SET_MISSING_IDS, missingIds: [2, 4] } as unknown as Action;
@@ -816,6 +846,30 @@ describe('panel/app/update', () => {
     expect(out.model.items.find((i) => i.id === 2)?.labelFormat).toBe('UpperAlpha');
 
     // Effects: persist state and render content with updated items
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('SET_BADGE_VISIBLE: updates only selected items and persists+renders', () => {
+    // id=1 remains true, id=2 will be updated to false (selected)
+    const items = [
+      { ...(makeItem(1, '', 1) as unknown as ScreenItem), visible: true } as unknown as ScreenItem,
+      { ...(makeItem(2, '', 2) as unknown as ScreenItem), visible: true } as unknown as ScreenItem,
+    ];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const action = { type: ActionType.SET_BADGE_VISIBLE, visible: false } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Default visible flag on model is updated
+    expect(out.model.defaultVisible).toBe(false);
+
+    // Only selected item (id=2) is updated
+    expect(out.model.items.find((i) => i.id === 1)?.visible).toBe(true);
+    expect(out.model.items.find((i) => i.id === 2)?.visible).toBe(false);
+
+    // Effects: persist state and render with updated items
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
   });
