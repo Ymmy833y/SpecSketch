@@ -125,8 +125,9 @@
 
     <div class="card">
       <div class="card-head-lg">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- size -->
+          <div class="sm:col-start-1 sm:row-start-1">
             <label for="badge-size-range" class="label-xs" data-i18n="label_badge_size">Badge size (10–30px)</label>
             <div class="flex items-center gap-2">
               <input id="badge-size-range" name="badgeSize" type="range" min="10" max="30" step="2" value="14"
@@ -135,104 +136,63 @@
             </div>
           </div>
 
-          <div>
-            <div class="grid grid-cols-[1fr_1fr_auto] gap-4 items-end">
-              <div>
-                <span class="label-xs" data-i18n="label_badge_color">Badge color</span>
-                <button id="badge-color-button" type="button" class="btn-field" popovertarget="badge-color-pop"
-                  popovertargetaction="toggle" aria-haspopup="listbox" style="anchor-name: --badge-color-trigger;">
-                  <span class="flex items-center gap-2 min-w-0">
-                    <span id="badge-color-dot" class="color-dot bg-slate-500 shrink-0"></span>
-                    <span id="badge-color-label" class="text-slate-600 dark:text-slate-300 truncate">Gray</span>
-                  </span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="ml-auto h-4 w-4 opacity-60 shrink-0"
-                    viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clip-rule="evenodd" />
-                  </svg>
-                </button>
+          <!-- color -->
+          <div class="grid grid-cols-2 gap-4 items-end sm:contents">
+            <div class="sm:col-start-2 sm:row-start-1">
+              <span class="label-xs" data-i18n="label_badge_color">Badge color</span>
+              <button id="badge-color-button" type="button" class="btn-field" popovertarget="badge-color-pop"
+                popovertargetaction="toggle" aria-haspopup="listbox" style="anchor-name: --badge-color-trigger;">
+                <span class="flex items-center gap-2 min-w-0">
+                  <span id="badge-color-dot" class="color-dot bg-slate-500 shrink-0"></span>
+                  <span id="badge-color-label" class="text-slate-600 dark:text-slate-300 truncate">Gray</span>
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="ml-auto h-4 w-4 opacity-60 shrink-0" viewBox="0 0 20 20"
+                  fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
 
-                <div id="badge-color-pop" popover class="popover">
-                  <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">Pick a color</p>
-                  <div class="grid grid-cols-5 gap-2" role="listbox" aria-label="Badge color">
-                    <button type="button" role="radio" aria-selected="true" data-color-name="Gray"
-                      class="group color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span
-                        class="color-dot bg-slate-500 group-aria-selected:ring-2 group-aria-selected:ring-indigo-400"></span>
-                      <span class="text-[10px] text-slate-500">Gray</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Red"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-red-500"></span>
-                      <span class="text-[10px] text-slate-500">Red</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Orange"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-orange-500"></span>
-                      <span class="text-[10px] text-slate-500">Orange</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Green"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-green-500"></span>
-                      <span class="text-[10px] text-slate-500">Green</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Blue"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-blue-500"></span>
-                      <span class="text-[10px] text-slate-500">Blue</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Purple"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-purple-500"></span>
-                      <span class="text-[10px] text-slate-500">Purple</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Pink"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-pink-500"></span>
-                      <span class="text-[10px] text-slate-500">Pink</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Yellow"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-yellow-500"></span>
-                      <span class="text-[10px] text-slate-500">Yellow</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Lime"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-lime-500"></span>
-                      <span class="text-[10px] text-slate-500">Lime</span>
-                    </button>
-                    <button type="button" role="radio" aria-selected="false" data-color-name="Cyan"
-                      class="color-swatch-btn" popovertarget="badge-color-pop" popovertargetaction="hide">
-                      <span class="color-dot bg-cyan-500"></span>
-                      <span class="text-[10px] text-slate-500">Cyan</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label for="badge-shape-select" class="label-xs" data-i18n="badge_shape">Badge shape</label>
-                <select id="badge-shape-select" name="badgeShape" class="select">
-                  <option value="circle" selected data-i18n="badge_shape_circle">Circle</option>
-                  <option value="square" data-i18n="badge_shape_square">Square</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="badge-delete-select" class="label-xs" data-i18n="common_delete">Badge Delete</label>
-                <button id="badge-delete-button" type="button" class="btn-icon btn-icon--danger" aria-label="Delete">
-                  <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" clip-rule="evenodd"
-                      d="M7 3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h3a1 1 0 1 1 0 2h-1l-1 10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6H4a1 1 0 1 1 0-2h3V3Zm1 3a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Zm4 0a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Z" />
-                  </svg>
-                </button>
-              </div>
+            <!-- shape -->
+            <div class="sm:col-start-3 sm:row-start-1">
+              <label for="badge-shape-select" class="label-xs" data-i18n="badge_shape">Badge shape</label>
+              <select id="badge-shape-select" name="badgeShape" class="select">
+                <option value="circle" selected data-i18n="badge_shape_circle">Circle</option>
+                <option value="square" data-i18n="badge_shape_square">Square</option>
+              </select>
             </div>
           </div>
 
-          <div>
-            <div class="grid grid-cols-[1fr_auto] gap-4 items-end">
+          <div class="grid grid-cols-[1fr_auto] gap-4 items-end sm:contents">
+            <!-- label format -->
+            <div class="sm:col-start-1 sm:row-start-2">
+              <label for="badge-label-format-select" data-i18n="badge_label_format">Label format</label>
+              <select id="badge-label-format-select" name="labelFormat" class="select">
+                <option value="Numbers" selected data-i18n="badge_label_format_numbers">Numbers</option>
+                <option value="UpperAlpha" data-i18n="badge_label_format_upper_alpha">UpperAlpha</option>
+                <option value="LowerAlpha" data-i18n="badge_label_format_lower_alpha">LowerAlpha</option>
+                <option value="None" data-i18n="badge_label_format_none">None</option>
+              </select>
+            </div>
+
+            <!-- delete -->
+            <div class="sm:col-start-2 sm:col-end-4 sm:row-start-2">
+              <label for="badge-delete-select" class="label-xs" data-i18n="common_delete">Badge Delete</label>
+              <button id="badge-delete-button" type="button" class="btn-icon btn-icon--danger sm:w-full"
+                aria-label="Delete">
+                <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M7 3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h3a1 1 0 1 1 0 2h-1l-1 10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6H4a1 1 0 1 1 0-2h3V3Zm1 3a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Zm4 0a1 1 0 0 0-1 1v8a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="sm:col-start-1 sm:col-span-3 sm:row-start-3">
+            <div class="grid gap-4 items-end grid-cols-1 xs:grid-cols-2">
+              <!-- position -->
               <div>
                 <label for="badge-position-button" class="label-xs" data-i18n="badge_position">Badge Position</label>
                 <button id="badge-position-button" type="button" class="btn-field" popovertarget="badge-position-pop"
@@ -248,83 +208,9 @@
                       clip-rule="evenodd" />
                   </svg>
                 </button>
-
-                <div id="badge-position-pop" popover class="popover">
-                  <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400" data-i18n="pick_position">Pick
-                    a position</p>
-                  <div class="relative mx-auto aspect-square max-w-sm rounded-3xl text-white">
-                    <button aria-label="Top Outside" data-position-name="top-outside"
-                      class="pos-btn pos-btn--glyph absolute left-1/2 top-1 -translate-x-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Top Outside" data-position-name="right-top-outside"
-                      class="pos-btn pos-btn--glyph absolute right-2 top-4 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Outside" data-position-name="right-outside"
-                      class="pos-btn pos-btn--glyph absolute right-1 top-1/2 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Bottom Outside" data-position-name="right-bottom-outside"
-                      class="pos-btn pos-btn--glyph absolute right-2 bottom-4 translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Bottom Outside" data-position-name="bottom-outside"
-                      class="pos-btn pos-btn--glyph absolute bottom-1 left-1/2 -translate-x-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Bottom Outside" data-position-name="left-bottom-outside"
-                      class="pos-btn pos-btn--glyph absolute bottom-4 left-2 translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Outside" data-position-name="left-outside"
-                      class="pos-btn pos-btn--glyph absolute left-1 top-1/2 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Top Outside" data-position-name="left-top-outside"
-                      class="pos-btn pos-btn--glyph absolute left-2 top-4 -translate-y-1/2" data-selected="true">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-
-                    <button aria-label="Top Inside" data-position-name="top-inside"
-                      class="pos-btn pos-btn--glyph absolute left-1/2 top-9 -translate-x-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Top Inside" data-position-name="right-top-inside"
-                      class="pos-btn pos-btn--glyph absolute right-8 top-12 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Inside" data-position-name="right-inside"
-                      class="pos-btn pos-btn--glyph absolute right-8 top-1/2 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Right Bottom Inside" data-position-name="right-bottom-inside"
-                      class="pos-btn pos-btn--glyph absolute right-8 bottom-12 translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Bottom Inside" data-position-name="bottom-inside"
-                      class="pos-btn pos-btn--glyph absolute bottom-9 left-1/2 -translate-x-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Bottom Inside" data-position-name="left-bottom-inside"
-                      class="pos-btn pos-btn--glyph absolute bottom-12 left-8 translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Inside" data-position-name="left-inside"
-                      class="pos-btn pos-btn--glyph absolute left-8 top-1/2 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Left Top Inside" data-position-name="left-top-inside"
-                      class="pos-btn pos-btn--glyph absolute left-8 top-12 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                    <button aria-label="Center" data-position-name="center"
-                      class="pos-btn pos-btn--glyph absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                      <span aria-hidden="true" class="dot"></span>
-                    </button>
-                  </div>
-                </div>
               </div>
+
+              <!-- group -->
               <div>
                 <label for="badge-group-select" class="label-xs" data-i18n="badge_group">Badge group</label>
                 <select id="badge-group-select" name="badgeGroup" class="select">
@@ -351,6 +237,140 @@
       </div>
 
       <div id="select-list" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- color pop -->
+  <div id="badge-color-pop" popover class="popover">
+    <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">Pick a color</p>
+    <div class="grid grid-cols-5 gap-2" role="listbox" aria-label="Badge color">
+      <button type="button" role="radio" aria-selected="true" data-color-name="Gray" class="group color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-slate-500 group-aria-selected:ring-2 group-aria-selected:ring-indigo-400"></span>
+        <span class="text-[10px] text-slate-500">Gray</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Red" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-red-500"></span>
+        <span class="text-[10px] text-slate-500">Red</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Orange" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-orange-500"></span>
+        <span class="text-[10px] text-slate-500">Orange</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Green" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-green-500"></span>
+        <span class="text-[10px] text-slate-500">Green</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Blue" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-blue-500"></span>
+        <span class="text-[10px] text-slate-500">Blue</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Purple" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-purple-500"></span>
+        <span class="text-[10px] text-slate-500">Purple</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Pink" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-pink-500"></span>
+        <span class="text-[10px] text-slate-500">Pink</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Yellow" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-yellow-500"></span>
+        <span class="text-[10px] text-slate-500">Yellow</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Lime" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-lime-500"></span>
+        <span class="text-[10px] text-slate-500">Lime</span>
+      </button>
+      <button type="button" role="radio" aria-selected="false" data-color-name="Cyan" class="color-swatch-btn"
+        popovertarget="badge-color-pop" popovertargetaction="hide">
+        <span class="color-dot bg-cyan-500"></span>
+        <span class="text-[10px] text-slate-500">Cyan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- badge position pop -->
+  <div id="badge-position-pop" popover class="popover">
+    <p class="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400" data-i18n="pick_position">Pick
+      a position</p>
+    <div class="relative mx-auto aspect-square max-w-sm rounded-3xl text-white">
+      <button aria-label="Top Outside" data-position-name="top-outside"
+        class="pos-btn pos-btn--glyph absolute left-1/2 top-1 -translate-x-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Top Outside" data-position-name="right-top-outside"
+        class="pos-btn pos-btn--glyph absolute right-2 top-4 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Outside" data-position-name="right-outside"
+        class="pos-btn pos-btn--glyph absolute right-1 top-1/2 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Bottom Outside" data-position-name="right-bottom-outside"
+        class="pos-btn pos-btn--glyph absolute right-2 bottom-4 translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Bottom Outside" data-position-name="bottom-outside"
+        class="pos-btn pos-btn--glyph absolute bottom-1 left-1/2 -translate-x-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Bottom Outside" data-position-name="left-bottom-outside"
+        class="pos-btn pos-btn--glyph absolute bottom-4 left-2 translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Outside" data-position-name="left-outside"
+        class="pos-btn pos-btn--glyph absolute left-1 top-1/2 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Top Outside" data-position-name="left-top-outside"
+        class="pos-btn pos-btn--glyph absolute left-2 top-4 -translate-y-1/2" data-selected="true">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+
+      <button aria-label="Top Inside" data-position-name="top-inside"
+        class="pos-btn pos-btn--glyph absolute left-1/2 top-9 -translate-x-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Top Inside" data-position-name="right-top-inside"
+        class="pos-btn pos-btn--glyph absolute right-8 top-12 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Inside" data-position-name="right-inside"
+        class="pos-btn pos-btn--glyph absolute right-8 top-1/2 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Right Bottom Inside" data-position-name="right-bottom-inside"
+        class="pos-btn pos-btn--glyph absolute right-8 bottom-12 translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Bottom Inside" data-position-name="bottom-inside"
+        class="pos-btn pos-btn--glyph absolute bottom-9 left-1/2 -translate-x-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Bottom Inside" data-position-name="left-bottom-inside"
+        class="pos-btn pos-btn--glyph absolute bottom-12 left-8 translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Inside" data-position-name="left-inside"
+        class="pos-btn pos-btn--glyph absolute left-8 top-1/2 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Left Top Inside" data-position-name="left-top-inside"
+        class="pos-btn pos-btn--glyph absolute left-8 top-12 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
+      <button aria-label="Center" data-position-name="center"
+        class="pos-btn pos-btn--glyph absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <span aria-hidden="true" class="dot"></span>
+      </button>
     </div>
   </div>
 

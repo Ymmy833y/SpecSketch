@@ -7,6 +7,7 @@ type Patch = {
     size?: ScreenItem['size'];
     color?: ScreenItem['color'];
     shape?: ScreenItem['shape'];
+    labelFormat?: ScreenItem['labelFormat'];
     position?: ScreenItem['position'];
     group?: ScreenItem['group'];
     comment?: ScreenItem['comment'];
@@ -42,6 +43,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
         size: a.size ?? state.defaultSize,
         color: a.color ?? state.defaultColor,
         shape: a.shape ?? state.defaultShape,
+        labelFormat: a.labelFormat ?? 'Numbers',
         position: a.position ?? state.defaultPosition,
         group: a.group ?? state.defaultGroup,
         comment: a.comment ?? '',

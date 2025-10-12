@@ -30,6 +30,7 @@ export function update(model: Model, action: Action): { model: Model; effects: E
           defaultSize: action.state.defaultSize,
           defaultColor: action.state.defaultColor,
           defaultShape: action.state.defaultShape,
+          defaultLabelFormat: action.state.defaultLabelFormat,
           defaultPosition: action.state.defaultPosition,
           defaultGroup: action.state.defaultGroup,
         },
@@ -98,6 +99,17 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       }));
       return {
         model: { ...model, defaultShape: action.shape, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_BADGE_LABEL_FORMAT: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { labelFormat: action.labelFormat } : {}),
+      }));
+      return {
+        model: { ...model, defaultLabelFormat: action.labelFormat, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }

@@ -50,6 +50,14 @@
   pointer-events: none;
 }
 
+.spsk-box.badge-hidden .spsk-badge {
+  display: none !important;
+}
+.spsk-box.badge-hidden .spsk-comment {
+  --w: 0;
+  --gap: 0;
+}
+
 .spsk-badge {
   position: absolute;
   font:

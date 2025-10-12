@@ -792,4 +792,31 @@ describe('panel/app/update', () => {
     // No side effects
     expect(out.effects).toEqual([]);
   });
+
+  it('SET_BADGE_LABEL_FORMAT: updates only selected items and persists+renders', () => {
+    // Two items; only id=2 is selected.
+    const items = [
+      makeItem(1, '', 1 /* labelFormat intentionally omitted */),
+      makeItem(2, '', 2 /* labelFormat intentionally omitted */),
+    ];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const action = {
+      type: ActionType.SET_BADGE_LABEL_FORMAT,
+      labelFormat: 'UpperAlpha',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Default label format is updated on the model
+    expect(out.model.defaultLabelFormat).toBe('UpperAlpha');
+
+    // Only the selected item receives the new labelFormat
+    expect(out.model.items.find((i) => i.id === 1)?.labelFormat).toBeUndefined();
+    expect(out.model.items.find((i) => i.id === 2)?.labelFormat).toBe('UpperAlpha');
+
+    // Effects: persist state and render content with updated items
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
 });

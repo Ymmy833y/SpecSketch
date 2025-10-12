@@ -5,6 +5,7 @@ import type {
   ItemGroup,
   ItemPosition,
   ItemShape,
+  LabelFormat,
   ScreenItem,
   ThemeMode,
   ToastMessage,
@@ -57,6 +58,9 @@ export enum ActionType {
 
   /** Update default badge shape (also apply to existing items) */
   SET_BADGE_SHAPE = 'SET_BADGE_SHAPE',
+
+  /** Update default badge label format (also apply to existing items) */
+  SET_BADGE_LABEL_FORMAT = 'SET_BADGE_LABEL_FORMAT',
 
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
@@ -157,6 +161,7 @@ export type Action =
         defaultSize: number;
         defaultColor: ItemColor;
         defaultShape: ItemShape;
+        defaultLabelFormat: LabelFormat;
         defaultPosition: ItemPosition;
         defaultGroup: ItemGroup;
       };
@@ -168,6 +173,7 @@ export type Action =
   | { type: ActionType.SET_BADGE_SIZE; size: number }
   | { type: ActionType.SET_BADGE_COLOR; color: ItemColor }
   | { type: ActionType.SET_BADGE_SHAPE; shape: ItemShape }
+  | { type: ActionType.SET_BADGE_LABEL_FORMAT; labelFormat: LabelFormat }
   | { type: ActionType.SET_BADGE_POSITION; position: ItemPosition }
   | { type: ActionType.SET_CAPTURE_FORMAT; format: CaptureFormat }
   | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }

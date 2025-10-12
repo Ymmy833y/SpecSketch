@@ -77,6 +77,9 @@ export class PanelController {
     this.view.on(UIEventType.BADGE_SHAPE_CHANGE, ({ shape }) =>
       this.dispatch({ type: ActionType.SET_BADGE_SHAPE, shape }),
     );
+    this.view.on(UIEventType.BADGE_LABEL_FORMAT_CHANGE, ({ labelFormat }) =>
+      this.dispatch({ type: ActionType.SET_BADGE_LABEL_FORMAT, labelFormat }),
+    );
     this.view.on(UIEventType.BADGE_DELETE, () => this.dispatch({ type: ActionType.BADGE_DELETE }));
     this.view.on(UIEventType.BADGE_POSITION_SELECT, ({ position }) =>
       this.dispatch({ type: ActionType.SET_BADGE_POSITION, position }),
@@ -179,6 +182,7 @@ export class PanelController {
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultLabelFormat: this.model.defaultLabelFormat,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
@@ -191,6 +195,7 @@ export class PanelController {
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultLabelFormat: this.model.defaultLabelFormat,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
@@ -223,6 +228,7 @@ export class PanelController {
                 defaultSize: state.defaultSize,
                 defaultColor: state.defaultColor,
                 defaultShape: state.defaultShape,
+                defaultLabelFormat: state.defaultLabelFormat,
                 defaultPosition: state.defaultPosition,
                 defaultGroup: state.defaultGroup,
               },
@@ -257,6 +263,7 @@ export class PanelController {
               defaultSize: st.defaultSize,
               defaultColor: st.defaultColor,
               defaultShape: st.defaultShape,
+              defaultLabelFormat: st.defaultLabelFormat,
               defaultPosition: st.defaultPosition,
               defaultGroup: st.defaultGroup,
             },
@@ -330,6 +337,7 @@ export class PanelController {
             defaultSize: s.defaultSize,
             defaultColor: s.defaultColor,
             defaultShape: s.defaultShape,
+            defaultLabelFormat: s.defaultLabelFormat,
             defaultPosition: s.defaultPosition,
             defaultGroup: s.defaultGroup,
           },
@@ -355,6 +363,7 @@ export class PanelController {
         defaultSize: st.defaultSize,
         defaultColor: st.defaultColor,
         defaultShape: st.defaultShape,
+        defaultLabelFormat: st.defaultLabelFormat,
         defaultPosition: st.defaultPosition,
         defaultGroup: st.defaultGroup,
       },

@@ -1,4 +1,4 @@
-import type { Anchor, ScreenItem } from '@common/types';
+import type { Anchor, LabelFormat, ScreenItem } from '@common/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let mountOverlay: typeof import('@content/overlay').mountOverlay;
@@ -31,6 +31,7 @@ function makeItem(
     shape?: string;
     position?: string;
     comment?: string;
+    labelFormat?: LabelFormat;
   },
 ): ScreenItem {
   const {
@@ -40,6 +41,7 @@ function makeItem(
     shape = 'circle',
     position = 'left-top-outside',
     comment,
+    labelFormat,
   } = opts ?? {};
   return {
     id,
@@ -49,6 +51,7 @@ function makeItem(
     shape,
     position,
     comment,
+    labelFormat,
     anchor: cssAnchor(selector),
   } as unknown as ScreenItem;
 }
@@ -319,6 +322,69 @@ describe('content/overlay', () => {
       expect(shadow.querySelectorAll('.spsk-box').length).toBe(0);
       expect(findBadgeByText(shadow, '1')).toBeUndefined();
       expect(findBadgeByText(shadow, '2')).toBeUndefined();
+    }, 5000);
+
+    it('toggles .badge-hidden on the box when labelFormat is "None"', async () => {
+      // Arrange
+      document.body.innerHTML = `<div id="a"></div>`;
+      const withNone = makeItem(1, '#a', { label: 1, labelFormat: 'None' });
+
+      // Act
+      await renderItems([withNone]);
+
+      // Assert
+      const shadow = getShadow();
+      const box = shadow.querySelector('.spsk-box') as HTMLDivElement;
+      expect(box).toBeTruthy();
+      expect(box.classList.contains('badge-hidden')).toBe(true);
+    }, 5000);
+
+    it('formats labels for Numbers (default), UpperAlpha, and LowerAlpha', async () => {
+      // Arrange
+      document.body.innerHTML = `<div id="a"></div><div id="b"></div><div id="c"></div>`;
+
+      const iNumbers = makeItem(1, '#a', { label: 12 }); // default Numbers
+      const iUpper = makeItem(2, '#b', { label: 27, labelFormat: 'UpperAlpha' }); // 27 -> 'AA'
+      const iLower = makeItem(3, '#c', { label: 26, labelFormat: 'LowerAlpha' }); // 26 -> 'z'
+
+      // Act
+      await renderItems([iNumbers, iUpper, iLower]);
+
+      // Assert
+      const shadow = getShadow();
+      expect(findBadgeByText(shadow, '12')).toBeTruthy(); // Numbers
+      expect(findBadgeByText(shadow, 'AA')).toBeTruthy(); // UpperAlpha
+      expect(findBadgeByText(shadow, 'z')).toBeTruthy(); // LowerAlpha
+    }, 5000);
+
+    it('throws when label is negative (formatLabel guard)', async () => {
+      // Arrange
+      document.body.innerHTML = `<div id="a"></div>`;
+      const bad = makeItem(1, '#a', { label: -1 });
+      // Act & Assert
+      await expect(renderItems([bad])).rejects.toThrow('label must be >= 0');
+    }, 5000);
+
+    it('UpperAlpha uses Excel-style codes: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA', async () => {
+      // Arrange
+      document.body.innerHTML = `<div id="a"></div><div id="b"></div><div id="c"></div><div id="d"></div><div id="e"></div>`;
+
+      const i1 = makeItem(1, '#a', { label: 1, labelFormat: 'UpperAlpha' }); // A
+      const i26 = makeItem(2, '#b', { label: 26, labelFormat: 'UpperAlpha' }); // Z
+      const i27 = makeItem(3, '#c', { label: 27, labelFormat: 'UpperAlpha' }); // AA
+      const i52 = makeItem(4, '#d', { label: 52, labelFormat: 'UpperAlpha' }); // AZ
+      const i53 = makeItem(5, '#e', { label: 53, labelFormat: 'UpperAlpha' }); // BA
+
+      // Act
+      await renderItems([i1, i26, i27, i52, i53]);
+
+      // Assert
+      const shadow = getShadow();
+      expect(findBadgeByText(shadow, 'A')).toBeTruthy();
+      expect(findBadgeByText(shadow, 'Z')).toBeTruthy();
+      expect(findBadgeByText(shadow, 'AA')).toBeTruthy();
+      expect(findBadgeByText(shadow, 'AZ')).toBeTruthy();
+      expect(findBadgeByText(shadow, 'BA')).toBeTruthy();
     }, 5000);
   });
 

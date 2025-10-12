@@ -4,9 +4,11 @@ import {
   isItemColor,
   isItemPosition,
   isItemShape,
+  isLabelFormat,
   type ItemColor,
   ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
   ThemeMode,
   ToastMessage,
@@ -55,6 +57,7 @@ export class PanelView {
     badgeColorLabel: HTMLSpanElement;
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
+    badgeLabelFormatSelect: HTMLSelectElement;
     badgeDeleteButton: HTMLButtonElement;
     badgePositionButtons: NodeListOf<HTMLButtonElement>;
     badgePositionLabel: HTMLSpanElement;
@@ -135,6 +138,7 @@ export class PanelView {
       badgeColorLabel: this.$('#badge-color-label'),
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
+      badgeLabelFormatSelect: this.$('#badge-label-format-select'),
       badgeDeleteButton: this.$('#badge-delete-button'),
       badgePositionButtons: this.$all<HTMLButtonElement>('#badge-position-pop button'),
       badgePositionLabel: this.$('#badge-position-label'),
@@ -221,6 +225,12 @@ export class PanelView {
       const v = this.els.badgeShapeSelect.value ?? null;
       const shape = isItemShape(v) ? (v as ItemShape) : 'circle';
       this.emit(UIEventType.BADGE_SHAPE_CHANGE, { shape });
+    });
+
+    this.els.badgeLabelFormatSelect.addEventListener('change', () => {
+      const v = this.els.badgeLabelFormatSelect.value ?? null;
+      const labelFormat = isLabelFormat(v) ? (v as LabelFormat) : 'Numbers';
+      this.emit(UIEventType.BADGE_LABEL_FORMAT_CHANGE, { labelFormat });
     });
 
     this.els.badgeDeleteButton.addEventListener('click', () => {
@@ -344,6 +354,7 @@ export class PanelView {
     this.els.badgeSizeRange.value = String(model.defaultSize);
     this.applyBadgeColorUI(model.defaultColor);
     this.els.badgeShapeSelect.value = model.defaultShape;
+    this.els.badgeLabelFormatSelect.value = model.defaultLabelFormat ?? 'Numbers';
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
   }
