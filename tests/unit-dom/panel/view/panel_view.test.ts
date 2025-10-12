@@ -146,6 +146,10 @@ const basePanelHtml = () => `
       <option value="circle" selected>circle</option>
       <option value="square">square</option>
     </select>
+    <select id="badge-visible-select" name="badgeVisible">
+      <option value="true" selected>Show</option>
+      <option value="false">Hide</option>
+    </select>
     <select id="badge-label-format-select" name="labelFormat">
       <option value="Numbers">Numbers</option>
       <option value="UpperAlpha">UpperAlpha</option>
@@ -233,6 +237,7 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultColor: 'Gray' as ItemColor,
     defaultShape: 'circle' as ItemShape,
     defaultLabelFormat: 'Numbers' as LabelFormat,
+    defaultVisible: true,
     defaultPosition: 'left-top-outside' as ItemPosition,
     defaultGroup: '' as ItemGroup,
     toastMessages: [],
@@ -562,6 +567,49 @@ describe('panel/view/panel_view', () => {
     renderWithModel(v, { defaultLabelFormat: undefined as unknown as LabelFormat });
     const sel2 = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
     expect(sel2.value).toBe('Numbers');
+  });
+
+  it('emits BADGE_VISIBLE_CHANGE when badge-visible select changes ("true" / "false")', () => {
+    const v = setupView();
+    const onVisible = vi.fn();
+    v.on(UIEventType.BADGE_VISIBLE_CHANGE, onVisible);
+
+    // initial render (defaultVisible=true by helper)
+    renderWithModel(v);
+
+    const sel = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+
+    // Change to false → emits { visible:false }
+    sel.value = 'false';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ visible: boolean }>(onVisible)).toEqual({ visible: false });
+
+    // Change to true → emits { visible:true }
+    onVisible.mockClear();
+    sel.value = 'true';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ visible: boolean }>(onVisible)).toEqual({ visible: true });
+  });
+
+  it('render sets badgeVisibleSelect.value from model.defaultVisible; falls back to "true" when undefined', () => {
+    const v = setupView();
+
+    // defaultVisible=false → select value should be "false"
+    renderWithModel(v, { defaultVisible: false });
+    const selFalse = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selFalse.value).toBe('false');
+
+    // defaultVisible undefined → coalesces to 'true' in implementation
+    renderWithModel(v, { defaultVisible: undefined as unknown as boolean });
+    const selUndef = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selUndef.value).toBe('true');
+
+    // defaultVisible=true → select value should be "true"
+    renderWithModel(v, { defaultVisible: true });
+    const selTrue = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selTrue.value).toBe('true');
   });
 
   it('renders grouped list (ungrouped first) and handles group/overall selection', () => {

@@ -80,6 +80,9 @@ export class PanelController {
     this.view.on(UIEventType.BADGE_LABEL_FORMAT_CHANGE, ({ labelFormat }) =>
       this.dispatch({ type: ActionType.SET_BADGE_LABEL_FORMAT, labelFormat }),
     );
+    this.view.on(UIEventType.BADGE_VISIBLE_CHANGE, ({ visible }) =>
+      this.dispatch({ type: ActionType.SET_BADGE_VISIBLE, visible }),
+    );
     this.view.on(UIEventType.BADGE_DELETE, () => this.dispatch({ type: ActionType.BADGE_DELETE }));
     this.view.on(UIEventType.BADGE_POSITION_SELECT, ({ position }) =>
       this.dispatch({ type: ActionType.SET_BADGE_POSITION, position }),
@@ -183,6 +186,7 @@ export class PanelController {
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
             defaultLabelFormat: this.model.defaultLabelFormat,
+            defaultVisible: this.model.defaultVisible,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
@@ -196,6 +200,7 @@ export class PanelController {
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
             defaultLabelFormat: this.model.defaultLabelFormat,
+            defaultVisible: this.model.defaultVisible,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
@@ -229,6 +234,7 @@ export class PanelController {
                 defaultColor: state.defaultColor,
                 defaultShape: state.defaultShape,
                 defaultLabelFormat: state.defaultLabelFormat,
+                defaultVisible: state.defaultVisible,
                 defaultPosition: state.defaultPosition,
                 defaultGroup: state.defaultGroup,
               },
@@ -264,6 +270,7 @@ export class PanelController {
               defaultColor: st.defaultColor,
               defaultShape: st.defaultShape,
               defaultLabelFormat: st.defaultLabelFormat,
+              defaultVisible: st.defaultVisible,
               defaultPosition: st.defaultPosition,
               defaultGroup: st.defaultGroup,
             },
@@ -338,6 +345,7 @@ export class PanelController {
             defaultColor: s.defaultColor,
             defaultShape: s.defaultShape,
             defaultLabelFormat: s.defaultLabelFormat,
+            defaultVisible: s.defaultVisible,
             defaultPosition: s.defaultPosition,
             defaultGroup: s.defaultGroup,
           },
@@ -364,6 +372,7 @@ export class PanelController {
         defaultColor: st.defaultColor,
         defaultShape: st.defaultShape,
         defaultLabelFormat: st.defaultLabelFormat,
+        defaultVisible: st.defaultVisible,
         defaultPosition: st.defaultPosition,
         defaultGroup: st.defaultGroup,
       },

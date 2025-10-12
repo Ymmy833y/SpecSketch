@@ -386,6 +386,31 @@ describe('content/overlay', () => {
       expect(findBadgeByText(shadow, 'AZ')).toBeTruthy();
       expect(findBadgeByText(shadow, 'BA')).toBeTruthy();
     }, 5000);
+
+    it('toggles .box-hidden on the box when visible is false', async () => {
+      // Arrange
+      document.body.innerHTML = `<div id="a"></div>`;
+      const hidden = makeItem(1, '#a', { label: 1 });
+      // Add the visibility flag without changing makeItem's type signature
+      (hidden as unknown as { visible: boolean }).visible = false;
+
+      // Act
+      await renderItems([hidden]);
+
+      // Assert: box has .box-hidden
+      const shadow = getShadow();
+      const box = shadow.querySelector('.spsk-box') as HTMLDivElement;
+      expect(box).toBeTruthy();
+      expect(box.classList.contains('box-hidden')).toBe(true);
+
+      // Act: same id becomes visible (true or omitted means "shown")
+      const shown = makeItem(1, '#a', { label: 1 });
+      (shown as unknown as { visible: boolean }).visible = true;
+      await renderItems([shown]);
+
+      // Assert: .box-hidden is removed
+      expect(box.classList.contains('box-hidden')).toBe(false);
+    }, 5000);
   });
 
   describe('getMissingIds', () => {

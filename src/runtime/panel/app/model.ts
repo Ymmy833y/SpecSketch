@@ -28,6 +28,7 @@ export type Model = {
   defaultColor: ItemColor;
   defaultShape: ItemShape;
   defaultLabelFormat: LabelFormat;
+  defaultVisible: boolean;
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 
@@ -57,6 +58,7 @@ export const initialModel: Model = {
   defaultColor: 'Blue',
   defaultShape: 'circle',
   defaultLabelFormat: 'Numbers',
+  defaultVisible: true,
   defaultPosition: 'left-top-outside',
   defaultGroup: UNGROUPED_VALUE,
   capture: {
