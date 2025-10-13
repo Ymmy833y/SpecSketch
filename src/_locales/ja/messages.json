@@ -64,6 +64,7 @@
   "hint_theme_note": { "message": "テーマを切り替えると、このパネルの見た目が即時に更新されます。" },
   "setting_import": { "message": "インポート" },
   "setting_store_pages": { "message": "保存ページ" },
+  "setting_store_pages_empty": { "message": "保存されたページはありません。" },
 
   "import_succeeded_with_count": {
     "message": "インポートが正常に完了しました。$1 件の要素を追加しました。"

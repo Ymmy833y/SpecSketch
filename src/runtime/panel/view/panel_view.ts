@@ -459,9 +459,12 @@ export class PanelView {
     const toggleBtn = this.el('button', 'select-item-gh-toggle') as HTMLButtonElement;
     toggleBtn.type = 'button';
     toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
-    const { d, viewBox } = isCollapsed ? getIcon('caretRight') : getIcon('caretDown');
-    const toggleIcon = this.createSvgIcon(d, { className: 'icon-sm', viewBox });
-    const togglePath = toggleIcon.querySelector('path') as SVGPathElement;
+
+    const iconSpec = isCollapsed ? getIcon('caretRight') : getIcon('caretDown');
+    const toggleIcon = this.createSvgIcon(iconSpec.d, {
+      className: 'icon-sm',
+      viewBox: iconSpec.viewBox,
+    });
     toggleBtn.append(toggleIcon);
 
     header.append(left, count, toggleBtn);
@@ -481,12 +484,24 @@ export class PanelView {
       if (currentlyCollapsed) {
         this.collapsedGroups.delete(gKey);
         ul.classList.remove('hidden');
-        togglePath.setAttribute('d', getIcon('caretDown').d);
+
+        const spec = getIcon('caretDown');
+        const icon = this.createSvgIcon(spec.d, {
+          className: 'icon-sm',
+          viewBox: spec.viewBox,
+        });
+        toggleBtn.replaceChildren(icon);
         toggleBtn.setAttribute('aria-expanded', 'true');
       } else {
         this.collapsedGroups.add(gKey);
         ul.classList.add('hidden');
-        togglePath.setAttribute('d', getIcon('caretRight').d);
+
+        const spec = getIcon('caretRight');
+        const icon = this.createSvgIcon(spec.d, {
+          className: 'icon-sm',
+          viewBox: spec.viewBox,
+        });
+        toggleBtn.replaceChildren(icon);
         toggleBtn.setAttribute('aria-expanded', 'false');
       }
     });
@@ -899,7 +914,7 @@ export class PanelView {
   }
 
   private createSvgIcon(
-    d: string,
+    d: string | ReadonlyArray<string>,
     opts: { className?: string; viewBox?: string; variant?: 'solid' | 'outline' } = {},
   ): SVGSVGElement {
     const svgNS = 'http://www.w3.org/2000/svg';
@@ -908,20 +923,23 @@ export class PanelView {
     svg.setAttribute('aria-hidden', 'true');
     if (opts.className) svg.setAttribute('class', opts.className);
 
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', d);
+    const paths = Array.isArray(d) ? d : [d];
+    for (const seg of paths) {
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('d', seg);
 
-    if (opts.variant === 'outline') {
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', 'currentColor');
-      path.setAttribute('stroke-width', '1.5');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-    } else {
-      path.setAttribute('fill', 'currentColor');
+      if (opts.variant === 'outline') {
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+      } else {
+        path.setAttribute('fill', 'currentColor');
+      }
+
+      svg.appendChild(path);
     }
-
-    svg.appendChild(path);
     return svg;
   }
 }
