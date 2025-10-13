@@ -922,7 +922,7 @@ describe('panel/view/panel_view', () => {
     expect(opts[1]!.selected).toBe(true);
   });
 
-  it('selecting NEW_GROUP shows modal and emits SET_GROUP, then create button emits new group and hides modal', () => {
+  it('selecting NEW_GROUP opens modal without emitting; clicking create emits new group and hides modal', () => {
     const v = setupView();
     const onSetGroup = vi.fn();
     v.on(UIEventType.SET_GROUP, onSetGroup);
@@ -931,27 +931,28 @@ describe('panel/view/panel_view', () => {
     renderWithModel(v, { items, defaultGroup: '__ungrouped__' });
 
     const sel = document.querySelector('#badge-group-select') as HTMLSelectElement;
-    // Select Create(option value="__newgroup__")
-    const createOpt = Array.from(sel.options).find((o) => o.textContent === 'Create')!;
-    sel.value = createOpt.value;
+
+    // Select the "Create" option by value (avoid relying on i18n text)
+    sel.value = '__newgroup__';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // First, it is emitted with the NEW_GROUP value and displayed modally.
-    expect(onSetGroup).toHaveBeenCalled();
-    const first = lastCallArg<{ group: string }>(onSetGroup)!;
-    expect(first.group).toBe('__newgroup__');
+    // Expect: no SET_GROUP is emitted yet; only the modal is opened
     const modal = document.querySelector('#group-name-modal') as HTMLDivElement;
     expect(modal).not.toHaveClass('hidden');
+    expect(onSetGroup).not.toHaveBeenCalled();
 
-    // Enter → Confirm with Create button
+    // Fill the input and click the "Create" button
     const input = document.querySelector('#group-name-input') as HTMLInputElement;
     input.value = 'MyGroup';
     const createBtn = document.querySelector('#group-name-create-btn') as HTMLButtonElement;
     createBtn.click();
 
-    // Emit with real group name & close modal
+    // Expect: SET_GROUP is emitted once with the entered group name
+    expect(onSetGroup).toHaveBeenCalledTimes(1);
     const final = lastCallArg<{ group: string }>(onSetGroup)!;
     expect(final.group).toBe('MyGroup');
+
+    // Expect: modal is closed and input is cleared
     expect(modal).toHaveClass('hidden');
     expect(input.value).toBe('');
   });

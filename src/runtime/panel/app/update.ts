@@ -409,11 +409,14 @@ function updateGroupAndDeferRelabel(
 ): ScreenItem[] {
   const normalize = (g?: string) => (g ?? '').trim();
   const nextGroup = normalize(nextGroupRaw);
-  let updateItemCnt = 0;
+
+  // Assign temporary huge labels so selected items sort to the end; we re-label later.
+  const tempLabelBase = Number.MAX_SAFE_INTEGER - items.length;
+
   const sortedItems = sortScreenItemsByGroupAndLabel(items);
-  return sortedItems.map((item) => {
+  return sortedItems.map((item, index) => {
     if (selectItems.includes(item.id) && item.group !== nextGroup) {
-      const label = Number.MAX_SAFE_INTEGER - updateItemCnt++;
+      const label = tempLabelBase + index; // keep relative order
       return { ...item, group: nextGroup, label };
     }
     return item;

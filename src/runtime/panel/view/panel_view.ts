@@ -257,6 +257,7 @@ export class PanelView {
       const group = value === UNGROUPED ? UNGROUPED_VALUE : value;
       if (group === this.NEW_GROUP) {
         this.els.groupNameModal.classList.remove('hidden');
+        return;
       }
       this.emit(UIEventType.SET_GROUP, { group });
     });
