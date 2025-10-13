@@ -968,25 +968,34 @@ describe('panel/view/panel_view', () => {
     )!;
     const toggleBtn = section.querySelector('button.select-item-gh-toggle') as HTMLButtonElement;
     const ul = section.querySelector('ul') as HTMLUListElement;
-    const path = toggleBtn.querySelector('svg path') as SVGPathElement;
+
+    const getCaretD = () => {
+      const svg = toggleBtn.querySelector('svg')!;
+      const ds = Array.from(svg.querySelectorAll('path')).map((p) => p.getAttribute('d') ?? '');
+      return ds.join('|');
+    };
 
     // Expanded state
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
     expect(ul).not.toHaveClass('hidden');
-    const d1 = path.getAttribute('d');
+    const d1 = getCaretD();
+    expect(d1).toBeTruthy();
 
     // Click to collapse
     toggleBtn.click();
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
     expect(ul).toHaveClass('hidden');
-    const d2 = path.getAttribute('d');
-    expect(d2).not.toBeNull();
-    expect(d2).not.toEqual(d1);
+    const d2 = getCaretD();
+    expect(d2).toBeTruthy();
+    expect(d2).not.toEqual(d1); // caretDown -> caretRight
 
     // Click again to expand
     toggleBtn.click();
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
     expect(ul).not.toHaveClass('hidden');
+    const d3 = getCaretD();
+    expect(d3).toBeTruthy();
+    expect(d3).toEqual(d1);
   });
 
   it('hover-in is suppressed for missing items and during drag operation', () => {
