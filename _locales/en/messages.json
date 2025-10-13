@@ -64,6 +64,7 @@
   "hint_theme_note": { "message": "Switching theme updates this panel’s appearance." },
   "setting_import": { "message": "Import" },
   "setting_store_pages": { "message": "Saved Pages" },
+  "setting_store_pages_empty": { "message": "No saved pages yet." },
 
   "import_succeeded_with_count": {
     "message": "Import completed successfully. Added $1 items."
