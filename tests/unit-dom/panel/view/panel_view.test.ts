@@ -342,6 +342,8 @@ describe('panel/view/panel_view', () => {
     // JPEG-only is disabled in the UI because format=png
     expect(c.jpegNum).toBeDisabled();
     expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableIgnoreOnly = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
 
     // CONNECTING → The rules are the same as for DISCONNECTED (only ignore is valid)
     renderWithModel(v, {
@@ -361,6 +363,8 @@ describe('panel/view/panel_view', () => {
     expect(c.themeLight).not.toBeDisabled();
     expect(c.jpegNum).toBeDisabled();
     expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableIgnoreOnly = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
 
     // RESTRICTED → All disabled (including ignore)
     renderWithModel(v, {
@@ -380,6 +384,8 @@ describe('panel/view/panel_view', () => {
     expect(c.themeLight).toBeDisabled();
     expect(c.jpegNum).toBeDisabled();
     expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableNone = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
 
     // CONNECTED → All are valid (however, JPEG-only is disabled by UI specification because format=png)
     renderWithModel(v, {
@@ -400,6 +406,8 @@ describe('panel/view/panel_view', () => {
     // PNG → JPEG-only is still disabled in the UI.
     expect(c.jpegNum).toBeDisabled();
     expect(c.jpegRange).toBeDisabled();
+    // list does NOT have inert (enableAll = true)
+    expect(document.querySelector('#select-list')).not.toHaveAttribute('inert');
   });
 
   it('emits toggle/clear/capture button events', () => {
