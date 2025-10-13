@@ -41,10 +41,12 @@
 - [User Guide](#user-guide)
   - [Select / Unselect Elements](#select--unselect-elements)
   - [Badge Tuning](#badge-tuning)
-    - [Color / Shape / Size](#color--shape--size)
+    - [Color / Shape / Size / Label Format / Visibility](#color--shape--size--label-format--visibility)
     - [Position](#position)
   - [Numbering, Grouping, Comments](#numbering-grouping-comments)
   - [Capture](#capture)
+  - [Import / Export](#import--export)
+  - [Theme](#theme)
 - [Permissions \& Data](#permissions--data)
   - [Granted Permissions](#granted-permissions)
   - [Stored Data \& Privacy](#stored-data--privacy)
@@ -144,27 +146,46 @@
 
 ### Badge Tuning
 
-#### Color / Shape / Size
-
+#### Color / Shape / Size / Label Format / Visibility
 <table>
   <thead>
     <tr>
-      <th>Setting</th>
+      <th>Item</th>
       <th>Options</th>
+      <th>Notes</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>🎨 Color</td>
       <td>Gray / Red / Orange / Green / Blue / Purple / Pink / Yellow / Lime / Cyan</td>
+      <td></td>
     </tr>
     <tr>
       <td>⬛ Shape</td>
       <td>Circle / Square</td>
+      <td></td>
     </tr>
     <tr>
-      <td>🔠 Size</td>
+      <td>📏 Size</td>
       <td>10px – 30px</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>🔠 Label Format</td>
+      <td>Numbers (123…) / Uppercase letters (ABC…) / Lowercase letters (abc…) / None</td>
+      <td>
+        Selecting <b>“None”</b> hides <b>only the badge</b>.<br>
+        Comments remain visible.
+      </td>
+    </tr>
+    <tr>
+      <td>👁️ Visibility</td>
+      <td>Show / Hide</td>
+      <td>
+        Selecting <b>“Hide”</b> hides <b>both the badge and the comment</b>.<br>
+        The data is retained and can be shown again later.
+      </td>
     </tr>
   </tbody>
 </table>
@@ -207,6 +228,37 @@
     <tr><td>Scale</td><td>0.5 ~ 2.0</td><td>Higher scale = sharper image, larger file size</td></tr>
   </tbody>
 </table>
+
+### Import / Export
+
+You can export and import saved data per page in JSON format.
+
+**Export**
+- Outputs a single file per page containing the selected items (badge settings, comments, etc.).
+
+**Import (merge behavior)**
+- Matches against existing data by <b>anchor ({ kind, version, value }</b>). If a <b>matching anchor already exists, it will neither add nor overwrite</b> (duplicates are skipped).
+- The page’s existing visual settings—<b>size / label format / color, etc.</b>—<b>take precedence</b>.
+- Therefore, if you <b>want the import file to take precedence</b>, <b>delete</b> the corresponding elements from the page first, then import.
+
+> [!note]
+> - Import works in a “add-if-new / skip-duplicates” safe mode.<br>
+> - Useful when you want to keep the page’s visual settings while importing only the item data.
+
+<p align="center">
+  <img src="./.github/assets/setting-modal-overview.png" alt="Spec Sketch overview" width="860" style="max-width:100%;border-radius:12px;">
+</p>
+
+### Theme
+
+Choose from three options:
+
+- **Light** — Always use the light theme
+- **Dark** — Always use the dark theme
+- **Device** — Follow the OS / browser setting
+
+> [!tip]
+> Select <b>“Device”</b> if you want the theme to match your environment by default.
 
 ---
 
