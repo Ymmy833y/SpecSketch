@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer components {
+  [inert] {
+    @apply cursor-not-allowed select-none opacity-60;
+    filter: grayscale(0.3);
+  }
+  [inert] * {
+    cursor: not-allowed !important;
+  }
+
   button, select, input, textarea {
     @apply disabled:bg-slate-100 dark:disabled:bg-slate-800/50
            disabled:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60;

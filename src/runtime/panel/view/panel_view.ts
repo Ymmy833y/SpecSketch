@@ -720,6 +720,7 @@ export class PanelView {
         (enableNone && false);
       el.disabled = !shouldEnable;
     });
+    this.els.list.toggleAttribute('inert', enableNone || enableIgnoreOnly);
   }
   private applyCaptureOptionsToggleUI(expanded: boolean) {
     this.els.captureOptionsToggle.setAttribute('aria-expanded', String(expanded));
