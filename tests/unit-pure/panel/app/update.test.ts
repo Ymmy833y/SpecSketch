@@ -588,19 +588,15 @@ describe('panel/app/update', () => {
     expect(out.effects).toEqual([]);
   });
 
-  it('SET_GROUP: updates selected items group, defers relabel with large numbers, then persists+renders', () => {
+  it('SET_GROUP: keeps old group label order when deferring relabel', () => {
     // Targets are id:1 and id:2.
-    // Because processing occurs after sorting (first-seen group → ascending label),
-    // reassignment runs in the order label=1 (id=1) → label=2 (id=2) within group A.
-    // Therefore, id=1 receives the larger temporary label (MAX_SAFE_INTEGER).
-    const items = [makeItem(1, 'A', 1), makeItem(2, 'A', 2), makeItem(3, 'B', 1)];
+    const items = [makeItem(1, 'A', 2), makeItem(2, 'A', 1), makeItem(3, 'B', 1)];
     const model = baseModel({ items, selectItems: [1, 2] });
     const action = { type: ActionType.SET_GROUP, group: 'B' } as unknown as Action;
 
     const out = update(model, action);
 
-    expect(norm).toHaveBeenCalled();
-    // The default group will contain the passed value.
+    expect(norm).toHaveBeenCalled(); // normalizeGroupLabelsAndCountUngrouped() was invoked
     expect(out.model.defaultGroup).toBe('B');
 
     const after = out.model.items;
@@ -608,18 +604,19 @@ describe('panel/app/update', () => {
     const s2 = after.find((i) => i.id === 2)!;
     const other = after.find((i) => i.id === 3)!;
 
+    // All items end up in group B (selected moved from A->B, the existing B remains B)
     expect(s1.group).toBe('B');
     expect(s2.group).toBe('B');
     expect(other.group).toBe('B');
 
-    // The label is overwritten with very large temporary values before normalization.
+    // Temporary labels should be very large before any subsequent compaction step.
     const THRESHOLD = 1e12;
     expect(s1.label).toBeGreaterThan(THRESHOLD);
     expect(s2.label).toBeGreaterThan(THRESHOLD);
 
-    // New rule: processed in group/label order -> id=1 is processed before id=2,
-    // so s1.label (MAX_SAFE_INTEGER) > s2.label (MAX_SAFE_INTEGER - 1).
-    expect(s1.label).toBeGreaterThan(s2.label);
+    // Because id:2 (old label=1) is processed BEFORE id:1 (old label=2),
+    // id:2 must receive the SMALLER temporary label: (base + 0) < (base + 1).
+    expect(s2.label).toBeLessThan(s1.label);
 
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
