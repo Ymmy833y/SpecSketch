@@ -1,6 +1,7 @@
 import { type ScreenItem, UNGROUPED_VALUE } from '@common/types';
+import { sortScreenItemsByGroupAndLabel } from '@common/utils';
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
-import { STATUS } from '@panel/view/status';
+import { STATUS } from '@panel/types/status';
 
 import { Action, ActionType } from '../types/action_types';
 import { Effect, EffectType } from '../types/effect_types';
@@ -10,7 +11,7 @@ import type { Model } from './model';
 export function update(model: Model, action: Action): { model: Model; effects: Effect[] } {
   switch (action.type) {
     case ActionType.INIT:
-      return { model, effects: [] };
+      return { model, effects: [{ kind: EffectType.SET_THEME }] };
 
     case ActionType.CONNECTED:
       return { model: { ...model, tabId: action.tabId, pageKey: action.pageKey }, effects: [] };
@@ -30,6 +31,8 @@ export function update(model: Model, action: Action): { model: Model; effects: E
           defaultSize: action.state.defaultSize,
           defaultColor: action.state.defaultColor,
           defaultShape: action.state.defaultShape,
+          defaultLabelFormat: action.state.defaultLabelFormat,
+          defaultVisible: action.state.defaultVisible,
           defaultPosition: action.state.defaultPosition,
           defaultGroup: action.state.defaultGroup,
         },
@@ -98,6 +101,28 @@ export function update(model: Model, action: Action): { model: Model; effects: E
       }));
       return {
         model: { ...model, defaultShape: action.shape, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_BADGE_LABEL_FORMAT: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { labelFormat: action.labelFormat } : {}),
+      }));
+      return {
+        model: { ...model, defaultLabelFormat: action.labelFormat, items },
+        effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
+      };
+    }
+
+    case ActionType.SET_BADGE_VISIBLE: {
+      const items = model.items.map((it) => ({
+        ...it,
+        ...(model.selectItems.includes(it.id) ? { visible: action.visible } : {}),
+      }));
+      return {
+        model: { ...model, defaultVisible: action.visible, items },
         effects: [{ kind: EffectType.PERSIST_STATE }, { kind: EffectType.RENDER_CONTENT, items }],
       };
     }
@@ -268,6 +293,64 @@ export function update(model: Model, action: Action): { model: Model; effects: E
         effects: [{ kind: EffectType.TOGGLE_SELECT_ON_CONTENT, enabled: false }],
       };
 
+    case ActionType.SET_THEME:
+      return {
+        model: { ...model, theme: action.theme },
+        effects: [],
+      };
+    case ActionType.UPDATE_THEME:
+      return {
+        model: { ...model, theme: action.theme },
+        effects: [{ kind: EffectType.UPDATE_THEME, theme: action.theme }],
+      };
+    case ActionType.STORE_RELOAD_REQUESTED:
+      return {
+        model,
+        effects: [{ kind: EffectType.READ_SCREEN_STATE_STORE }],
+      };
+    case ActionType.STORE_RELOAD_SUCCEEDED:
+      return {
+        model: { ...model, pageKeys: action.pageKeys },
+        effects: [],
+      };
+    case ActionType.IMPORT_SCREAN_STATE_FILE:
+      return {
+        model,
+        effects: [{ kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: action.file }],
+      };
+    case ActionType.IMPORT_SUCCEEDED:
+      return {
+        model: { ...model, toastMessages: action.toastMessages },
+        effects: [],
+      };
+    case ActionType.IMPORT_FAILED:
+      return {
+        model: { ...model, toastMessages: action.toastMessages },
+        effects: [],
+      };
+    case ActionType.TOAST_DISMISS_REQUESTED: {
+      const toastMessages = model.toastMessages.filter((t) => t.uuid !== action.uuid);
+      return {
+        model: { ...model, toastMessages },
+        effects: [],
+      };
+    }
+    case ActionType.REMOVE_SCREEN_STATE_BY_PAGE:
+      return {
+        model,
+        effects: [
+          { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY, pageKey: action.pageKey },
+        ],
+      };
+
+    case ActionType.EXPORT_SCREEN_STATE_BY_PAGE:
+      return {
+        model,
+        effects: [{ kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: action.pageKey }],
+      };
+    case ActionType.EXPORT_FAILED:
+      return { model, effects: [{ kind: EffectType.NOTIFY_ERROR, error: action.error }] };
+
     default:
       return { model, effects: [] };
   }
@@ -326,16 +409,18 @@ function updateGroupAndDeferRelabel(
 ): ScreenItem[] {
   const normalize = (g?: string) => (g ?? '').trim();
   const nextGroup = normalize(nextGroupRaw);
-  let updateItemCnt = 0;
-  return items
-    .sort((a, b) => b.id - a.id)
-    .map((item) => {
-      if (selectItems.includes(item.id) && item.group !== nextGroup) {
-        const label = Number.MAX_SAFE_INTEGER - updateItemCnt++;
-        return { ...item, group: nextGroup, label };
-      }
-      return item;
-    });
+
+  // Assign temporary huge labels so selected items sort to the end; we re-label later.
+  const tempLabelBase = Number.MAX_SAFE_INTEGER - items.length;
+
+  const sortedItems = sortScreenItemsByGroupAndLabel(items);
+  return sortedItems.map((item, index) => {
+    if (selectItems.includes(item.id) && item.group !== nextGroup) {
+      const label = tempLabelBase + index; // keep relative order
+      return { ...item, group: nextGroup, label };
+    }
+    return item;
+  });
 }
 
 function applyItemSelectionChangedById(id: number, isCheck: boolean, selectItems: number[]) {

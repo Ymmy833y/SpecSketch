@@ -1,21 +1,11 @@
 import { type Anchor, type ScreenItem, type ScreenState } from '@common/types';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('@panel/state/store', () => {
-  return {
-    getState: vi.fn(async (_key: string) => {
-      throw new Error('getState mock is not seeded for this test');
-    }),
-    setState: vi.fn(async (_key: string, _s: ScreenState) => undefined),
-  };
-});
-
 import {
   applyPatch,
   handleSelected,
   normalizeGroupLabelsAndCountUngrouped,
 } from '@panel/services/state';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable } from '@panel/storage/tables';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ---- Test helpers ------------------------------------------------------------
 const PAGE = 'pg-1';
@@ -43,6 +33,8 @@ const makeState = (items: ScreenItem[], nextId: number): ScreenState => ({
   defaultSize: 16 as ScreenItem['size'],
   defaultColor: 'indigo' as ScreenItem['color'],
   defaultShape: 'square' as ScreenItem['shape'],
+  defaultLabelFormat: 'Numbers' as ScreenState['defaultLabelFormat'],
+  defaultVisible: true,
   defaultPosition: 'left-top-outside' as ScreenItem['position'],
   defaultGroup: '',
 });
@@ -59,7 +51,10 @@ describe('panel/services/state', () => {
       const i2 = makeItem(2, 2, css('#b'));
       const i3 = makeItem(3, 3, css('#c'));
       const initial = makeState([i1, i2, i3], 4);
-      vi.mocked(getState).mockResolvedValueOnce(initial);
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(initial);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, { removedIds: [2] });
@@ -68,9 +63,10 @@ describe('panel/services/state', () => {
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2]);
 
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
-      const persisted = vi.mocked(setState).mock.calls[0]?.[1] as ScreenState;
-      expect(persisted.items.map((it: ScreenItem) => it.id)).toEqual([1, 3]);
+      expect(getSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      const persisted = setSpy.mock.calls[0]?.[1] as ScreenState;
+      expect(persisted.items.map((it) => it.id)).toEqual([1, 3]);
     });
 
     it('adds anchors using defaults, normalizes labels, advances nextId, and persists', async () => {
@@ -78,7 +74,10 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
 
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, {
@@ -96,22 +95,208 @@ describe('panel/services/state', () => {
       expect(addedX.shape).toBe(next.defaultShape);
       expect(addedX.position).toBe(next.defaultPosition);
       expect(addedX.group ?? '').toBe(next.defaultGroup);
+      // Assert labelFormat default to 'Numbers' when omitted
+      expect(addedX.labelFormat).toBe('Numbers');
 
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      const addedY = next.items.find((it: ScreenItem) => it.anchor.value === '#y')!;
+      // Assert labelFormat default for the other added item as well
+      expect(addedY.labelFormat).toBe('Numbers');
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
 
     it('handles empty patch by normalizing and persisting (no material change)', async () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState).mockResolvedValueOnce(makeState([i1, i2], 3));
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await applyPatch(PAGE, {});
 
       // Assert
       expect(next.items.map((it: ScreenItem) => it.id)).toEqual([1, 2]);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds anchors with per-item overrides; falls back to defaults when omitted; persists', async () => {
+      // Arrange
+      const iA1 = makeItem(1, 1, css('#a'), 'A'); // group A
+      const iU1 = makeItem(2, 1, css('#b')); // ungrouped
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([iA1, iU1], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          {
+            anchor: css('#a2'),
+            size: 24 as ScreenItem['size'],
+            color: 'lime' as ScreenItem['color'],
+            shape: 'circle' as ScreenItem['shape'],
+            position: 'right-bottom-inside' as ScreenItem['position'],
+            group: 'A',
+            comment: 'note',
+            labelFormat: 'UpperAlpha' as ScreenItem['labelFormat'],
+          },
+          {
+            // no overrides -> should use defaults
+            anchor: css('#u2'),
+          },
+        ],
+      });
+
+      // Assert: length / nextId
+      expect(next.items).toHaveLength(4);
+      expect(next.nextId).toBe(5);
+
+      // overrides item (#a2)
+      const a2 = next.items.find((it) => it.anchor.value === '#a2')!;
+      expect(a2.size).toBe(24);
+      expect(a2.color).toBe('lime');
+      expect(a2.shape).toBe('circle');
+      expect(a2.position).toBe('right-bottom-inside');
+      expect(a2.group).toBe('A');
+      expect(a2.comment).toBe('note');
+      expect(a2.labelFormat).toBe('UpperAlpha');
+
+      // defaulted item (#u2)
+      const u2 = next.items.find((it) => it.anchor.value === '#u2')!;
+      expect(u2.size).toBe(next.defaultSize);
+      expect(u2.color).toBe(next.defaultColor);
+      expect(u2.shape).toBe(next.defaultShape);
+      expect(u2.position).toBe(next.defaultPosition);
+      expect(u2.group ?? '').toBe(next.defaultGroup);
+      expect(u2.comment).toBe('');
+      expect(u2.labelFormat).toBe('Numbers');
+
+      // labels normalized by group
+      const groupA = next.items
+        .filter((it) => (it.group ?? '') === 'A')
+        .sort((a, b) => a.label - b.label);
+      expect(groupA.map((it) => it.anchor.value)).toEqual(['#a', '#a2']);
+      expect(groupA.map((it) => it.label)).toEqual([1, 2]);
+
+      const ungrouped = next.items
+        .filter((it) => (it.group ?? '') === '')
+        .sort((a, b) => a.label - b.label);
+      expect(ungrouped.map((it) => it.anchor.value)).toEqual(['#b', '#u2']);
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2]);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds into mixed groups and normalizes labels per group independently', async () => {
+      // Arrange
+      const a1 = makeItem(1, 2, css('#a1'), 'A'); // label will be normalized
+      const a2 = makeItem(2, 1, css('#a0'), 'A');
+      const u1 = makeItem(3, 3, css('#u1')); // ungrouped
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(makeState([a1, a2, u1], 4));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          { anchor: css('#a3'), group: 'A' }, // goes to group A
+          { anchor: css('#u2') }, // goes to ungrouped
+        ],
+      });
+
+      // Assert: nextId advanced by 2
+      expect(next.nextId).toBe(6);
+
+      // Group A should be relabeled 1..3
+      const groupA = next.items
+        .filter((it) => (it.group ?? '') === 'A')
+        .sort((a, b) => a.label - b.label);
+      expect(groupA).toHaveLength(3);
+      expect(groupA.map((it) => it.label)).toEqual([1, 2, 3]);
+      expect(groupA.map((it) => it.anchor.value).sort()).toEqual(['#a0', '#a1', '#a3'].sort());
+
+      // Ungrouped should be relabeled 1..2
+      const ungrouped = next.items
+        .filter((it) => (it.group ?? '') === '')
+        .sort((a, b) => a.label - b.label);
+      expect(ungrouped).toHaveLength(2);
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2]);
+      expect(ungrouped.map((it) => it.anchor.value).sort()).toEqual(['#u1', '#u2'].sort());
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds anchors using defaults including visible (inherits state.defaultVisible); persists', async () => {
+      // Arrange
+      const i1 = makeItem(1, 1, css('#a'));
+      const state = makeState([i1], 2);
+      // flip defaultVisible to false to verify default inheritance
+      state.defaultVisible = false;
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(state);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, { added: [{ anchor: css('#x') }] });
+
+      // Assert
+      const added = next.items.find((it: ScreenItem) => it.anchor.value === '#x')!;
+      // visible should inherit from state.defaultVisible (false)
+      expect(added.visible).toBe(false);
+      // labelFormat should inherit default 'Numbers' (from defaultLabelFormat)
+      expect(added.labelFormat).toBe('Numbers');
+      expect(next.nextId).toBe(3);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds anchors with per-item overrides for visible and labelFormat; falls back to defaults when omitted', async () => {
+      // Arrange
+      const i1 = makeItem(1, 1, css('#a'));
+      const base = makeState([i1], 2);
+      // keep defaultVisible = true to check override -> false
+      vi.spyOn(screenStateTable, 'get').mockResolvedValueOnce(base);
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
+
+      // Act
+      const next = await applyPatch(PAGE, {
+        added: [
+          {
+            anchor: css('#ovr'),
+            // override both
+            visible: false as ScreenItem['visible'],
+            labelFormat: 'LowerAlpha' as ScreenItem['labelFormat'],
+          },
+          {
+            // omit both -> should use defaults
+            anchor: css('#def'),
+          },
+        ],
+      });
+
+      // Assert
+      const ovr = next.items.find((it) => it.anchor.value === '#ovr')!;
+      expect(ovr.visible).toBe(false); // per-item override applied
+      expect(ovr.labelFormat).toBe('LowerAlpha'); // per-item override applied
+
+      const def = next.items.find((it) => it.anchor.value === '#def')!;
+      expect(def.visible).toBe(true); // falls back to state.defaultVisible
+      expect(def.labelFormat).toBe('Numbers'); // falls back to defaultLabelFormat
+
+      // labels normalized 1..n within (ungrouped) bucket
+      const ungrouped = next.items.filter((it) => (it.group ?? '') === '');
+      expect(ungrouped.map((it) => it.label)).toEqual([1, 2, 3]);
+
+      expect(next.nextId).toBe(4);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -124,9 +309,12 @@ describe('panel/services/state', () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#b'));
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1, i2], 3)) // for handleSelected
         .mockResolvedValueOnce(makeState([i1, i2], 3)); // for applyPatch
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await handleSelected(PAGE, [css('#a')]);
@@ -134,14 +322,14 @@ describe('panel/services/state', () => {
       // Assert
       expect(next.items.map((it: ScreenItem) => it.anchor.value)).toEqual(['#b']);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1]);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
 
     it('adds new item once when duplicate values are provided (dedup by value)', async () => {
       // Arrange
       const i1 = makeItem(1, 1, css('#a'));
 
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1], 2))
         .mockResolvedValueOnce(makeState([i1], 2));
 
@@ -159,9 +347,12 @@ describe('panel/services/state', () => {
       const i1 = makeItem(1, 1, css('#a'));
       const i2 = makeItem(2, 2, css('#c'));
 
-      vi.mocked(getState)
+      vi.spyOn(screenStateTable, 'get')
         .mockResolvedValueOnce(makeState([i1, i2], 3))
         .mockResolvedValueOnce(makeState([i1, i2], 3));
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       // Act
       const next = await handleSelected(PAGE, [css('#a'), css('#b'), css('#b')]);
@@ -170,7 +361,7 @@ describe('panel/services/state', () => {
       expect(next.items.map((it: ScreenItem) => it.anchor.value).sort()).toEqual(['#b', '#c']);
       expect(next.items.map((it: ScreenItem) => it.label)).toEqual([1, 2]);
       expect(next.nextId).toBe(4);
-      expect(vi.mocked(setState)).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledTimes(1);
     });
   });
 

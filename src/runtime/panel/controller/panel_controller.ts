@@ -1,17 +1,20 @@
 import { BackgroundToPanel, type ContentToPanel, MSG_TYPE } from '@common/messages';
+import { ToastMessage } from '@common/types';
 import { isRestricted, pageKey } from '@common/url';
 import { getActiveTab } from '@infra/chrome/tabs';
 import { initialModel, Model } from '@panel/app/model';
 import { update } from '@panel/app/update';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
+import { exportScreenState } from '@panel/services/export';
+import { importScreanState } from '@panel/services/import';
 import { handleSelected } from '@panel/services/state';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { Action, ActionType } from '@panel/types/action_types';
 import { Effect, EffectType } from '@panel/types/effect_types';
+import { STATUS } from '@panel/types/status';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
-import { STATUS } from '@panel/view/status';
 
 type Connection = Awaited<ReturnType<typeof connectToTab>>;
 type EnsureResult = { ok: true; contextChanged: boolean } | { ok: false };
@@ -74,6 +77,12 @@ export class PanelController {
     this.view.on(UIEventType.BADGE_SHAPE_CHANGE, ({ shape }) =>
       this.dispatch({ type: ActionType.SET_BADGE_SHAPE, shape }),
     );
+    this.view.on(UIEventType.BADGE_LABEL_FORMAT_CHANGE, ({ labelFormat }) =>
+      this.dispatch({ type: ActionType.SET_BADGE_LABEL_FORMAT, labelFormat }),
+    );
+    this.view.on(UIEventType.BADGE_VISIBLE_CHANGE, ({ visible }) =>
+      this.dispatch({ type: ActionType.SET_BADGE_VISIBLE, visible }),
+    );
     this.view.on(UIEventType.BADGE_DELETE, () => this.dispatch({ type: ActionType.BADGE_DELETE }));
     this.view.on(UIEventType.BADGE_POSITION_SELECT, ({ position }) =>
       this.dispatch({ type: ActionType.SET_BADGE_POSITION, position }),
@@ -121,6 +130,24 @@ export class PanelController {
     this.view.on(UIEventType.ITEM_COMMENT_APPLY, ({ id, comment }) =>
       this.dispatch({ type: ActionType.UPDATE_ITEM_COMMENT, id, comment }),
     );
+    this.view.on(UIEventType.UPDATE_THEME, ({ theme }) =>
+      this.dispatch({ type: ActionType.UPDATE_THEME, theme }),
+    );
+    this.view.on(UIEventType.SETTING_MODAL_SHOW, () =>
+      this.dispatch({ type: ActionType.STORE_RELOAD_REQUESTED }),
+    );
+    this.view.on(UIEventType.IMPORT_SCREAN_STATE_FILE, ({ file }) =>
+      this.dispatch({ type: ActionType.IMPORT_SCREAN_STATE_FILE, file }),
+    );
+    this.view.on(UIEventType.TOAST_DISMISS_REQUESTED, ({ uuid }) =>
+      this.dispatch({ type: ActionType.TOAST_DISMISS_REQUESTED, uuid }),
+    );
+    this.view.on(UIEventType.REMOVE_PAGE_CLICK, ({ pageKey }) =>
+      this.dispatch({ type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE, pageKey }),
+    );
+    this.view.on(UIEventType.EXPORT_PAGE_CLICK, ({ pageKey }) =>
+      this.dispatch({ type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE, pageKey }),
+    );
   }
 
   private dispatch(action: Action): void {
@@ -152,27 +179,120 @@ export class PanelController {
           await this.conn?.api.hover(fx.id);
           break;
         case EffectType.CLEAR_STATE:
-          await setState(this.model.pageKey, {
+          await screenStateTable.set(this.model.pageKey, {
             items: this.model.items,
             nextId: 1,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultLabelFormat: this.model.defaultLabelFormat,
+            defaultVisible: this.model.defaultVisible,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
           break;
         case EffectType.PERSIST_STATE: {
-          const prev = await getState(this.model.pageKey);
-          await setState(this.model.pageKey, {
+          const prev = await screenStateTable.get(this.model.pageKey);
+          await screenStateTable.set(this.model.pageKey, {
             ...prev,
             items: this.model.items,
             defaultSize: this.model.defaultSize,
             defaultColor: this.model.defaultColor,
             defaultShape: this.model.defaultShape,
+            defaultLabelFormat: this.model.defaultLabelFormat,
+            defaultVisible: this.model.defaultVisible,
             defaultPosition: this.model.defaultPosition,
             defaultGroup: this.model.defaultGroup,
           });
+          break;
+        }
+        case EffectType.SET_THEME: {
+          const theme = await themeTable.get();
+          this.dispatch({ type: ActionType.SET_THEME, theme });
+          break;
+        }
+        case EffectType.UPDATE_THEME:
+          await themeTable.set(fx.theme);
+          break;
+        case EffectType.READ_SCREEN_STATE_STORE: {
+          const screenStates = await screenStateTable.readAll();
+          const pageKeys: string[] = Object.keys(screenStates);
+          this.dispatch({
+            type: ActionType.STORE_RELOAD_SUCCEEDED,
+            pageKeys,
+          });
+          break;
+        }
+        case EffectType.IMPORT_SCREAN_STATE_FILE: {
+          try {
+            const { state, successMessage } = await importScreanState(fx.file, this.model.pageKey);
+            this.dispatch({
+              type: ActionType.RESTORE_STATE,
+              state: {
+                items: state.items,
+                defaultSize: state.defaultSize,
+                defaultColor: state.defaultColor,
+                defaultShape: state.defaultShape,
+                defaultLabelFormat: state.defaultLabelFormat,
+                defaultVisible: state.defaultVisible,
+                defaultPosition: state.defaultPosition,
+                defaultGroup: state.defaultGroup,
+              },
+            });
+            const message: ToastMessage = {
+              uuid: crypto.randomUUID(),
+              message: successMessage,
+              kind: 'success',
+            };
+            this.dispatch({
+              type: ActionType.IMPORT_SUCCEEDED,
+              toastMessages: [message],
+            });
+          } catch (e) {
+            const error = e as Error;
+            const message: ToastMessage = {
+              uuid: crypto.randomUUID(),
+              message: error.message,
+              kind: 'error',
+            };
+            this.dispatch({
+              type: ActionType.IMPORT_FAILED,
+              toastMessages: [message],
+            });
+          }
+          break;
+        }
+        case EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY: {
+          await screenStateTable.remove(fx.pageKey);
+          const screenStates = await screenStateTable.readAll();
+          const pageKeys: string[] = Object.keys(screenStates);
+          this.dispatch({
+            type: ActionType.STORE_RELOAD_SUCCEEDED,
+            pageKeys,
+          });
+          const st = await screenStateTable.get(this.model.pageKey);
+          this.dispatch({
+            type: ActionType.RESTORE_STATE,
+            state: {
+              items: st.items,
+              defaultSize: st.defaultSize,
+              defaultColor: st.defaultColor,
+              defaultShape: st.defaultShape,
+              defaultLabelFormat: st.defaultLabelFormat,
+              defaultVisible: st.defaultVisible,
+              defaultPosition: st.defaultPosition,
+              defaultGroup: st.defaultGroup,
+            },
+          });
+          break;
+        }
+        case EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY: {
+          try {
+            const state = await screenStateTable.get(fx.pageKey);
+            await exportScreenState(state, fx.pageKey);
+          } catch (error) {
+            this.dispatch({ type: ActionType.EXPORT_FAILED, error });
+          }
           break;
         }
         case EffectType.MEASURE_CONTENT_SIZE:
@@ -233,6 +353,8 @@ export class PanelController {
             defaultSize: s.defaultSize,
             defaultColor: s.defaultColor,
             defaultShape: s.defaultShape,
+            defaultLabelFormat: s.defaultLabelFormat,
+            defaultVisible: s.defaultVisible,
             defaultPosition: s.defaultPosition,
             defaultGroup: s.defaultGroup,
           },
@@ -250,7 +372,7 @@ export class PanelController {
       }
     });
 
-    const st = await getState(newKey);
+    const st = await screenStateTable.get(newKey);
     this.dispatch({
       type: ActionType.RESTORE_STATE,
       state: {
@@ -258,6 +380,8 @@ export class PanelController {
         defaultSize: st.defaultSize,
         defaultColor: st.defaultColor,
         defaultShape: st.defaultShape,
+        defaultLabelFormat: st.defaultLabelFormat,
+        defaultVisible: st.defaultVisible,
         defaultPosition: st.defaultPosition,
         defaultGroup: st.defaultGroup,
       },

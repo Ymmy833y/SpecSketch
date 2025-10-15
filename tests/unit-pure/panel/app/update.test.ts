@@ -1,4 +1,4 @@
-import { type ScreenItem } from '@common/types';
+import { type ScreenItem, ToastMessage } from '@common/types';
 import type { Model } from '@panel/app/model';
 import { update } from '@panel/app/update';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,7 @@ vi.mock('@panel/services/state', () => {
 import { normalizeGroupLabelsAndCountUngrouped } from '@panel/services/state';
 import { Action, ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
-import { STATUS } from '@panel/view/status';
+import { STATUS } from '@panel/types/status';
 
 // ---- Helpers ----
 const norm = vi.mocked(normalizeGroupLabelsAndCountUngrouped);
@@ -73,7 +73,7 @@ describe('panel/app/update', () => {
     const out = update(model, action);
 
     expect(out.model).toBe(model);
-    expect(out.effects).toEqual([]);
+    expect(out.effects).toEqual([{ kind: EffectType.SET_THEME }]);
   });
 
   it('CONNECTED: sets tabId and pageKey', () => {
@@ -120,6 +120,36 @@ describe('panel/app/update', () => {
     expect(out.model.defaultShape).toBe('square');
     expect(out.model.defaultPosition).toBe('right-top-outside');
     expect(out.model.defaultGroup).toBe('test');
+    expect(out.effects).toEqual([{ kind: EffectType.RENDER_CONTENT, items }]);
+  });
+
+  it('RESTORE_STATE: restores defaultLabelFormat/defaultVisible and renders', () => {
+    const items = [makeItem(1, '', 1)];
+    const model = baseModel();
+    const action = {
+      type: ActionType.RESTORE_STATE,
+      state: {
+        items,
+        defaultSize: 16,
+        defaultColor: 'Green',
+        defaultShape: 'square',
+        defaultLabelFormat: 'LowerAlpha',
+        defaultVisible: false,
+        defaultPosition: 'right-bottom-outside',
+        defaultGroup: 'grp',
+      },
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.items).toEqual(items);
+    expect(out.model.defaultSize).toBe(16);
+    expect(out.model.defaultColor).toBe('Green');
+    expect(out.model.defaultShape).toBe('square');
+    expect(out.model.defaultLabelFormat).toBe('LowerAlpha');
+    expect(out.model.defaultVisible).toBe(false);
+    expect(out.model.defaultPosition).toBe('right-bottom-outside');
+    expect(out.model.defaultGroup).toBe('grp');
     expect(out.effects).toEqual([{ kind: EffectType.RENDER_CONTENT, items }]);
   });
 
@@ -558,17 +588,15 @@ describe('panel/app/update', () => {
     expect(out.effects).toEqual([]);
   });
 
-  it('SET_GROUP: updates selected items group, defers relabel with large numbers, then persists+renders', () => {
-    // id:2,1 is the selection target. It is assumed that the labels will be equivalent to MAX_SAFE_INTEGER,
-    // MAX_SAFE_INTEGER-1 in descending order of id.
-    const items = [makeItem(1, 'A', 1), makeItem(2, 'A', 2), makeItem(3, 'B', 1)];
+  it('SET_GROUP: keeps old group label order when deferring relabel', () => {
+    // Targets are id:1 and id:2.
+    const items = [makeItem(1, 'A', 2), makeItem(2, 'A', 1), makeItem(3, 'B', 1)];
     const model = baseModel({ items, selectItems: [1, 2] });
     const action = { type: ActionType.SET_GROUP, group: 'B' } as unknown as Action;
 
     const out = update(model, action);
 
-    expect(norm).toHaveBeenCalled();
-    // The default group will contain the passed value.
+    expect(norm).toHaveBeenCalled(); // normalizeGroupLabelsAndCountUngrouped() was invoked
     expect(out.model.defaultGroup).toBe('B');
 
     const after = out.model.items;
@@ -576,16 +604,19 @@ describe('panel/app/update', () => {
     const s2 = after.find((i) => i.id === 2)!;
     const other = after.find((i) => i.id === 3)!;
 
+    // All items end up in group B (selected moved from A->B, the existing B remains B)
     expect(s1.group).toBe('B');
     expect(s2.group).toBe('B');
     expect(other.group).toBe('B');
 
-    // The label is assumed to be overwritten with a very large value as a "temporary value before normalization.
+    // Temporary labels should be very large before any subsequent compaction step.
     const THRESHOLD = 1e12;
     expect(s1.label).toBeGreaterThan(THRESHOLD);
     expect(s2.label).toBeGreaterThan(THRESHOLD);
-    // Since the ids are processed in descending order, id=2 is larger
-    expect(s2.label).toBeGreaterThan(s1.label);
+
+    // Because id:2 (old label=1) is processed BEFORE id:1 (old label=2),
+    // id:2 must receive the SMALLER temporary label: (base + 0) < (base + 1).
+    expect(s2.label).toBeLessThan(s1.label);
 
     expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
     expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
@@ -630,6 +661,237 @@ describe('panel/app/update', () => {
     const out = update(model, { type: ActionType.CAPTURE_SUCCEEDED } as unknown as Action);
 
     expect(out.model).toBe(model);
+    expect(out.effects).toEqual([]);
+  });
+
+  it('SET_THEME: updates theme only (no effects)', () => {
+    const model = baseModel({ theme: 'light' as unknown as Model['theme'] });
+    const action = { type: ActionType.SET_THEME, theme: 'dark' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.theme).toBe('dark');
+    expect(out.effects).toEqual([]);
+  });
+
+  it('UPDATE_THEME: updates theme and emits UPDATE_THEME effect', () => {
+    const model = baseModel({ theme: 'light' as unknown as Model['theme'] });
+    const action = { type: ActionType.UPDATE_THEME, theme: 'dark' } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model.theme).toBe('dark');
+    expect(out.effects).toEqual([{ kind: EffectType.UPDATE_THEME, theme: 'dark' }]);
+  });
+  it('STORE_RELOAD_REQUESTED: emits READ_SCREEN_STATE_STORE effect (no model change)', () => {
+    const model = baseModel();
+    const action = { type: ActionType.STORE_RELOAD_REQUESTED } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model).toBe(model);
+    expect(out.effects).toEqual([{ kind: EffectType.READ_SCREEN_STATE_STORE }]);
+  });
+
+  it('STORE_RELOAD_SUCCEEDED: updates pageKeys only (no effects)', () => {
+    const model = baseModel();
+    const pageKeys = ['https://example.com/a', 'https://example.com/b'];
+    const action = {
+      type: ActionType.STORE_RELOAD_SUCCEEDED,
+      pageKeys,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // pageKeys is updated
+    expect(out.model).toMatchObject({ pageKeys });
+    // no side effects
+    expect(out.effects).toEqual([]);
+    // other fields remain as-is (spot-check)
+    expect(out.model.items).toBe(model.items);
+    expect(out.model.tabId).toBe(model.tabId);
+  });
+
+  it('REMOVE_SCREEN_STATE_BY_PAGE: emits REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY with given pageKey', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE,
+      pageKey: 'https://example.com/remove-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    expect(out.model).toBe(model);
+    expect(out.effects).toEqual([
+      {
+        kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY,
+        pageKey: 'https://example.com/remove-me',
+      },
+    ]);
+  });
+
+  it('EXPORT_SCREEN_STATE_BY_PAGE: emits EXPORT_SCREEN_STATE_BY_PAGE_KEY with given pageKey', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE,
+      pageKey: 'https://example.com/export-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Model is unchanged
+    expect(out.model).toBe(model);
+    // Emit export effect with the same pageKey
+    expect(out.effects).toEqual([
+      {
+        kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY,
+        pageKey: 'https://example.com/export-me',
+      },
+    ]);
+  });
+
+  it('EXPORT_FAILED: emits NOTIFY_ERROR(error)', () => {
+    const model = baseModel();
+    const action = {
+      type: ActionType.EXPORT_FAILED,
+      error: 'failed to export',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Notify error effect with the given message
+    expect(out.effects).toEqual([{ kind: EffectType.NOTIFY_ERROR, error: 'failed to export' }]);
+    // Model remains unchanged
+    expect(out.model).toBe(model);
+  });
+
+  it('IMPORT_SCREAN_STATE_FILE: emits IMPORT_SCREAN_STATE_FILE effect with given file (no model change)', () => {
+    const model = baseModel();
+    // Use a simple stub object as a File-like placeholder for identity check
+    const fileStub = {} as unknown as File;
+
+    const action = {
+      type: ActionType.IMPORT_SCREAN_STATE_FILE,
+      file: fileStub,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Model is unchanged
+    expect(out.model).toBe(model);
+    // Effect includes the same file object
+    expect(out.effects).toEqual([{ kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: fileStub }]);
+  });
+
+  it('IMPORT_FAILED: stores toastMessages on model (no effects)', () => {
+    const model = baseModel({ toastMessages: [] as ToastMessage[] });
+    const toastMessages = [
+      { uuid: 'u-1', message: 'Invalid file format', kind: 'error' },
+      { uuid: 'u-2', message: 'Nothing to import', kind: 'info' },
+    ] as unknown as Model['toastMessages'];
+
+    const action = {
+      type: ActionType.IMPORT_FAILED,
+      toastMessages,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // toastMessages is replaced with the provided array
+    expect(out.model.toastMessages).toEqual(toastMessages);
+    // No side effects
+    expect(out.effects).toEqual([]);
+  });
+
+  it('TOAST_DISMISS_REQUESTED: removes a toast by uuid (no effects)', () => {
+    const model = baseModel({
+      toastMessages: [
+        { uuid: 'keep-me', message: 'ok', kind: 'success' },
+        { uuid: 'remove-me', message: 'error', kind: 'error' },
+      ] as unknown as Model['toastMessages'],
+    });
+
+    const action = {
+      type: ActionType.TOAST_DISMISS_REQUESTED,
+      uuid: 'remove-me',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // The toast with matching uuid is removed
+    expect(out.model.toastMessages?.map((t: ToastMessage) => t.uuid)).toEqual(['keep-me']);
+    // No side effects
+    expect(out.effects).toEqual([]);
+  });
+
+  it('SET_BADGE_LABEL_FORMAT: updates only selected items and persists+renders', () => {
+    // Two items; only id=2 is selected.
+    const items = [
+      makeItem(1, '', 1 /* labelFormat intentionally omitted */),
+      makeItem(2, '', 2 /* labelFormat intentionally omitted */),
+    ];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const action = {
+      type: ActionType.SET_BADGE_LABEL_FORMAT,
+      labelFormat: 'UpperAlpha',
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Default label format is updated on the model
+    expect(out.model.defaultLabelFormat).toBe('UpperAlpha');
+
+    // Only the selected item receives the new labelFormat
+    expect(out.model.items.find((i) => i.id === 1)?.labelFormat).toBeUndefined();
+    expect(out.model.items.find((i) => i.id === 2)?.labelFormat).toBe('UpperAlpha');
+
+    // Effects: persist state and render content with updated items
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('SET_BADGE_VISIBLE: updates only selected items and persists+renders', () => {
+    // id=1 remains true, id=2 will be updated to false (selected)
+    const items = [
+      { ...(makeItem(1, '', 1) as unknown as ScreenItem), visible: true } as unknown as ScreenItem,
+      { ...(makeItem(2, '', 2) as unknown as ScreenItem), visible: true } as unknown as ScreenItem,
+    ];
+    const model = baseModel({ items, selectItems: [2] });
+
+    const action = { type: ActionType.SET_BADGE_VISIBLE, visible: false } as unknown as Action;
+
+    const out = update(model, action);
+
+    // Default visible flag on model is updated
+    expect(out.model.defaultVisible).toBe(false);
+
+    // Only selected item (id=2) is updated
+    expect(out.model.items.find((i) => i.id === 1)?.visible).toBe(true);
+    expect(out.model.items.find((i) => i.id === 2)?.visible).toBe(false);
+
+    // Effects: persist state and render with updated items
+    expect(out.effects[0]).toEqual({ kind: EffectType.PERSIST_STATE });
+    expect(out.effects[1]).toEqual({ kind: EffectType.RENDER_CONTENT, items: out.model.items });
+  });
+
+  it('IMPORT_SUCCEEDED: stores toastMessages on model (no effects)', () => {
+    const model = baseModel({ toastMessages: [] as ToastMessage[] });
+    const toastMessages = [
+      { uuid: 'u-1', message: 'Import completed successfully', kind: 'success' },
+      { uuid: 'u-2', message: 'Added 3 items', kind: 'info' },
+    ] as unknown as Model['toastMessages'];
+
+    const action = {
+      type: ActionType.IMPORT_SUCCEEDED,
+      toastMessages,
+    } as unknown as Action;
+
+    const out = update(model, action);
+
+    // toastMessages is replaced with the provided array
+    expect(out.model.toastMessages).toEqual(toastMessages);
+    // No side effects
     expect(out.effects).toEqual([]);
   });
 });

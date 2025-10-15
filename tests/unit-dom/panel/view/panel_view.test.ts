@@ -21,15 +21,32 @@ vi.mock('@common/i18n', () => ({
   },
 }));
 
-vi.mock('@panel/view/status', () => {
-  const STATUS = { CONNECTED: 'connected', DISCONNECTED: 'disconnected' } as const;
+vi.mock('@panel/types/status', () => {
+  const STATUS = {
+    RESTRICTED: 'RESTRICTED',
+    CONNECTING: 'CONNECTING',
+    CONNECTED: 'CONNECTED',
+    DISCONNECTED: 'DISCONNECTED',
+  } as const;
+
+  const STATUS_CLASS_BY_KEY = {
+    RESTRICTED: 'connect-status--restricted',
+    CONNECTING: 'connect-status--connecting',
+    CONNECTED: 'connect-status--connected',
+    DISCONNECTED: 'connect-status--disconnected',
+  } as const;
+
+  const STATUS_MSG_KEY = {
+    RESTRICTED: 'status_restricted',
+    CONNECTING: 'status_connecting',
+    CONNECTED: 'status_connected',
+    DISCONNECTED: 'status_disconnected',
+  } as const;
+
   return {
     STATUS,
-    STATUS_LABEL_STYLE: {
-      connected: { body: ['bg-green-100'], dot: ['bg-green-500'] },
-      disconnected: { body: ['bg-slate-100'], dot: ['bg-slate-400'] },
-    } as Record<string, { body: string[]; dot: string[] }>,
-    getStatusMessage: (k: string) => (k === STATUS.CONNECTED ? 'Connected' : 'Disconnected'),
+    STATUS_CLASS_BY_KEY,
+    getStatusMessage: (k: keyof typeof STATUS) => STATUS_MSG_KEY[k],
   };
 });
 
@@ -37,10 +54,12 @@ vi.mock('@common/types', () => {
   const validColors = new Set(['Blue', 'Red', 'Gray']);
   const validShapes = new Set(['circle', 'square']);
   const validPositions = new Set(['left-top-outside', 'right-top-outside', 'top-outside']);
+  const validLabelFormats = new Set(['Numbers', 'UpperAlpha', 'LowerAlpha', 'None']); // ← 追加
   return {
     isItemColor: (v: unknown) => typeof v === 'string' && validColors.has(v),
     isItemShape: (v: unknown) => typeof v === 'string' && validShapes.has(v),
     isItemPosition: (v: unknown) => typeof v === 'string' && validPositions.has(v),
+    isLabelFormat: (v: unknown) => typeof v === 'string' && validLabelFormats.has(v), // ← 追加
     UNGROUPED: '__ungrouped__',
   };
 });
@@ -72,18 +91,20 @@ import {
   ItemGroup,
   type ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
 } from '@common/types';
 import { Model } from '@panel/app/model';
+import { STATUS } from '@panel/types/status';
 import { UIEventType } from '@panel/types/ui_event_types';
 import { PanelView } from '@panel/view/panel_view';
-import { STATUS } from '@panel/view/status';
 
 // ---- Helpers ----
 const basePanelHtml = () => `
 <div id="panel-root">
   <div class="toolbar">
     <span id="status"></span>
+    <button id="setting-button" type="button" data-ignore-disable="true"></button>
     <button id="toggle-select"><span id="toggle-select-icon"></span><span id="toggle-select-label"></span></button>
     <button id="clear">Clear</button>
     <button id="capture">Capture</button>
@@ -125,6 +146,16 @@ const basePanelHtml = () => `
       <option value="circle" selected>circle</option>
       <option value="square">square</option>
     </select>
+    <select id="badge-visible-select" name="badgeVisible">
+      <option value="true" selected>Show</option>
+      <option value="false">Hide</option>
+    </select>
+    <select id="badge-label-format-select" name="labelFormat">
+      <option value="Numbers">Numbers</option>
+      <option value="UpperAlpha">UpperAlpha</option>
+      <option value="LowerAlpha">LowerAlpha</option>
+      <option value="None">None</option>
+    </select>
     <button id="badge-delete-button" type="button">Delete</button>
     <span id="badge-position-label"></span>
     <div id="badge-position-pop">
@@ -152,6 +183,20 @@ const basePanelHtml = () => `
     <button id="item-comment-cancel-btn"></button>
     <button id="item-comment-apply-btn"></button>
   </div>
+  
+  <div id="setting-modal" class="modal-base hidden" aria-labelledby="create-group-title" role="dialog">
+    <button id="setting-close-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-light-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-dark-btn" type="button" data-ignore-disable="true"></button>
+    <button id="theme-device-btn" type="button" data-ignore-disable="true"></button>
+    <input id="import-file-input" type="file" accept=".json,application/json" />
+    <button id="import-btn" type="button"></button>
+    <span id="store-count"></span>
+    <ul id="store-list"></ul>
+    <div id="store-empty" class="hidden"></div>
+  </div>
+
+  <div id="toast-parent"></div>
 </div>
 `;
 
@@ -174,6 +219,8 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
   const m: Model = {
     tabId: 1,
     pageKey: 'test',
+    pageKeys: [],
+    theme: 'device',
     status: STATUS.CONNECTED,
     selectionEnabled: true,
     items: [] as ScreenItem[],
@@ -189,8 +236,11 @@ function renderWithModel(view: PanelView, model: Partial<Record<string, unknown>
     defaultSize: 16,
     defaultColor: 'Gray' as ItemColor,
     defaultShape: 'circle' as ItemShape,
+    defaultLabelFormat: 'Numbers' as LabelFormat,
+    defaultVisible: true,
     defaultPosition: 'left-top-outside' as ItemPosition,
     defaultGroup: '' as ItemGroup,
+    toastMessages: [],
     ...model,
   };
   view.render(m);
@@ -206,26 +256,158 @@ export function lastCallArg<T>(
 
 // ---- Tests ----
 describe('panel/view/panel_view', () => {
+  // Prepare a matchMedia mockup
+  const makeMatchMedia = (matches: boolean) =>
+    vi.fn().mockReturnValue({
+      matches,
+      media: '(prefers-color-scheme: dark)',
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    } as unknown as MediaQueryList);
+
   beforeEach(() => {
     vi.restoreAllMocks();
     document.body.innerHTML = '';
+    window.matchMedia = makeMatchMedia(false);
   });
 
-  it('renders status and disables/enables all buttons by status', () => {
+  it('renderStatus applies class and text per StatusKey', () => {
     const v = setupView();
-    // DISCONNECTED → All buttons disabled
-    renderWithModel(v, { status: 'disconnected' });
-    expect(document.querySelector('#status')).toHaveTextContent('Disconnected');
-    document.querySelectorAll('button').forEach((b) => {
-      expect(b).toBeDisabled();
+
+    // DISCONNECTED
+    renderWithModel(v, { status: 'DISCONNECTED' });
+    const s1 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s1).toHaveTextContent('status_disconnected');
+    expect(s1.className).toBe('connect-status connect-status--disconnected');
+    expect(s1.querySelector('.connect-status-dot')).toBeInTheDocument();
+
+    // CONNECTING
+    renderWithModel(v, { status: 'CONNECTING' });
+    const s2 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s2).toHaveTextContent('status_connecting');
+    expect(s2.className).toBe('connect-status connect-status--connecting');
+
+    // RESTRICTED
+    renderWithModel(v, { status: 'RESTRICTED' });
+    const s3 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s3).toHaveTextContent('status_restricted');
+    expect(s3.className).toBe('connect-status connect-status--restricted');
+
+    // CONNECTED
+    renderWithModel(v, { status: 'CONNECTED' });
+    const s4 = document.querySelector('#status') as HTMLSpanElement;
+    expect(s4).toHaveTextContent('status_connected');
+    expect(s4.className).toBe('connect-status connect-status--connected');
+  });
+
+  it('disableFormControls policy: CONNECTED enables all, CONNECTING/DISCONNECTED enable only ignored, RESTRICTED disables all', () => {
+    const v = setupView();
+
+    // Helper to snapshot key controls
+    const pick = () => ({
+      toggle: document.querySelector('#toggle-select') as HTMLButtonElement,
+      clear: document.querySelector('#clear') as HTMLButtonElement,
+      capture: document.querySelector('#capture') as HTMLButtonElement,
+      toggleCapture: document.querySelector('#capture-options-toggle') as HTMLButtonElement,
+      ignoredSetting: document.querySelector('#setting-button') as HTMLButtonElement,
+      ignoredClose: document.querySelector('#setting-close-btn') as HTMLButtonElement,
+      themeLight: document.querySelector('#theme-light-btn') as HTMLButtonElement,
+      shapeSelect: document.querySelector('#badge-shape-select') as HTMLSelectElement,
+      scaleNum: document.querySelector('#capture-scale-number') as HTMLInputElement,
+      commentText: document.querySelector('#item-comment-input') as HTMLTextAreaElement,
+      jpegNum: document.querySelector('#jpeg-quality-number') as HTMLInputElement,
+      jpegRange: document.querySelector('#jpeg-quality-range') as HTMLInputElement,
     });
 
-    // CONNECTED → enabled
-    renderWithModel(v, { status: 'connected' });
-    expect(document.querySelector('#status')).toHaveTextContent('Connected');
-    document.querySelectorAll('button').forEach((b) => {
-      expect(b).not.toBeDisabled();
+    // DISCONNECTED → only data-ignore-disable remains enabled
+    renderWithModel(v, {
+      status: 'DISCONNECTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
     });
+    let c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    // JPEG-only is disabled in the UI because format=png
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableIgnoreOnly = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
+
+    // CONNECTING → The rules are the same as for DISCONNECTED (only ignore is valid)
+    renderWithModel(v, {
+      status: 'CONNECTING',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableIgnoreOnly = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
+
+    // RESTRICTED → All disabled (including ignore)
+    renderWithModel(v, {
+      status: 'RESTRICTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).toBeDisabled();
+    expect(c.clear).toBeDisabled();
+    expect(c.capture).toBeDisabled();
+    expect(c.toggleCapture).toBeDisabled();
+    expect(c.shapeSelect).toBeDisabled();
+    expect(c.scaleNum).toBeDisabled();
+    expect(c.commentText).toBeDisabled();
+    expect(c.ignoredSetting).toBeDisabled();
+    expect(c.ignoredClose).toBeDisabled();
+    expect(c.themeLight).toBeDisabled();
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
+    // list has inert (enableNone = true)
+    expect(document.querySelector('#select-list')).toHaveAttribute('inert');
+
+    // CONNECTED → All are valid (however, JPEG-only is disabled by UI specification because format=png)
+    renderWithModel(v, {
+      status: 'CONNECTED',
+      capture: { format: 'png', area: 'full', quality: 80, scale: 1, panelExpanded: false },
+    });
+    c = pick();
+    expect(c.toggle).not.toBeDisabled();
+    expect(c.clear).not.toBeDisabled();
+    expect(c.capture).not.toBeDisabled();
+    expect(c.toggleCapture).not.toBeDisabled();
+    expect(c.shapeSelect).not.toBeDisabled();
+    expect(c.scaleNum).not.toBeDisabled();
+    expect(c.commentText).not.toBeDisabled();
+    expect(c.ignoredSetting).not.toBeDisabled();
+    expect(c.ignoredClose).not.toBeDisabled();
+    expect(c.themeLight).not.toBeDisabled();
+    // PNG → JPEG-only is still disabled in the UI.
+    expect(c.jpegNum).toBeDisabled();
+    expect(c.jpegRange).toBeDisabled();
+    // list does NOT have inert (enableAll = true)
+    expect(document.querySelector('#select-list')).not.toHaveAttribute('inert');
   });
 
   it('emits toggle/clear/capture button events', () => {
@@ -355,6 +537,87 @@ describe('panel/view/panel_view', () => {
     // Delete
     (document.querySelector('#badge-delete-button') as HTMLButtonElement).click();
     expect(onDel).toHaveBeenCalledTimes(1);
+  });
+
+  it('emits BADGE_LABEL_FORMAT_CHANGE when label-format select changes; falls back to Numbers for invalid', () => {
+    const v = setupView();
+    const onFmt = vi.fn();
+    v.on(UIEventType.BADGE_LABEL_FORMAT_CHANGE, onFmt);
+
+    renderWithModel(v, { defaultLabelFormat: 'Numbers' });
+
+    const sel = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+
+    // Valid value → emits with selected format
+    sel.value = 'UpperAlpha';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onFmt).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ labelFormat: string }>(onFmt)).toEqual({ labelFormat: 'UpperAlpha' });
+
+    // Invalid value → falls back to 'Numbers'
+    onFmt.mockClear();
+    // force an invalid option value
+    sel.value = 'InvalidFormat';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onFmt).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ labelFormat: string }>(onFmt)).toEqual({ labelFormat: 'Numbers' });
+  });
+
+  it('render sets badgeLabelFormatSelect.value from model.defaultLabelFormat; falls back to Numbers when undefined', () => {
+    const v = setupView();
+
+    // Uses provided defaultLabelFormat
+    renderWithModel(v, { defaultLabelFormat: 'LowerAlpha' });
+    const sel = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+    expect(sel.value).toBe('LowerAlpha');
+
+    // Fallback when defaultLabelFormat is undefined (nullish coalescing to 'Numbers')
+    renderWithModel(v, { defaultLabelFormat: undefined as unknown as LabelFormat });
+    const sel2 = document.querySelector('#badge-label-format-select') as HTMLSelectElement;
+    expect(sel2.value).toBe('Numbers');
+  });
+
+  it('emits BADGE_VISIBLE_CHANGE when badge-visible select changes ("true" / "false")', () => {
+    const v = setupView();
+    const onVisible = vi.fn();
+    v.on(UIEventType.BADGE_VISIBLE_CHANGE, onVisible);
+
+    // initial render (defaultVisible=true by helper)
+    renderWithModel(v);
+
+    const sel = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+
+    // Change to false → emits { visible:false }
+    sel.value = 'false';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ visible: boolean }>(onVisible)).toEqual({ visible: false });
+
+    // Change to true → emits { visible:true }
+    onVisible.mockClear();
+    sel.value = 'true';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<{ visible: boolean }>(onVisible)).toEqual({ visible: true });
+  });
+
+  it('render sets badgeVisibleSelect.value from model.defaultVisible; falls back to "true" when undefined', () => {
+    const v = setupView();
+
+    // defaultVisible=false → select value should be "false"
+    renderWithModel(v, { defaultVisible: false });
+    const selFalse = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selFalse.value).toBe('false');
+
+    // defaultVisible undefined → coalesces to 'true' in implementation
+    renderWithModel(v, { defaultVisible: undefined as unknown as boolean });
+    const selUndef = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selUndef.value).toBe('true');
+
+    // defaultVisible=true → select value should be "true"
+    renderWithModel(v, { defaultVisible: true });
+    const selTrue = document.querySelector('#badge-visible-select') as HTMLSelectElement;
+    expect(selTrue.value).toBe('true');
   });
 
   it('renders grouped list (ungrouped first) and handles group/overall selection', () => {
@@ -659,7 +922,7 @@ describe('panel/view/panel_view', () => {
     expect(opts[1]!.selected).toBe(true);
   });
 
-  it('selecting NEW_GROUP shows modal and emits SET_GROUP, then create button emits new group and hides modal', () => {
+  it('selecting NEW_GROUP opens modal without emitting; clicking create emits new group and hides modal', () => {
     const v = setupView();
     const onSetGroup = vi.fn();
     v.on(UIEventType.SET_GROUP, onSetGroup);
@@ -668,27 +931,28 @@ describe('panel/view/panel_view', () => {
     renderWithModel(v, { items, defaultGroup: '__ungrouped__' });
 
     const sel = document.querySelector('#badge-group-select') as HTMLSelectElement;
-    // Select Create(option value="__newgroup__")
-    const createOpt = Array.from(sel.options).find((o) => o.textContent === 'Create')!;
-    sel.value = createOpt.value;
+
+    // Select the "Create" option by value (avoid relying on i18n text)
+    sel.value = '__newgroup__';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // First, it is emitted with the NEW_GROUP value and displayed modally.
-    expect(onSetGroup).toHaveBeenCalled();
-    const first = lastCallArg<{ group: string }>(onSetGroup)!;
-    expect(first.group).toBe('__newgroup__');
+    // Expect: no SET_GROUP is emitted yet; only the modal is opened
     const modal = document.querySelector('#group-name-modal') as HTMLDivElement;
     expect(modal).not.toHaveClass('hidden');
+    expect(onSetGroup).not.toHaveBeenCalled();
 
-    // Enter → Confirm with Create button
+    // Fill the input and click the "Create" button
     const input = document.querySelector('#group-name-input') as HTMLInputElement;
     input.value = 'MyGroup';
     const createBtn = document.querySelector('#group-name-create-btn') as HTMLButtonElement;
     createBtn.click();
 
-    // Emit with real group name & close modal
+    // Expect: SET_GROUP is emitted once with the entered group name
+    expect(onSetGroup).toHaveBeenCalledTimes(1);
     const final = lastCallArg<{ group: string }>(onSetGroup)!;
     expect(final.group).toBe('MyGroup');
+
+    // Expect: modal is closed and input is cleared
     expect(modal).toHaveClass('hidden');
     expect(input.value).toBe('');
   });
@@ -705,25 +969,34 @@ describe('panel/view/panel_view', () => {
     )!;
     const toggleBtn = section.querySelector('button.select-item-gh-toggle') as HTMLButtonElement;
     const ul = section.querySelector('ul') as HTMLUListElement;
-    const path = toggleBtn.querySelector('svg path') as SVGPathElement;
+
+    const getCaretD = () => {
+      const svg = toggleBtn.querySelector('svg')!;
+      const ds = Array.from(svg.querySelectorAll('path')).map((p) => p.getAttribute('d') ?? '');
+      return ds.join('|');
+    };
 
     // Expanded state
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
     expect(ul).not.toHaveClass('hidden');
-    const d1 = path.getAttribute('d');
+    const d1 = getCaretD();
+    expect(d1).toBeTruthy();
 
     // Click to collapse
     toggleBtn.click();
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
     expect(ul).toHaveClass('hidden');
-    const d2 = path.getAttribute('d');
-    expect(d2).not.toBeNull();
-    expect(d2).not.toEqual(d1);
+    const d2 = getCaretD();
+    expect(d2).toBeTruthy();
+    expect(d2).not.toEqual(d1); // caretDown -> caretRight
 
     // Click again to expand
     toggleBtn.click();
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
     expect(ul).not.toHaveClass('hidden');
+    const d3 = getCaretD();
+    expect(d3).toBeTruthy();
+    expect(d3).toEqual(d1);
   });
 
   it('hover-in is suppressed for missing items and during drag operation', () => {
@@ -896,5 +1169,268 @@ describe('panel/view/panel_view', () => {
     const payload = lastCallArg<{ id: number; comment: string }>(onApply)!;
     expect(payload).toEqual({ id: 2, comment: 'new comment' });
     expect(modal).toHaveClass('hidden');
+  });
+
+  it('clicking theme-light applies light theme and emits UPDATE_THEME', () => {
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'dark' });
+
+    const lightBtn = document.querySelector('#theme-light-btn') as HTMLButtonElement;
+    lightBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'light' });
+    // applyTheme('light') → dark class is removed from html root
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(lightBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-device-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-dark applies dark theme and emits UPDATE_THEME', () => {
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'light' });
+
+    const darkBtn = document.querySelector('#theme-dark-btn') as HTMLButtonElement;
+    darkBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'dark' });
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(darkBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-device-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-device applies system preference (light system) and emits UPDATE_THEME', () => {
+    // System lights: matches=false
+    window.matchMedia = makeMatchMedia(false);
+
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'dark' });
+
+    const deviceBtn = document.querySelector('#theme-device-btn') as HTMLButtonElement;
+    deviceBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'device' });
+    // matches=false → dark class is not added
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(deviceBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking theme-device applies system preference (dark system) and emits UPDATE_THEME', () => {
+    // System is dark: matches=true
+    window.matchMedia = makeMatchMedia(true);
+
+    const v = setupView();
+    const onTheme = vi.fn();
+    v.on(UIEventType.UPDATE_THEME, onTheme);
+
+    renderWithModel(v, { theme: 'light' });
+
+    const deviceBtn = document.querySelector('#theme-device-btn') as HTMLButtonElement;
+    deviceBtn.click();
+
+    expect(onTheme).toHaveBeenCalledWith({ theme: 'device' });
+    // matches=true → dark class is added
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(deviceBtn.getAttribute('data-active')).toBe('true');
+    expect(
+      (document.querySelector('#theme-light-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+    expect(
+      (document.querySelector('#theme-dark-btn') as HTMLElement).getAttribute('data-active'),
+    ).toBe('false');
+  });
+
+  it('clicking setting-button shows modal and emits SETTING_MODAL_SHOW', () => {
+    const v = setupView();
+    const onShow = vi.fn();
+    v.on(UIEventType.SETTING_MODAL_SHOW, onShow);
+
+    renderWithModel(v);
+
+    const btn = document.querySelector('#setting-button') as HTMLButtonElement;
+    const modal = document.querySelector('#setting-modal') as HTMLDivElement;
+
+    expect(modal).toHaveClass('hidden');
+
+    btn.click();
+    expect(modal).not.toHaveClass('hidden');
+    expect(onShow).toHaveBeenCalledTimes(1);
+    expect(lastCallArg<undefined>(onShow)).toBeUndefined();
+  });
+
+  it('render → applyStore: empty state when pageKeys=[], list hidden & count=0', () => {
+    const v = setupView();
+
+    renderWithModel(v, { pageKeys: [] });
+
+    const count = document.querySelector('#store-count') as HTMLSpanElement;
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const empty = document.querySelector('#store-empty') as HTMLDivElement;
+
+    expect(count.textContent).toBe('0');
+    expect(list).toHaveClass('hidden');
+    expect(empty).not.toHaveClass('hidden');
+  });
+
+  it('render → applyStore: renders links for pageKeys, shows list, hides empty, and emits REMOVE_PAGE_CLICK', () => {
+    const v = setupView();
+    const onRemove = vi.fn();
+    v.on(UIEventType.REMOVE_PAGE_CLICK, onRemove);
+
+    const keys = ['https://example.com/a', 'https://example.com/b'];
+    renderWithModel(v, { pageKeys: keys });
+
+    const count = document.querySelector('#store-count') as HTMLSpanElement;
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const empty = document.querySelector('#store-empty') as HTMLDivElement;
+
+    expect(count.textContent).toBe('2');
+    expect(list).not.toHaveClass('hidden');
+    expect(empty).toHaveClass('hidden');
+
+    const lis = Array.from(list.querySelectorAll('li'));
+    expect(lis.length).toBe(2);
+
+    const a0 = lis[0]!.querySelector('a') as HTMLAnchorElement;
+    const a1 = lis[1]!.querySelector('a') as HTMLAnchorElement;
+    expect(a0.href).toBe(keys[0]);
+    expect(a0.target).toBe('_blank');
+    expect(a0.textContent).toBe(keys[0]);
+    expect(a1.href).toBe(keys[1]);
+    expect(a1.target).toBe('_blank');
+    expect(a1.textContent).toBe(keys[1]);
+
+    const btn1 = lis[0]!.querySelectorAll('button')[1] as HTMLButtonElement;
+    expect(btn1.getAttribute('data-ignore-disable')).toBe('true');
+    btn1.click();
+
+    expect(onRemove).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ pageKey: string }>(onRemove)!;
+    expect(payload).toEqual({ pageKey: keys[0] });
+  });
+
+  it('render → applyStore: emits EXPORT_PAGE_CLICK when export button is clicked', () => {
+    const v = setupView();
+    const onExport = vi.fn();
+    v.on(UIEventType.EXPORT_PAGE_CLICK, onExport);
+
+    const keys = ['https://example.com/a', 'https://example.com/b'];
+    renderWithModel(v, { pageKeys: keys });
+
+    const list = document.querySelector('#store-list') as HTMLUListElement;
+    const lis = Array.from(list.querySelectorAll('li'));
+    expect(lis.length).toBe(2);
+
+    // The first button in each row is the Export button
+    const exportBtn = lis[0]!.querySelectorAll('button')[0] as HTMLButtonElement;
+
+    // Export button should be excluded from disableFormControls by data-ignore-disable
+    expect(exportBtn.getAttribute('data-ignore-disable')).toBe('true');
+
+    // Click → emits EXPORT_PAGE_CLICK with pageKey
+    exportBtn.click();
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ pageKey: string }>(onExport)!;
+    expect(payload).toEqual({ pageKey: keys[0] });
+  });
+
+  it('import button: opens file dialog when no file is selected and does not emit', () => {
+    const v = setupView();
+    const onImport = vi.fn();
+    v.on(UIEventType.IMPORT_SCREAN_STATE_FILE, onImport);
+
+    renderWithModel(v);
+
+    const input = document.querySelector('#import-file-input') as HTMLInputElement;
+    const openSpy = vi.spyOn(input, 'click');
+
+    // Simulate "no files selected"
+    Object.defineProperty(input, 'files', { value: undefined, configurable: true });
+
+    (document.querySelector('#import-btn') as HTMLButtonElement).click();
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('import button: emits IMPORT_SCREAN_STATE_FILE with the selected file when a file exists', () => {
+    const v = setupView();
+    const onImport = vi.fn();
+    v.on(UIEventType.IMPORT_SCREAN_STATE_FILE, onImport);
+
+    renderWithModel(v);
+
+    const input = document.querySelector('#import-file-input') as HTMLInputElement;
+    const file = new File([JSON.stringify({})], 'state.json', { type: 'application/json' });
+
+    // Minimal FileList-like shape is enough for the implementation (uses files[0])
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+
+    (document.querySelector('#import-btn') as HTMLButtonElement).click();
+
+    expect(onImport).toHaveBeenCalledTimes(1);
+    const payload = lastCallArg<{ file: File }>(onImport)!;
+    expect(payload.file).toBe(file);
+  });
+
+  it('applyToastMessages: appends toasts, emits TOAST_DISMISS_REQUESTED per toast, supports close and auto-dismiss', async () => {
+    // Enable fake timers BEFORE rendering so the internal setTimeout is captured
+    vi.useFakeTimers();
+
+    const v = setupView();
+    const onDismiss = vi.fn();
+    v.on(UIEventType.TOAST_DISMISS_REQUESTED, onDismiss);
+
+    // Render with two toast messages → appends two nodes and emits twice
+    renderWithModel(v, {
+      toastMessages: [
+        { uuid: 'u1', message: 'Hello', kind: 'error' },
+        { uuid: 'u2', message: 'World', kind: 'success' },
+      ],
+    });
+
+    const container = document.querySelector('#toast-parent') as HTMLDivElement;
+    expect(container.children.length).toBe(2);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    expect(onDismiss.mock.calls.map((c) => c[0].uuid).sort()).toEqual(['u1', 'u2']);
+
+    // Closing the first toast removes it immediately and clears its timer
+    const firstToast = container.querySelector('.toast') as HTMLDivElement;
+    const closeBtn = firstToast.querySelector('button.toast-close') as HTMLButtonElement;
+    closeBtn.click();
+    expect(firstToast.isConnected).toBe(false);
+    expect(container.children.length).toBe(1);
+
+    // Auto-dismiss removes the remaining toast after 10s
+    vi.advanceTimersByTime(10000);
+    await vi.runAllTimersAsync();
+    expect(container.children.length).toBe(0);
+
+    vi.useRealTimers();
   });
 });

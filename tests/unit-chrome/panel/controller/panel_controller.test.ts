@@ -40,6 +40,14 @@ vi.mock('@panel/services/capture.ts', () => ({
   capture: vi.fn(),
 }));
 
+vi.mock('@panel/services/export.ts', () => ({
+  exportScreenState: vi.fn(),
+}));
+
+vi.mock('@panel/services/import.ts', () => ({
+  importScreanState: vi.fn(),
+}));
+
 vi.mock('@panel/services/state.ts', () => ({
   handleSelected: vi.fn(async () => ({
     items: [], // ScreenItem[]
@@ -77,7 +85,9 @@ import { update } from '@panel/app/update';
 import { PanelController } from '@panel/controller/panel_controller';
 import { connectToTab } from '@panel/messaging/connection';
 import { capture } from '@panel/services/capture';
-import { getState, setState } from '@panel/state/store';
+import { exportScreenState } from '@panel/services/export';
+import { importScreanState } from '@panel/services/import';
+import { screenStateTable, themeTable } from '@panel/storage/tables';
 import { ActionType } from '@panel/types/action_types';
 import { EffectType } from '@panel/types/effect_types';
 import { UIEventType } from '@panel/types/ui_event_types';
@@ -198,8 +208,6 @@ describe('panel/controller/panel_controller', () => {
     vi.mocked(isRestricted).mockReturnValue(false);
 
     vi.mocked(connectToTab).mockReset();
-    vi.mocked(getState).mockReset();
-    vi.mocked(setState).mockReset();
     vi.mocked(capture).mockReset();
 
     // Mock update (using ReturnType<typeof vi.fn> to avoid type mismatch)
@@ -376,6 +384,201 @@ describe('panel/controller/panel_controller', () => {
         comment: '',
       });
     });
+
+    it('view handler SETTING_MODAL_SHOW dispatches STORE_RELOAD_REQUESTED', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      // Fire the UI event and assert the dispatched action
+      view.emit(UIEventType.SETTING_MODAL_SHOW);
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_REQUESTED,
+      });
+    });
+
+    it('view handler REMOVE_PAGE_CLICK dispatches REMOVE_SCREEN_STATE_BY_PAGE with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const targetKey = 'key://to-remove';
+      view.emit(UIEventType.REMOVE_PAGE_CLICK, { pageKey: targetKey });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE,
+        pageKey: targetKey,
+      });
+    });
+
+    it('view handler EXPORT_PAGE_CLICK dispatches EXPORT_SCREEN_STATE_BY_PAGE with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const targetKey = 'key://to-export';
+      view.emit(UIEventType.EXPORT_PAGE_CLICK, { pageKey: targetKey });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE,
+        pageKey: targetKey,
+      });
+    });
+
+    it('view handler IMPORT_SCREAN_STATE_FILE dispatches IMPORT_SCREAN_STATE_FILE with file payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      // Dummy file object (we do not rely on its content in this test)
+      const dummyFile = {} as unknown as File;
+      view.emit(UIEventType.IMPORT_SCREAN_STATE_FILE, { file: dummyFile });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_SCREAN_STATE_FILE,
+        file: dummyFile,
+      });
+    });
+
+    it('view handler TOAST_DISMISS_REQUESTED dispatches TOAST_DISMISS_REQUESTED with uuid', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const uuid = 'abc-123';
+      view.emit(UIEventType.TOAST_DISMISS_REQUESTED, { uuid });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.TOAST_DISMISS_REQUESTED,
+        uuid,
+      });
+    });
+
+    it('view handler BADGE_LABEL_FORMAT_CHANGE dispatches SET_BADGE_LABEL_FORMAT with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      const labelFormat = 'UpperAlpha' as const;
+      view.emit(UIEventType.BADGE_LABEL_FORMAT_CHANGE, { labelFormat });
+
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.SET_BADGE_LABEL_FORMAT,
+        labelFormat: 'UpperAlpha',
+      });
+    });
+
+    it('view handler BADGE_VISIBLE_CHANGE dispatches SET_BADGE_VISIBLE with payload', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<{ ok: true; contextChanged: boolean }>;
+        dispatch: (a: unknown) => void;
+      };
+      vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive').mockResolvedValue({
+        ok: true,
+        contextChanged: false,
+      });
+
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      await pc.start();
+
+      // visible: false → hide badges
+      view.emit(UIEventType.BADGE_VISIBLE_CHANGE, { visible: false });
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.SET_BADGE_VISIBLE,
+        visible: false,
+      });
+
+      // visible: true → show badges
+      view.emit(UIEventType.BADGE_VISIBLE_CHANGE, { visible: true });
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.SET_BADGE_VISIBLE,
+        visible: true,
+      });
+    });
   });
 
   describe('ensureConnectionAlive', () => {
@@ -423,12 +626,14 @@ describe('panel/controller/panel_controller', () => {
 
       const conn = makeConnStub();
       vi.mocked(connectToTab).mockResolvedValue(conn as unknown as never);
-      vi.mocked(getState).mockResolvedValue({
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
         defaultSize: 10,
         defaultColor: 'Blue',
         defaultShape: 'square',
+        defaultLabelFormat: 'Numbers',
+        defaultVisible: true,
         defaultPosition: 'left-top-outside',
         defaultGroup: UNGROUPED_VALUE,
       });
@@ -458,6 +663,8 @@ describe('panel/controller/panel_controller', () => {
         state: expect.objectContaining({
           items: [makeItem(1), makeItem(2)],
           defaultShape: 'square',
+          defaultLabelFormat: 'Numbers',
+          defaultVisible: true,
         }),
       });
       expect(dispatch).toHaveBeenCalledWith({ type: ActionType.SET_STATUS, status: 'CONNECTED' });
@@ -475,12 +682,14 @@ describe('panel/controller/panel_controller', () => {
       vi.mocked(getActiveTab).mockResolvedValue(
         makeTab({ url: 'https://example.com/content-size' }),
       );
-      vi.mocked(getState).mockResolvedValue({
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [],
         nextId: 1,
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
+        defaultLabelFormat: 'Numbers',
+        defaultVisible: true,
         defaultPosition: 'left-top-outside',
         defaultGroup: UNGROUPED_VALUE,
       });
@@ -584,19 +793,26 @@ describe('panel/controller/panel_controller', () => {
         defaultShape: 'square',
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
+        defaultLabelFormat: 'UpperAlpha',
+        defaultVisible: true,
       };
       type Exposed = { ensureConnectionAlive: () => Promise<unknown> };
       const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.CLEAR_STATE }]);
 
       expect(ensure).not.toHaveBeenCalled();
-      expect(setState).toHaveBeenCalledWith('key://local', {
+      expect(setSpy).toHaveBeenCalledWith('key://local', {
         items: [makeItem(1), makeItem(2), makeItem(3)],
         nextId: 1,
         defaultSize: 20,
         defaultColor: 'Green',
         defaultShape: 'square',
+        defaultLabelFormat: 'UpperAlpha',
+        defaultVisible: true,
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
       });
@@ -615,21 +831,28 @@ describe('panel/controller/panel_controller', () => {
         defaultShape: 'square',
         defaultGroup: 'right-top-outside',
         defaultPosition: '',
+        defaultLabelFormat: 'LowerAlpha',
+        defaultVisible: false, // override target
       };
-      vi.mocked(getState).mockResolvedValue({
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue({
         items: [makeItem(1), makeItem(2)],
         nextId: 5,
         defaultSize: 12,
         defaultColor: 'Red',
         defaultShape: 'circle',
+        defaultLabelFormat: 'Numbers',
+        defaultVisible: false,
         defaultPosition: 'left-top-inside',
         defaultGroup: '',
       });
+      const setSpy = vi
+        .spyOn(screenStateTable, 'set')
+        .mockResolvedValue(undefined as unknown as void);
 
       await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.PERSIST_STATE }]);
 
-      expect(getState).toHaveBeenCalledWith('key://persist');
-      expect(setState).toHaveBeenCalledWith(
+      expect(getSpy).toHaveBeenCalledWith('key://persist');
+      expect(setSpy).toHaveBeenCalledWith(
         'key://persist',
         expect.objectContaining({
           items: [makeItem(100, { color: 'Purple', shape: 'square' })],
@@ -639,6 +862,7 @@ describe('panel/controller/panel_controller', () => {
           defaultShape: 'square',
           defaultGroup: 'right-top-outside',
           defaultPosition: '',
+          defaultLabelFormat: 'LowerAlpha',
         }),
       );
     });
@@ -698,6 +922,347 @@ describe('panel/controller/panel_controller', () => {
       ]);
 
       expect(conn.api.measureSize).toHaveBeenCalledTimes(1);
+    });
+
+    it('SET_THEME: reads theme from themeTable and dispatches SET_THEME', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const getSpy = vi.spyOn(themeTable, 'get').mockResolvedValue('dark' as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [{ kind: EffectType.SET_THEME }]);
+
+      expect(ensure).not.toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({ type: ActionType.SET_THEME, theme: 'dark' });
+    });
+
+    it('UPDATE_THEME: writes theme to themeTable (no dispatch)', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const setSpy = vi.spyOn(themeTable, 'set').mockResolvedValue(undefined as unknown as void);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.UPDATE_THEME, theme: 'light' as never },
+      ]);
+
+      expect(ensure).not.toHaveBeenCalled();
+      expect(setSpy).toHaveBeenCalledWith('light');
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('READ_SCREEN_STATE_STORE: loads all keys and dispatches STORE_RELOAD_SUCCEEDED', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const readAllSpy = vi.spyOn(screenStateTable, 'readAll').mockResolvedValue({
+        'key://alpha': { items: [] },
+        'key://beta': { items: [] },
+        'key://gamma': { items: [] },
+      } as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.READ_SCREEN_STATE_STORE },
+      ]);
+
+      // No connection needed for store reading
+      expect(ensure).not.toHaveBeenCalled();
+      // Read all was called and keys were propagated via STORE_RELOAD_SUCCEEDED
+      expect(readAllSpy).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_SUCCEEDED,
+        pageKeys: expect.arrayContaining(['key://alpha', 'key://beta', 'key://gamma']),
+      });
+    });
+
+    it('REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY: removes entry, reloads keys, and restores current state', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      // Current model.pageKey to be restored after deletion
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const removeSpy = vi.spyOn(screenStateTable, 'remove').mockResolvedValue(undefined as never);
+
+      // After removal, the remaining keys returned by readAll
+      const readAllSpy = vi.spyOn(screenStateTable, 'readAll').mockResolvedValue({
+        'key://alpha': { items: [] },
+        'key://current': { items: [] },
+      } as never);
+
+      // The state to restore for the current page
+      const restored = {
+        items: [makeItem(1), makeItem(2)],
+        defaultSize: 16,
+        defaultColor: 'Blue' as const,
+        defaultShape: 'square' as const,
+        defaultLabelFormat: 'UpperAlpha' as const,
+        defaultVisible: true as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue(restored as never);
+
+      // Execute the effect under test
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY, pageKey: 'key://to-remove' },
+      ]);
+
+      // No connection required
+      expect(ensure).not.toHaveBeenCalled();
+      // Remove → readAll → get(current) were called
+      expect(removeSpy).toHaveBeenCalledWith('key://to-remove');
+      expect(readAllSpy).toHaveBeenCalledTimes(1);
+      expect(getSpy).toHaveBeenCalledWith('key://current');
+
+      // First, the list refresh
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.STORE_RELOAD_SUCCEEDED,
+        pageKeys: expect.arrayContaining(['key://alpha', 'key://current']),
+      });
+
+      // Then, the current page state restore
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.RESTORE_STATE,
+        state: expect.objectContaining({
+          items: restored.items,
+          defaultSize: restored.defaultSize,
+          defaultColor: restored.defaultColor,
+          defaultShape: restored.defaultShape,
+          defaultLabelFormat: restored.defaultLabelFormat,
+          defaultVisible: restored.defaultVisible,
+          defaultPosition: restored.defaultPosition,
+          defaultGroup: restored.defaultGroup,
+        }),
+      });
+    });
+
+    it('EXPORT_SCREEN_STATE_BY_PAGE_KEY: reads state and calls exportScreenState', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = {
+        ensureConnectionAlive: () => Promise<unknown>;
+        dispatch: (a: unknown) => void;
+      };
+      const ensure = vi.spyOn(pc as unknown as Exposed, 'ensureConnectionAlive');
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      const state = {
+        items: [],
+        nextId: 1,
+        defaultSize: 12,
+        defaultColor: 'Red' as const,
+        defaultShape: 'circle' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      const getSpy = vi.spyOn(screenStateTable, 'get').mockResolvedValue(state as never);
+      vi.mocked(exportScreenState).mockResolvedValueOnce(123 as never);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: 'key://export-me' },
+      ]);
+
+      // No connection required
+      expect(ensure).not.toHaveBeenCalled();
+      // State is retrieved and passed to exporter
+      expect(getSpy).toHaveBeenCalledWith('key://export-me');
+      expect(exportScreenState).toHaveBeenCalledWith(state, 'key://export-me');
+      // Success path does not dispatch anything
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('EXPORT_SCREEN_STATE_BY_PAGE_KEY: dispatches EXPORT_FAILED on error', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // screenStateTable.get succeeds, but exporter throws
+      vi.spyOn(screenStateTable, 'get').mockResolvedValue({
+        items: [],
+        nextId: 1,
+        defaultSize: 12,
+        defaultColor: 'Red' as const,
+        defaultShape: 'circle' as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      } as never);
+
+      const err = new Error('export failed');
+      vi.mocked(exportScreenState).mockRejectedValueOnce(err);
+
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY, pageKey: 'key://export-error' },
+      ]);
+
+      // Error path dispatches EXPORT_FAILED
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.EXPORT_FAILED,
+        error: err,
+      });
+    });
+
+    it('IMPORT_SCREAN_STATE_FILE: success → dispatches RESTORE_STATE then IMPORT_SUCCEEDED toast', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      // Current pageKey used by importScreanState(file, model.pageKey)
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // Stabilize crypto.randomUUID
+      const cryptoObj =
+        (globalThis as unknown as { crypto?: { randomUUID: () => string } }).crypto ??
+        ((globalThis as unknown as { crypto: { randomUUID: () => string } }).crypto = {
+          randomUUID: () => 'stub-uuid',
+        });
+      const uuidSpy = vi.spyOn(cryptoObj, 'randomUUID').mockReturnValue('test-uuid');
+
+      // Mock imported state and success message (NEW shape)
+      const imported = {
+        items: [makeItem(1), makeItem(2)],
+        defaultSize: 14,
+        defaultColor: 'Blue' as const,
+        defaultShape: 'square' as const,
+        defaultLabelFormat: 'LowerAlpha' as const,
+        defaultVisible: true as const,
+        defaultPosition: 'left-top-outside' as const,
+        defaultGroup: UNGROUPED_VALUE,
+      };
+      const successMessage = 'Import completed successfully: added 2 items';
+      vi.mocked(importScreanState).mockResolvedValueOnce({
+        state: imported,
+        successMessage,
+      } as never);
+
+      const dummyFile = {} as unknown as File;
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: dummyFile },
+      ]);
+
+      // Verify RESTORE_STATE dispatched with imported fields
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.RESTORE_STATE,
+        state: expect.objectContaining({
+          items: imported.items,
+          defaultSize: imported.defaultSize,
+          defaultColor: imported.defaultColor,
+          defaultShape: imported.defaultShape,
+          defaultLabelFormat: imported.defaultLabelFormat,
+          defaultVisible: imported.defaultVisible,
+          defaultPosition: imported.defaultPosition,
+          defaultGroup: imported.defaultGroup,
+        }),
+      });
+
+      // Verify success toast via IMPORT_SUCCEEDED
+      expect(uuidSpy).toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_SUCCEEDED,
+        toastMessages: [
+          {
+            uuid: 'test-uuid',
+            message: successMessage,
+            kind: 'success',
+          },
+        ],
+      });
+
+      // (optional) order check: RESTORE_STATE should come before IMPORT_SUCCEEDED
+      const calls = (dispatch.mock.calls as Array<[unknown]>).map(([a]) => a as { type: string });
+      const iRestore = calls.findIndex((c) => c.type === ActionType.RESTORE_STATE);
+      const iSucceeded = calls.findIndex((c) => c.type === ActionType.IMPORT_SUCCEEDED);
+      expect(iRestore).toBeGreaterThanOrEqual(0);
+      expect(iSucceeded).toBeGreaterThan(iRestore);
+    });
+
+    it('IMPORT_SCREAN_STATE_FILE: failure → dispatches IMPORT_FAILED with toast message', async () => {
+      const view = new ViewStub();
+      const pc = new PanelController(view as unknown as never);
+
+      (pc as unknown as { model: { pageKey: string } }).model.pageKey = 'key://current';
+
+      type Exposed = { dispatch: (a: unknown) => void };
+      const dispatch = vi
+        .spyOn(pc as unknown as Exposed, 'dispatch')
+        .mockImplementation(() => undefined);
+
+      // Ensure crypto.randomUUID is stable
+      const cryptoObj =
+        (globalThis as unknown as { crypto?: { randomUUID: () => string } }).crypto ??
+        ((globalThis as unknown as { crypto: { randomUUID: () => string } }).crypto = {
+          randomUUID: () => 'stub-uuid',
+        });
+      const uuidSpy = vi.spyOn(cryptoObj, 'randomUUID').mockReturnValue('test-uuid');
+
+      const err = new Error('invalid file');
+      vi.mocked(importScreanState).mockRejectedValueOnce(err);
+
+      const dummyFile = {} as unknown as File;
+      await callPrivate<Promise<void>>(pc, 'execEffects', [
+        { kind: EffectType.IMPORT_SCREAN_STATE_FILE, file: dummyFile },
+      ]);
+
+      // Should dispatch IMPORT_FAILED with a single toast message
+      expect(uuidSpy).toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith({
+        type: ActionType.IMPORT_FAILED,
+        toastMessages: [
+          {
+            uuid: 'test-uuid',
+            message: 'invalid file',
+            kind: 'error',
+          },
+        ],
+      });
     });
   });
 

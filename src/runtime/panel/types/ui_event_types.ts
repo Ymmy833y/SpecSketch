@@ -7,7 +7,7 @@
  * - Payloads are strongly typed via UIEventPayloadMap; use `undefined` for no payload.
  */
 
-import type { ItemColor, ItemPosition, ItemShape } from '@common/types';
+import type { ItemColor, ItemPosition, ItemShape, LabelFormat, ThemeMode } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
 
 export enum UIEventType {
@@ -28,6 +28,12 @@ export enum UIEventType {
 
   /** Badge shape changed (select) */
   BADGE_SHAPE_CHANGE = 'BADGE_SHAPE_CHANGE',
+
+  /** Badge label format changed (select) */
+  BADGE_LABEL_FORMAT_CHANGE = 'BADGE_LABEL_FORMAT_CHANGE',
+
+  /** Badge visible format changed (select) */
+  BADGE_VISIBLE_CHANGE = 'BADGE_VISIBLE_CHANGE',
 
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
@@ -67,6 +73,24 @@ export enum UIEventType {
 
   /** Apply pending comment edits to the selected item */
   ITEM_COMMENT_APPLY = 'ITEM_COMMENT_APPLY',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
+
+  /** Emitted after the Settings modal is show */
+  SETTING_MODAL_SHOW = 'SETTING_MODAL_SHOW',
+
+  /** Import a ScreenState from a selected JSON file */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
+  /** Dismiss a toast by UUID */
+  TOAST_DISMISS_REQUESTED = 'TOAST_DISMISS_REQUESTED',
+
+  /** Click to remove the saved page */
+  REMOVE_PAGE_CLICK = 'REMOVE_PAGE_CLICK',
+
+  /** Click the export button */
+  EXPORT_PAGE_CLICK = 'EXPORT_PAGE_CLICK',
 }
 
 /**
@@ -83,6 +107,8 @@ export type UIEventPayloadMap = {
   [UIEventType.BADGE_SIZE_CHANGE]: { size: number };
   [UIEventType.BADGE_COLOR_SELECT]: { color: ItemColor };
   [UIEventType.BADGE_SHAPE_CHANGE]: { shape: ItemShape };
+  [UIEventType.BADGE_LABEL_FORMAT_CHANGE]: { labelFormat: LabelFormat };
+  [UIEventType.BADGE_VISIBLE_CHANGE]: { visible: boolean };
   [UIEventType.BADGE_DELETE]: undefined;
   [UIEventType.BADGE_POSITION_SELECT]: { position: ItemPosition };
   [UIEventType.SET_GROUP]: { group: string };
@@ -102,4 +128,10 @@ export type UIEventPayloadMap = {
   [UIEventType.ITEM_HOVER_IN]: { id: number };
   [UIEventType.ITEM_HOVER_OUT]: undefined;
   [UIEventType.ITEM_COMMENT_APPLY]: { id: number; comment: string };
+  [UIEventType.UPDATE_THEME]: { theme: ThemeMode };
+  [UIEventType.SETTING_MODAL_SHOW]: undefined;
+  [UIEventType.IMPORT_SCREAN_STATE_FILE]: { file: File };
+  [UIEventType.TOAST_DISMISS_REQUESTED]: { uuid: string };
+  [UIEventType.REMOVE_PAGE_CLICK]: { pageKey: string };
+  [UIEventType.EXPORT_PAGE_CLICK]: { pageKey: string };
 };

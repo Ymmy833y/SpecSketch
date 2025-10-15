@@ -1,4 +1,4 @@
-import type { Anchor, ScreenItem } from '@common/types';
+import type { Anchor, LabelFormat, ScreenItem } from '@common/types';
 
 let shadowRoot: ShadowRoot | null = null;
 let rootEl: HTMLElement | null = null;
@@ -150,10 +150,12 @@ const applyVisualState = (tracked: Tracked, item: ScreenItem) => {
   tracked.anchor = item.anchor;
   tracked.boxEl.className = `spsk-box spsk-box--${color}`;
   tracked.boxEl.style.setProperty('--spsk-border-w', `${item.size / 4}px`);
+  tracked.boxEl.classList.toggle('badge-hidden', item.labelFormat === 'None');
+  tracked.boxEl.classList.toggle('box-hidden', item.visible === false);
 
   tracked.badgeEl.className = `spsk-badge spsk-badge--${item.shape} spsk-badge--${color} spsk-badge--${item.position}`;
   tracked.badgeEl.style.fontSize = sizePx;
-  tracked.badgeEl.textContent = String(item.label);
+  tracked.badgeEl.textContent = formatLabel(item.label, item.labelFormat);
 
   if (item.comment) {
     tracked.commentEl.textContent = item.comment;
@@ -262,4 +264,44 @@ function updatePositions() {
     t.boxEl.style.width = `${r.width}px`;
     t.boxEl.style.height = `${r.height}px`;
   }
+}
+
+/**
+ * Formats a label according to the given format option.
+ *
+ * @param label - A non-negative integer label (e.g., 1, 2...).
+ * @param fmt - Label format strategy; defaults to `'Numbers'`.
+ * @returns The formatted label string, or `null` when the format is `'None'`.
+ */
+function formatLabel(label: number, fmt: LabelFormat = 'Numbers'): string | null {
+  if (label < 0) throw new Error('label must be >= 0');
+  switch (fmt) {
+    case 'UpperAlpha':
+      return toAlpha(label).toUpperCase();
+    case 'LowerAlpha':
+      return toAlpha(label).toLowerCase();
+    case 'None':
+      return null;
+    case 'Numbers':
+    default:
+      return String(label);
+  }
+}
+
+/**
+ * Converts a positive 1-based label number into an Excel-style alphabetic code.
+ * Example: 1 → A, 26 → Z, 27 → AA.
+ *
+ * @param label - A positive integer where 1 maps to 'A'.
+ * @returns The alphabetic representation (A, B, ..., Z, AA, AB, ...).
+ */
+function toAlpha(label: number): string {
+  let n = label - 1; // Normalize to 0-based
+  let s = '';
+  while (n >= 0) {
+    const r = n % 26; // Range: 0..25
+    s = String.fromCharCode(65 + r) + s; // 'A' + r
+    n = Math.floor(n / 26) - 1; // Excel-style carry
+  }
+  return s;
 }

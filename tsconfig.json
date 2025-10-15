@@ -10,14 +10,12 @@
     "outDir": "dist",
     "rootDir": "src",
     "types": ["chrome"],
-
-    "baseUrl": "src",
     "paths": {
-      "@common/*": ["common/*"],
-      "@infra/*": ["infra/*"],
-      "@panel/*": ["runtime/panel/*"],
-      "@content/*": ["runtime/content/*"],
-      "@background/*": ["runtime/background/*"]
+      "@common/*": ["./src/common/*"],
+      "@infra/*": ["./src/infra/*"],
+      "@panel/*": ["./src/runtime/panel/*"],
+      "@content/*": ["./src/runtime/content/*"],
+      "@background/*": ["./src/runtime/background/*"]
     }
   },
   "include": ["src/**/*"],

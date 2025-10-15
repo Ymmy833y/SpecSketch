@@ -3,16 +3,23 @@ import {
   ItemGroup,
   type ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
+  ThemeMode,
+  ToastMessage,
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import type { StatusKey } from '@panel/view/status';
+import type { StatusKey } from '@panel/types/status';
 
 export type Model = {
   status: StatusKey;
   tabId: number | null;
   pageKey: string;
+
+  pageKeys: string[];
+
+  theme: ThemeMode;
 
   selectionEnabled: boolean;
   items: ScreenItem[];
@@ -20,6 +27,8 @@ export type Model = {
   defaultSize: number;
   defaultColor: ItemColor;
   defaultShape: ItemShape;
+  defaultLabelFormat: LabelFormat;
+  defaultVisible: boolean;
   defaultPosition: ItemPosition;
   defaultGroup: ItemGroup;
 
@@ -33,17 +42,23 @@ export type Model = {
 
   selectItems: ScreenItem['id'][];
   missingIds: ScreenItem['id'][];
+
+  toastMessages: ToastMessage[];
 };
 
 export const initialModel: Model = {
   status: 'DISCONNECTED',
   tabId: null,
   pageKey: '',
+  pageKeys: [],
+  theme: 'device',
   selectionEnabled: false,
   items: [],
   defaultSize: 14,
   defaultColor: 'Blue',
   defaultShape: 'circle',
+  defaultLabelFormat: 'Numbers',
+  defaultVisible: true,
   defaultPosition: 'left-top-outside',
   defaultGroup: UNGROUPED_VALUE,
   capture: {
@@ -55,4 +70,5 @@ export const initialModel: Model = {
   },
   selectItems: [],
   missingIds: [],
+  toastMessages: [],
 };

@@ -1,4 +1,4 @@
-import { ContentSize, ScreenItem } from '@common/types';
+import { ContentSize, ScreenItem, ThemeMode } from '@common/types';
 
 /**
  * EffectType
@@ -37,6 +37,24 @@ export enum EffectType {
    */
   PERSIST_STATE = 'PERSIST_STATE',
 
+  /** Sete UI theme */
+  SET_THEME = 'SET_THEME',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
+
+  /** Read the screen-state map from `chrome.storage.local` */
+  READ_SCREEN_STATE_STORE = 'READ_SCREEN_STATE_STORE',
+
+  /** Import a ScreenState from a selected JSON file. */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
+  /** Remove screen state by page key */
+  REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY = 'REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY',
+
+  /** Export screen state by page key */
+  EXPORT_SCREEN_STATE_BY_PAGE_KEY = 'EXPORT_SCREEN_STATE_BY_PAGE_KEY',
+
   /** Report/log an error (and optionally surface it to the UI) */
   NOTIFY_ERROR = 'NOTIFY_ERROR',
 }
@@ -60,4 +78,10 @@ export type Effect =
     }
   | { kind: EffectType.CLEAR_STATE }
   | { kind: EffectType.PERSIST_STATE }
+  | { kind: EffectType.SET_THEME }
+  | { kind: EffectType.UPDATE_THEME; theme: ThemeMode }
+  | { kind: EffectType.READ_SCREEN_STATE_STORE }
+  | { kind: EffectType.IMPORT_SCREAN_STATE_FILE; file: File }
+  | { kind: EffectType.REMOVE_SCREEN_STATE_STORE_BY_PAGE_KEY; pageKey: string }
+  | { kind: EffectType.EXPORT_SCREEN_STATE_BY_PAGE_KEY; pageKey: string }
   | { kind: EffectType.NOTIFY_ERROR; error: unknown };

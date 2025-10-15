@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-orange.svg"></a>
-  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.0.0"><img alt="Version 1.0.0" src="https://img.shields.io/badge/Version-1.0.0-green.svg"></a>
+  <a href="https://github.com/Ymmy833y/SpecSketch/releases/tag/v1.1.0"><img alt="Version 1.1.0" src="https://img.shields.io/badge/Version-1.1.0-green.svg"></a>
   <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-blue?style=flat-square&logo=typescript&logoColor=white">
 </p>
 
@@ -41,10 +41,12 @@
 - [操作ガイド](#操作ガイド)
   - [要素の選択・解除](#要素の選択解除)
   - [バッジの調整](#バッジの調整)
-    - [色・形・サイズ](#色形サイズ)
+    - [色・形・サイズ・表示形式・非表示](#色形サイズ表示形式非表示)
     - [位置](#位置)
   - [連番・グルーピング・コメント](#連番グルーピングコメント)
   - [キャプチャ](#キャプチャ)
+  - [インポート・エクスポート](#インポートエクスポート)
+  - [テーマの変更](#テーマの変更)
 - [権限と保存データ](#権限と保存データ)
   - [付与している権限](#付与している権限)
   - [保存データとプライバシー](#保存データとプライバシー)
@@ -142,26 +144,46 @@
 
 ### バッジの調整
 
-#### 色・形・サイズ
+#### 色・形・サイズ・表示形式・非表示
 <table>
   <thead>
     <tr>
       <th>項目</th>
       <th>選択肢</th>
+      <th>補足</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>🎨色</td>
+      <td>🎨 色</td>
       <td>グレー / 赤 / オレンジ / 緑 / 青 / 紫 / ピンク / 黄色 / ライム / シアン</td>
+      <td></td>
     </tr>
     <tr>
-      <td>⬛形</td>
+      <td>⬛ 形</td>
       <td>丸 / 四角</td>
+      <td></td>
     </tr>
     <tr>
-      <td>🔠サイズ</td>
+      <td>📏 サイズ</td>
       <td>10px 〜 30px</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>🔠 表示形式</td>
+      <td>数字（123…） / 大文字英字（ABC…） / 小文字英字（abc…） / なし</td>
+      <td>
+        <b>「なし」</b>を選ぶと<b>バッジのみ</b>非表示になります。<br>
+        コメントは表示されます。
+      </td>
+    </tr>
+    <tr>
+      <td>👁️ 表示・非表示</td>
+      <td>表示 / 非表示</td>
+      <td>
+        <b>「非表示」</b>を選ぶと<b>バッジとコメントの両方</b>が非表示になります。<br>
+        データ自体は保持され、再表示が可能です。
+      </td>
     </tr>
   </tbody>
 </table>
@@ -205,6 +227,38 @@
     <tr><td>Scale</td><td>0.5 ~ 2.0</td><td>出力解像度の倍率。2.0 で高精細、容量は増加</td></tr>
   </tbody>
 </table>
+
+### インポート・エクスポート
+
+ページごとの保存情報を JSON 形式でエクスポート／インポートできます。
+
+**エクスポート**
+- ページ毎に保存されている選択アイテム（バッジ設定・コメント等）を 1 ファイルに出力します。
+
+**インポート（マージの挙動）**
+- 既存データと<b>アンカー（{ kind, version, value }</b>）で照合し、<b>同一アンカーが既に存在する場合は追加・上書きしません</b>（重複回避）。
+- バッジの<b>サイズ／表示形式／色などのページ側既存設定が優先</b>されます。
+- つまり、<b>インポートファイルの内容を優先したい</b>場合は、該当要素をページから一旦<b>削除</b>してからインポートしてください。
+
+> [!note]
+> - インポートは「追加入り／重複スキップ」の安全側動作です。<br>
+> - ページの見た目設定を維持しつつ、要素データだけ取り込みたいときに有効です。
+
+
+<p align="center">
+  <img src="./.github/assets/setting-modal-overview.png" alt="Spec Sketch overview" width="860" style="max-width:100%;border-radius:12px;">
+</p>
+
+### テーマの変更
+
+テーマは次の 3 つから選べます。
+
+- **ライト** … 常にライトテーマを使用
+- **ダーク** … 常にダークテーマを使用
+- **デバイス** … OS / ブラウザの設定
+
+> [!tip]
+> 既定で環境に合わせたい場合は<b>「デバイス」</b>を選択してください。
 
 ---
 

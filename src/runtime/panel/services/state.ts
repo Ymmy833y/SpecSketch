@@ -1,8 +1,18 @@
 import type { Anchor, ScreenItem, ScreenState } from '@common/types';
-import { getState, setState } from '@panel/state/store';
+import { screenStateTable } from '@panel/storage/tables';
 
 type Patch = {
-  added?: Array<{ anchor: ScreenItem['anchor'] }>;
+  added?: Array<{
+    anchor: ScreenItem['anchor'];
+    size?: ScreenItem['size'];
+    color?: ScreenItem['color'];
+    shape?: ScreenItem['shape'];
+    labelFormat?: ScreenItem['labelFormat'];
+    visible?: ScreenItem['visible'];
+    position?: ScreenItem['position'];
+    group?: ScreenItem['group'];
+    comment?: ScreenItem['comment'];
+  }>;
   removedIds?: number[];
 };
 
@@ -16,7 +26,7 @@ type Patch = {
  * @returns Promise resolving to the updated ScreenState.
  */
 export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenState> {
-  const state = await getState(pageKey);
+  const state = await screenStateTable.get(pageKey);
 
   if (patch.removedIds?.length) {
     const toRemove = new Set(patch.removedIds);
@@ -31,18 +41,21 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
         id,
         label,
         anchor: a.anchor,
-        size: state.defaultSize,
-        color: state.defaultColor,
-        shape: state.defaultShape,
-        position: state.defaultPosition,
-        group: state.defaultGroup,
+        size: a.size ?? state.defaultSize,
+        color: a.color ?? state.defaultColor,
+        shape: a.shape ?? state.defaultShape,
+        labelFormat: a.labelFormat ?? state.defaultLabelFormat,
+        visible: a.visible ?? state.defaultVisible,
+        position: a.position ?? state.defaultPosition,
+        group: a.group ?? state.defaultGroup,
+        comment: a.comment ?? '',
       };
       state.items.push(it);
     }
   }
   state.items = normalizeGroupLabelsAndCountUngrouped(state.items);
 
-  await setState(pageKey, state);
+  await screenStateTable.set(pageKey, state);
   return state;
 }
 
@@ -56,7 +69,7 @@ export async function applyPatch(pageKey: string, patch: Patch): Promise<ScreenS
  * @returns Promise resolving to the updated ScreenState.
  */
 export async function handleSelected(pageKey: string, anchors: Anchor[]): Promise<ScreenState> {
-  const state = await getState(pageKey);
+  const state = await screenStateTable.get(pageKey);
   const uniq = Array.from(new Set(anchors.map((a) => a.value)))
     .map((v) => anchors.find((a) => a.value === v)!)
     .filter(Boolean);

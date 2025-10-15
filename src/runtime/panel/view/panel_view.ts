@@ -4,15 +4,19 @@ import {
   isItemColor,
   isItemPosition,
   isItemShape,
+  isLabelFormat,
   type ItemColor,
   ItemPosition,
   type ItemShape,
+  LabelFormat,
   type ScreenItem,
+  ThemeMode,
+  ToastMessage,
   UNGROUPED,
   UNGROUPED_VALUE,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import { getStatusMessage, STATUS, STATUS_LABEL_STYLE, type StatusKey } from '@panel/view/status';
+import { getStatusMessage, STATUS, STATUS_CLASS_BY_KEY, type StatusKey } from '@panel/types/status';
 
 import type { Model } from '../app/model';
 import { type UIEventPayloadMap, UIEventType } from '../types/ui_event_types';
@@ -53,6 +57,8 @@ export class PanelView {
     badgeColorLabel: HTMLSpanElement;
     badgeColorDot: HTMLSpanElement;
     badgeShapeSelect: HTMLSelectElement;
+    badgeLabelFormatSelect: HTMLSelectElement;
+    badgeVisibleSelect: HTMLSelectElement;
     badgeDeleteButton: HTMLButtonElement;
     badgePositionButtons: NodeListOf<HTMLButtonElement>;
     badgePositionLabel: HTMLSpanElement;
@@ -70,6 +76,23 @@ export class PanelView {
     itemCommentApplyBtn: HTMLButtonElement;
 
     selectItemAllCheckbox: HTMLInputElement;
+
+    settingModal: HTMLDivElement;
+    settingButton: HTMLButtonElement;
+    settingCloseButton: HTMLButtonElement;
+
+    themeLightBtn: HTMLButtonElement;
+    themeDarkBtn: HTMLButtonElement;
+    themeDeviceBtn: HTMLButtonElement;
+
+    importFileInput: HTMLInputElement;
+    importBtn: HTMLButtonElement;
+
+    storeCount: HTMLSpanElement;
+    storeList: HTMLUListElement;
+    storeEmpty: HTMLDivElement;
+
+    toastParent: HTMLDivElement;
   };
 
   private readonly NEW_GROUP = '__newgroup__';
@@ -82,6 +105,8 @@ export class PanelView {
   private hoverOutTimer: ReturnType<typeof setTimeout> | null = null;
 
   private collapsedGroups = new Set<string>();
+
+  private TOAST_AUTO_DISMISS = 10000;
 
   constructor(private doc: Document) {
     i18n.localize(doc);
@@ -114,6 +139,8 @@ export class PanelView {
       badgeColorLabel: this.$('#badge-color-label'),
       badgeColorDot: this.$('#badge-color-dot'),
       badgeShapeSelect: this.$('#badge-shape-select'),
+      badgeLabelFormatSelect: this.$('#badge-label-format-select'),
+      badgeVisibleSelect: this.$('#badge-visible-select'),
       badgeDeleteButton: this.$('#badge-delete-button'),
       badgePositionButtons: this.$all<HTMLButtonElement>('#badge-position-pop button'),
       badgePositionLabel: this.$('#badge-position-label'),
@@ -130,6 +157,23 @@ export class PanelView {
       itemCommentApplyBtn: this.$('#item-comment-apply-btn'),
 
       selectItemAllCheckbox: this.$('input[type="checkbox"][name="item-select"][value="all"]'),
+
+      settingModal: this.$('#setting-modal'),
+      settingButton: this.$('#setting-button'),
+      settingCloseButton: this.$('#setting-close-btn'),
+
+      themeLightBtn: this.$('#theme-light-btn'),
+      themeDarkBtn: this.$('#theme-dark-btn'),
+      themeDeviceBtn: this.$('#theme-device-btn'),
+
+      importFileInput: this.$('#import-file-input'),
+      importBtn: this.$('#import-btn'),
+
+      storeCount: this.$('#store-count'),
+      storeList: this.$('#store-list'),
+      storeEmpty: this.$('#store-empty'),
+
+      toastParent: this.$('#toast-parent'),
     };
 
     this.els.toggleBtn.addEventListener('click', () =>
@@ -185,6 +229,17 @@ export class PanelView {
       this.emit(UIEventType.BADGE_SHAPE_CHANGE, { shape });
     });
 
+    this.els.badgeLabelFormatSelect.addEventListener('change', () => {
+      const v = this.els.badgeLabelFormatSelect.value ?? null;
+      const labelFormat = isLabelFormat(v) ? (v as LabelFormat) : 'Numbers';
+      this.emit(UIEventType.BADGE_LABEL_FORMAT_CHANGE, { labelFormat });
+    });
+
+    this.els.badgeVisibleSelect.addEventListener('change', () => {
+      const visible = this.els.badgeVisibleSelect.value === 'true';
+      this.emit(UIEventType.BADGE_VISIBLE_CHANGE, { visible });
+    });
+
     this.els.badgeDeleteButton.addEventListener('click', () => {
       this.emit(UIEventType.BADGE_DELETE, undefined);
     });
@@ -202,6 +257,7 @@ export class PanelView {
       const group = value === UNGROUPED ? UNGROUPED_VALUE : value;
       if (group === this.NEW_GROUP) {
         this.els.groupNameModal.classList.remove('hidden');
+        return;
       }
       this.emit(UIEventType.SET_GROUP, { group });
     });
@@ -227,6 +283,37 @@ export class PanelView {
       const id = Number(this.els.itemCommentIdInput.value);
       this.emit(UIEventType.ITEM_COMMENT_APPLY, { id, comment });
       this.els.itemCommentModal.classList.add('hidden');
+    });
+
+    this.els.settingButton.addEventListener('click', () => {
+      this.els.settingModal.classList.remove('hidden');
+      this.emit(UIEventType.SETTING_MODAL_SHOW, undefined);
+    });
+    this.els.settingCloseButton.addEventListener('click', () => {
+      this.els.settingModal.classList.add('hidden');
+    });
+
+    this.els.themeLightBtn.addEventListener('click', () => {
+      this.applyTheme('light');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'light' });
+    });
+    this.els.themeDarkBtn.addEventListener('click', () => {
+      this.applyTheme('dark');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'dark' });
+    });
+    this.els.themeDeviceBtn.addEventListener('click', () => {
+      this.applyTheme('device');
+      this.emit(UIEventType.UPDATE_THEME, { theme: 'device' });
+    });
+
+    this.els.importBtn.addEventListener('click', () => {
+      // If no file is selected, open the dialog
+      if (!this.els.importFileInput.files || this.els.importFileInput.files.length === 0) {
+        this.els.importFileInput.click();
+        return;
+      }
+      const file = this.els.importFileInput.files[0]!;
+      this.emit(UIEventType.IMPORT_SCREAN_STATE_FILE, { file });
     });
 
     this.updateQualityVisibility();
@@ -255,6 +342,9 @@ export class PanelView {
   }
 
   render(model: Model): void {
+    this.applyToastMessages(model.toastMessages);
+    this.applyTheme(model.theme);
+    this.applyStore(model.pageKeys);
     this.renderStatus(model.status);
     this.renderToggle(model.selectionEnabled);
     this.renderList(model.items, model.selectItems, model.missingIds);
@@ -272,24 +362,26 @@ export class PanelView {
     this.els.badgeSizeRange.value = String(model.defaultSize);
     this.applyBadgeColorUI(model.defaultColor);
     this.els.badgeShapeSelect.value = model.defaultShape;
+    this.els.badgeLabelFormatSelect.value = model.defaultLabelFormat ?? 'Numbers';
+    this.els.badgeVisibleSelect.value = String(model.defaultVisible ?? 'true');
     this.applyBadgePositonUI(model.defaultPosition);
     this.applyBadgeGroupSelectUI(this.getExistingGroups(model.items), model.defaultGroup);
   }
 
   private renderStatus(key: StatusKey): void {
-    const style = STATUS_LABEL_STYLE[key];
+    const style = STATUS_CLASS_BY_KEY[key];
     const el = this.els.status;
     el.className = '';
-    el.classList.add('connect-status', ...style.body);
+    el.className = `connect-status ${style}`;
 
     const dot = this.doc.createElement('span');
-    dot.classList.add('connect-status-dot', ...style.dot);
+    dot.classList.add('connect-status-dot');
 
     const text = this.doc.createElement('span');
     text.textContent = getStatusMessage(key);
     el.replaceChildren(dot, text);
 
-    this.disabledAllButtons(key !== STATUS.CONNECTED);
+    this.disableFormControls(key);
   }
 
   private renderToggle(enabled: boolean): void {
@@ -368,9 +460,12 @@ export class PanelView {
     const toggleBtn = this.el('button', 'select-item-gh-toggle') as HTMLButtonElement;
     toggleBtn.type = 'button';
     toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
-    const { d, viewBox } = isCollapsed ? getIcon('caretRight') : getIcon('caretDown');
-    const toggleIcon = this.createSvgIcon(d, { className: 'icon-sm', viewBox });
-    const togglePath = toggleIcon.querySelector('path') as SVGPathElement;
+
+    const iconSpec = isCollapsed ? getIcon('caretRight') : getIcon('caretDown');
+    const toggleIcon = this.createSvgIcon(iconSpec.d, {
+      className: 'icon-sm',
+      viewBox: iconSpec.viewBox,
+    });
     toggleBtn.append(toggleIcon);
 
     header.append(left, count, toggleBtn);
@@ -390,12 +485,24 @@ export class PanelView {
       if (currentlyCollapsed) {
         this.collapsedGroups.delete(gKey);
         ul.classList.remove('hidden');
-        togglePath.setAttribute('d', getIcon('caretDown').d);
+
+        const spec = getIcon('caretDown');
+        const icon = this.createSvgIcon(spec.d, {
+          className: 'icon-sm',
+          viewBox: spec.viewBox,
+        });
+        toggleBtn.replaceChildren(icon);
         toggleBtn.setAttribute('aria-expanded', 'true');
       } else {
         this.collapsedGroups.add(gKey);
         ul.classList.add('hidden');
-        togglePath.setAttribute('d', getIcon('caretRight').d);
+
+        const spec = getIcon('caretRight');
+        const icon = this.createSvgIcon(spec.d, {
+          className: 'icon-sm',
+          viewBox: spec.viewBox,
+        });
+        toggleBtn.replaceChildren(icon);
         toggleBtn.setAttribute('aria-expanded', 'false');
       }
     });
@@ -612,8 +719,24 @@ export class PanelView {
     rangeEl.addEventListener('input', () => sync(rangeEl.value));
     numberEl.addEventListener('input', () => sync(numberEl.value));
   }
-  private disabledAllButtons(isDisabled: boolean): void {
-    this.doc.querySelectorAll('button').forEach((btn) => (btn.disabled = isDisabled));
+  private disableFormControls(status: StatusKey): void {
+    const controls = this.doc.querySelectorAll<
+      HTMLButtonElement | HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
+    >('button, select, input, textarea');
+
+    // Determine enablement policy per status
+    const enableAll = status === STATUS.CONNECTED;
+    const enableIgnoreOnly = status === STATUS.CONNECTING || status === STATUS.DISCONNECTED;
+    const enableNone = status === STATUS.RESTRICTED;
+
+    controls.forEach((el) => {
+      const shouldEnable =
+        (enableAll && true) ||
+        (enableIgnoreOnly && el.hasAttribute('data-ignore-disable')) ||
+        (enableNone && false);
+      el.disabled = !shouldEnable;
+    });
+    this.els.list.toggleAttribute('inert', enableNone || enableIgnoreOnly);
   }
   private applyCaptureOptionsToggleUI(expanded: boolean) {
     this.els.captureOptionsToggle.setAttribute('aria-expanded', String(expanded));
@@ -658,6 +781,112 @@ export class PanelView {
     this.els.badgeGroupSelect.append(createOpt);
   }
 
+  private applyTheme(theme: ThemeMode): void {
+    const root = document.documentElement;
+    const isDark =
+      theme === 'device'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : theme === 'dark';
+    if (isDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    this.els.themeLightBtn.setAttribute('data-active', String(theme === 'light'));
+    this.els.themeDarkBtn.setAttribute('data-active', String(theme === 'dark'));
+    this.els.themeDeviceBtn.setAttribute('data-active', String(theme === 'device'));
+  }
+
+  private applyStore(pageKeys: string[]): void {
+    this.els.storeCount.textContent = String(pageKeys.length);
+    this.els.storeList.innerHTML = '';
+
+    if (pageKeys.length <= 0) {
+      this.els.storeList.classList.add('hidden');
+      this.els.storeEmpty.classList.remove('hidden');
+      return;
+    }
+
+    for (const pageKey of pageKeys) {
+      const liElem = this.el('li', 'select-item');
+      const aWrapElem = this.el('div', 'min-w-0 flex-1');
+      const aElem = this.el('a', 'anchor whitespace-normal break-words', pageKey);
+      aElem.href = pageKey;
+      aElem.target = '_blank';
+      aWrapElem.appendChild(aElem);
+      const exportBtnElem = this.el('button', 'btn-icon');
+      exportBtnElem.setAttribute('data-ignore-disable', 'true');
+      const exportIconDef = getIcon('export');
+      const exportIcon = this.createSvgIcon(exportIconDef.d, {
+        className: 'icon-sm',
+        viewBox: exportIconDef.viewBox,
+      });
+      exportBtnElem.appendChild(exportIcon);
+      const removeBtnElem = this.el('button', 'btn-icon btn-icon--danger');
+      removeBtnElem.setAttribute('data-ignore-disable', 'true');
+      const removeIconDef = getIcon('remove');
+      const removeIcon = this.createSvgIcon(removeIconDef.d, {
+        className: 'icon-sm',
+        viewBox: removeIconDef.viewBox,
+      });
+      removeBtnElem.appendChild(removeIcon);
+      liElem.appendChild(aWrapElem);
+      liElem.appendChild(exportBtnElem);
+      liElem.appendChild(removeBtnElem);
+      this.els.storeList.appendChild(liElem);
+
+      exportBtnElem.addEventListener('click', () => {
+        this.emit(UIEventType.EXPORT_PAGE_CLICK, { pageKey });
+      });
+      removeBtnElem.addEventListener('click', () => {
+        this.emit(UIEventType.REMOVE_PAGE_CLICK, { pageKey });
+      });
+    }
+    this.els.storeList.classList.remove('hidden');
+    this.els.storeEmpty.classList.add('hidden');
+  }
+
+  private applyToastMessages(toastMessages: ToastMessage[]): void {
+    for (const toastMessage of toastMessages) {
+      const toastElem = this.generateToastMessage(toastMessage);
+      this.els.toastParent.appendChild(toastElem);
+      this.emit(UIEventType.TOAST_DISMISS_REQUESTED, { uuid: toastMessage.uuid });
+    }
+  }
+
+  private generateToastMessage(toastMessage: ToastMessage): HTMLDivElement {
+    const toastElem = this.el('div', `toast toast--${toastMessage.kind}`);
+    const toastIconDef = getIcon(toastMessage.kind);
+    const toastIcon = this.createSvgIcon(toastIconDef.d, {
+      className: 'toast-icon',
+      viewBox: toastIconDef.viewBox,
+      variant: 'solid',
+    });
+    const toastBody = this.el('div', 'toast-body');
+    const desc = this.el('p', 'toast-desc', toastMessage.message);
+    toastBody.appendChild(desc);
+    const closeBtn = this.el('button', `toast-close toast-close--${toastMessage.kind}`);
+    const closeIconDef = getIcon('close');
+    const closeIcon = this.createSvgIcon(closeIconDef.d, {
+      className: 'h-3.5 w-3.5',
+      viewBox: closeIconDef.viewBox,
+    });
+    closeBtn.appendChild(closeIcon);
+    toastElem.appendChild(toastIcon);
+    toastElem.appendChild(toastBody);
+    toastElem.appendChild(closeBtn);
+
+    const timerId = window.setTimeout(() => {
+      if (toastElem.isConnected) toastElem.remove();
+    }, this.TOAST_AUTO_DISMISS);
+
+    closeBtn.addEventListener('click', () => {
+      clearTimeout(timerId);
+      if (toastElem.isConnected) toastElem.remove();
+    });
+    return toastElem;
+  }
+
   private $<T extends Element>(selector: string): T {
     const el = this.doc.querySelector(selector);
     if (!el) throw new Error(`[PanelView] Missing element: ${selector}`);
@@ -686,29 +915,32 @@ export class PanelView {
   }
 
   private createSvgIcon(
-    d: string,
-    opts: {
-      className?: string;
-      viewBox?: string;
-      attrs?: Record<string, string>;
-    } = {},
+    d: string | ReadonlyArray<string>,
+    opts: { className?: string; viewBox?: string; variant?: 'solid' | 'outline' } = {},
   ): SVGSVGElement {
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-
-    const svg = document.createElementNS(SVG_NS, 'svg');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
     svg.setAttribute('viewBox', opts.viewBox ?? '0 0 20 20');
-    svg.setAttribute('class', opts.className ?? 'h-3.5 w-3.5');
-    svg.setAttribute('fill', 'currentColor');
     svg.setAttribute('aria-hidden', 'true');
+    if (opts.className) svg.setAttribute('class', opts.className);
 
-    if (opts.attrs) {
-      for (const [k, v] of Object.entries(opts.attrs)) svg.setAttribute(k, v);
+    const paths = Array.isArray(d) ? d : [d];
+    for (const seg of paths) {
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('d', seg);
+
+      if (opts.variant === 'outline') {
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+      } else {
+        path.setAttribute('fill', 'currentColor');
+      }
+
+      svg.appendChild(path);
     }
-
-    const pathEl = document.createElementNS(SVG_NS, 'path');
-    pathEl.setAttribute('d', d);
-    svg.appendChild(pathEl);
-
     return svg;
   }
 }

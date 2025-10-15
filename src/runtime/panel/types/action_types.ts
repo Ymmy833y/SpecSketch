@@ -5,10 +5,13 @@ import type {
   ItemGroup,
   ItemPosition,
   ItemShape,
+  LabelFormat,
   ScreenItem,
+  ThemeMode,
+  ToastMessage,
 } from '@common/types';
 import type { CaptureArea, CaptureFormat } from '@panel/services/capture';
-import type { StatusKey } from '@panel/view/status';
+import type { StatusKey } from '@panel/types/status';
 
 /**
  * ActionType
@@ -55,6 +58,12 @@ export enum ActionType {
 
   /** Update default badge shape (also apply to existing items) */
   SET_BADGE_SHAPE = 'SET_BADGE_SHAPE',
+
+  /** Update default badge label format (also apply to existing items) */
+  SET_BADGE_LABEL_FORMAT = 'SET_BADGE_LABEL_FORMAT',
+
+  /** Update default badge visable (also apply to existing items) */
+  SET_BADGE_VISIBLE = 'SET_BADGE_VISIBLE',
 
   /** Delete the selected badge */
   BADGE_DELETE = 'BADGE_DELETE',
@@ -112,6 +121,39 @@ export enum ActionType {
 
   /** Persist the edited comment text for the targeted item */
   UPDATE_ITEM_COMMENT = 'UPDATE_ITEM_COMMENT',
+
+  /** Sete UI theme */
+  SET_THEME = 'SET_THEME',
+
+  /** Update the UI theme */
+  UPDATE_THEME = 'UPDATE_THEME',
+
+  /** Dispatched to request reloading the latest data */
+  STORE_RELOAD_REQUESTED = 'STORE_RELOAD_REQUESTED',
+
+  /** Dispatched after the store is successfully reloaded with the latest data */
+  STORE_RELOAD_SUCCEEDED = 'STORE_RELOAD_SUCCEEDED',
+
+  /** Import a ScreenState from a selected JSON file. */
+  IMPORT_SCREAN_STATE_FILE = 'IMPORT_SCREAN_STATE_FILE',
+
+  /** Emitted when the import operation succeeds. */
+  IMPORT_SUCCEEDED = 'IMPORT_SUCCEEDED',
+
+  /** Emitted when the import operation fails. */
+  IMPORT_FAILED = 'IMPORT_FAILED',
+
+  /** Dismiss a toast by UUID */
+  TOAST_DISMISS_REQUESTED = 'TOAST_DISMISS_REQUESTED',
+
+  /** Remove screen state by page key */
+  REMOVE_SCREEN_STATE_BY_PAGE = 'REMOVE_SCREEN_STATE_BY_PAGE',
+
+  /** Export screen state by page key */
+  EXPORT_SCREEN_STATE_BY_PAGE = 'EXPORT_SCREEN_STATE_BY_PAGE',
+
+  /** Export failed with an error */
+  EXPORT_FAILED = 'EXPORT_FAILED',
 }
 
 export type Action =
@@ -125,6 +167,8 @@ export type Action =
         defaultSize: number;
         defaultColor: ItemColor;
         defaultShape: ItemShape;
+        defaultLabelFormat: LabelFormat;
+        defaultVisible: boolean;
         defaultPosition: ItemPosition;
         defaultGroup: ItemGroup;
       };
@@ -136,6 +180,8 @@ export type Action =
   | { type: ActionType.SET_BADGE_SIZE; size: number }
   | { type: ActionType.SET_BADGE_COLOR; color: ItemColor }
   | { type: ActionType.SET_BADGE_SHAPE; shape: ItemShape }
+  | { type: ActionType.SET_BADGE_LABEL_FORMAT; labelFormat: LabelFormat }
+  | { type: ActionType.SET_BADGE_VISIBLE; visible: boolean }
   | { type: ActionType.SET_BADGE_POSITION; position: ItemPosition }
   | { type: ActionType.SET_CAPTURE_FORMAT; format: CaptureFormat }
   | { type: ActionType.SET_CAPTURE_AREA; area: CaptureArea }
@@ -156,4 +202,15 @@ export type Action =
   | { type: ActionType.ITEM_HOVER_OUT }
   | { type: ActionType.UPDATE_ITEM_COMMENT; id: number; comment: string }
   | { type: ActionType.PORT_DISCONNECTED }
-  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number };
+  | { type: ActionType.CLOSE_PANEL_REQUESTED; tabId?: number }
+  | { type: ActionType.SET_THEME; theme: ThemeMode }
+  | { type: ActionType.UPDATE_THEME; theme: ThemeMode }
+  | { type: ActionType.STORE_RELOAD_REQUESTED }
+  | { type: ActionType.STORE_RELOAD_SUCCEEDED; pageKeys: string[] }
+  | { type: ActionType.IMPORT_SCREAN_STATE_FILE; file: File }
+  | { type: ActionType.IMPORT_SUCCEEDED; toastMessages: ToastMessage[] }
+  | { type: ActionType.IMPORT_FAILED; toastMessages: ToastMessage[] }
+  | { type: ActionType.TOAST_DISMISS_REQUESTED; uuid: string }
+  | { type: ActionType.REMOVE_SCREEN_STATE_BY_PAGE; pageKey: string }
+  | { type: ActionType.EXPORT_SCREEN_STATE_BY_PAGE; pageKey: string }
+  | { type: ActionType.EXPORT_FAILED; error: unknown };
