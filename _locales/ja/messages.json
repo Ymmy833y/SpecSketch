@@ -29,6 +29,17 @@
   "badge_shape": { "message": "形状" },
   "badge_shape_circle": { "message": "丸" },
   "badge_shape_square": { "message": "四角" },
+
+  "badge_visible": { "message": "表示・非表示" },
+  "badge_visible_show": { "message": "表示" },
+  "badge_visible_hide": { "message": "非表示" },
+  
+  "badge_label_format": { "message": "表示形式" },
+  "badge_label_format_numbers": { "message": "123..." },
+  "badge_label_format_upper_alpha": { "message": "ABC..." },
+  "badge_label_format_lower_alpha": { "message": "abc..." },
+  "badge_label_format_none": { "message": "なし" },
+
   "badge_position": { "message": "位置" },
   "badge_group": { "message": "グループ" },
 
@@ -44,6 +55,22 @@
   "create_group_subtitle": { "message": "新しいグループ名を入力してください。" },
 
   "comment_edit_title": { "message": "コメントを編集" },
+
+  "setting":        { "message": "設定" },
+  "setting_theme":  { "message": "テーマ設定" },
+  "theme_light":    { "message": "ライト" },
+  "theme_dark":     { "message": "ダーク" },
+  "theme_device":     { "message": "デバイス" },
+  "hint_theme_note": { "message": "テーマを切り替えると、このパネルの見た目が即時に更新されます。" },
+  "setting_import": { "message": "インポート" },
+  "setting_store_pages": { "message": "保存ページ" },
+  "setting_store_pages_empty": { "message": "保存されたページはありません。" },
+
+  "import_succeeded_with_count": {
+    "message": "インポートが正常に完了しました。$1 件の要素を追加しました。"
+  },
+  "import_file_not_json": { "message": "JSON ファイルのみ対応しています。" },
+  "import_payload_invalid": { "message": "エクスポート形式が不正です。" },
 
   "common_create": { "message": "作成" },
   "common_delete": { "message": "削除" },

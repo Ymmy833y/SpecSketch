@@ -29,6 +29,17 @@
   "badge_shape": { "message": "Badge shape" },
   "badge_shape_circle": { "message": "Circle" },
   "badge_shape_square": { "message": "Square" },
+
+  "badge_visible": { "message": "Visible" },
+  "badge_visible_show": { "message": "Show" },
+  "badge_visible_hide": { "message": "Hide" },
+
+  "badge_label_format": { "message": "Label format" },
+  "badge_label_format_numbers": { "message": "123..." },
+  "badge_label_format_upper_alpha": { "message": "ABC..." },
+  "badge_label_format_lower_alpha": { "message": "abc..." },
+  "badge_label_format_none": { "message": "None" },
+
   "badge_position": { "message": "Badge Position" },
   "badge_group": { "message": "Badge Group" },
 
@@ -44,6 +55,22 @@
   "create_group_subtitle": { "message": "Please enter a new group name." },
 
   "comment_edit_title": { "message": "Edit Comment" },
+
+  "setting": { "message": "Setting" },
+  "setting_theme": { "message": "Setting Theme" },
+  "theme_light": { "message": "Light" },
+  "theme_dark": { "message": "Dark" },
+  "theme_device": { "message": "Device" },
+  "hint_theme_note": { "message": "Switching theme updates this panel’s appearance." },
+  "setting_import": { "message": "Import" },
+  "setting_store_pages": { "message": "Saved Pages" },
+  "setting_store_pages_empty": { "message": "No saved pages yet." },
+
+  "import_succeeded_with_count": {
+    "message": "Import completed successfully. Added $1 items."
+  },
+  "import_file_not_json": { "message": "Only JSON files are supported." },
+  "import_payload_invalid": { "message": "Invalid export payload." },
 
   "common_create": { "message": "Create" },
   "common_delete": { "message": "Delete" },

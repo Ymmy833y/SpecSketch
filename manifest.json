@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Spec Sketch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "default_locale": "en",
   "description": "SpecSketch lets you easily create screenshots with numbered elements on a webpage.",
   "permissions": ["sidePanel", "scripting", "storage", "tabs", "debugger", "downloads"],
